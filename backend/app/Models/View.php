@@ -2,13 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['user_id', 'reference_id', 'viewed_at', 'ip_address'])]
 class View extends Model
 {
     public $timestamps = false;
+
+    protected $fillable = [
+        'user_id',
+        'reference_id',
+        'viewed_at',
+        'ip_address',
+    ];
 
     public function user()
     {

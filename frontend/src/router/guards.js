@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/auth'
 
 export function setupAuthGuards(router) {
-  router.beforeEach(async (to, from, next) => {
+  router.beforeEach(async (to, from) => {
     const authStore = useAuthStore()
     
     // Fetch user if not already fetched
@@ -15,14 +15,14 @@ export function setupAuthGuards(router) {
     if (publicRoutes.includes(to.name)) {
       // If already authenticated and trying to go to auth page, redirect to dashboard
       if (to.name === 'auth' && authStore.isAuthenticated) {
-        return next({ name: 'dashboard' })
+        return { name: 'dashboard' }
       }
-      return next()
+      return
     }
 
     // Protected routes below
     if (!authStore.isAuthenticated) {
-      return next({ name: 'auth' })
+      return { name: 'auth' }
     }
 
     // Role-based protection
@@ -30,19 +30,17 @@ export function setupAuthGuards(router) {
     
     // RH routes
     if (to.name?.startsWith('rh-') && !['responsable_rh', 'admin'].includes(userRole)) {
-      return next({ name: 'dashboard' })
+      return { name: 'dashboard' }
     }
 
     // Manager routes
     if (to.name?.startsWith('manager-') && !['responsable_demande', 'admin'].includes(userRole)) {
-      return next({ name: 'dashboard' })
+      return { name: 'dashboard' }
     }
 
     // Admin routes
     if (to.name?.startsWith('admin-') && userRole !== 'admin') {
-      return next({ name: 'dashboard' })
+      return { name: 'dashboard' }
     }
-
-    next()
   })
 }

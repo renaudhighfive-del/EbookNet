@@ -2,16 +2,29 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable([
-    'title', 'subtitle', 'abstract', 'isbn', 'publication_year', 'language',
-    'document_type', 'pages', 'category_id', 'publisher_id', 'uploaded_by',
-    'cover_image', 'file_path', 'download_count', 'view_count', 'status'
-])]
 class Reference extends Model
 {
+    protected $fillable = [
+        'title',
+        'subtitle',
+        'abstract',
+        'isbn',
+        'publication_year',
+        'language',
+        'document_type',
+        'pages',
+        'category_id',
+        'publisher_id',
+        'uploaded_by',
+        'cover_image',
+        'file_path',
+        'download_count',
+        'view_count',
+        'status',
+    ];
+
     public function category()
     {
         return $this->belongsTo(Category::class);

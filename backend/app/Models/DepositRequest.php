@@ -2,15 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable([
-    'applicant_id', 'assigned_manager_id', 'title', 'description',
-    'proposed_file', 'status', 'reference_id'
-])]
 class DepositRequest extends Model
 {
+    protected $fillable = [
+        'applicant_id',
+        'assigned_manager_id',
+        'title',
+        'description',
+        'proposed_file',
+        'status',
+        'reference_id',
+    ];
+
     public function applicant()
     {
         return $this->belongsTo(User::class, 'applicant_id');

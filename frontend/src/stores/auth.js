@@ -14,7 +14,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     try {
       // First get the CSRF cookie
-      await axios.get('http://localhost:8000/sanctum/csrf-cookie')
+      await axios.get('http://127.0.0.1:8000/sanctum/csrf-cookie')
       // Then login
       const response = await api.post('/auth/login', credentials)
       user.value = response.data.user
@@ -28,7 +28,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     try {
       // First get the CSRF cookie
-      await axios.get('http://localhost:8000/sanctum/csrf-cookie')
+      await axios.get('http://127.0.0.1:8000/sanctum/csrf-cookie')
       // Then register
       const response = await api.post('/auth/register', data)
       user.value = response.data.user

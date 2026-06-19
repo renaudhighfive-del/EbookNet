@@ -77,10 +77,10 @@
 
         <!-- Role -->
         <div class="border-b border-gray-200 pb-6">
-          <h3 class="text-lg font-semibold text-navy-800 mb-4">Rôle & permissions</h3>
+          <h3 class="text-lg font-semibold text-navy-800 mb-4">Rôle et permissions</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="bg-gray-50 rounded-xl p-4">
-              <label class="flex items-start gap-3 cursor-pointer">
+              <label class="flex items-start gap-2 cursor-pointer">
                 <input type="radio" v-model="form.role" value="user" class="mt-1">
                 <div class="flex-1">
                   <p class="font-semibold text-navy-800">Utilisateur standard</p>
@@ -91,7 +91,7 @@
               </label>
             </div>
             <div class="bg-gray-50 rounded-xl p-4">
-              <label class="flex items-start gap-3 cursor-pointer">
+              <label class="flex items-start gap-2 cursor-pointer">
                 <input type="radio" v-model="form.role" value="responsable_rh" class="mt-1">
                 <div class="flex-1">
                   <p class="font-semibold text-navy-800">Responsable RH</p>
@@ -102,7 +102,7 @@
               </label>
             </div>
             <div class="bg-gray-50 rounded-xl p-4">
-              <label class="flex items-start gap-3 cursor-pointer">
+              <label class="flex items-start gap-2 cursor-pointer">
                 <input type="radio" v-model="form.role" value="responsable_demande" class="mt-1">
                 <div class="flex-1">
                   <p class="font-semibold text-navy-800">Responsable — Demandes</p>
@@ -113,7 +113,7 @@
               </label>
             </div>
             <div class="bg-gray-50 rounded-xl p-4">
-              <label class="flex items-start gap-3 cursor-pointer">
+              <label class="flex items-start gap-2 cursor-pointer">
                 <input type="radio" v-model="form.role" value="admin" class="mt-1">
                 <div class="flex-1">
                   <p class="font-semibold text-navy-800">Administrateur</p>
@@ -188,7 +188,7 @@ const goBack = () => {
 const fetchUser = async () => {
   isLoading.value = true
   try {
-    await axios.get('http://localhost:8000/sanctum/csrf-cookie')
+    await axios.get('http://127.0.0.1:8000/sanctum/csrf-cookie')
     const response = await api.get(`/users/${route.params.id}`)
     const user = response.data.user
     form.value = {
@@ -210,7 +210,7 @@ const fetchUser = async () => {
 const handleSubmit = async () => {
   isLoading.value = true
   try {
-    await axios.get('http://localhost:8000/sanctum/csrf-cookie')
+    await axios.get('http://127.0.0.1:8000/sanctum/csrf-cookie')
     if (isEdit.value) {
       await api.put(`/users/${route.params.id}`, form.value)
     } else {
