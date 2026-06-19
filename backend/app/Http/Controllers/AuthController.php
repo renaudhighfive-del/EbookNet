@@ -6,6 +6,7 @@ use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,14 @@ class AuthController extends Controller
         $user = auth()->user();
         $user->update(['last_login_at' => now()]);
         $user->loadMissing(['depositRequests', 'notifications']);
+
+        // Log login activity
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'login',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
 
         return response()->json([
             'message' => 'Connexion réussie.',
@@ -57,6 +66,18 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
+        $user = auth()->user();
+
+        if ($user) {
+            // Log logout activity
+            ActivityLog::create([
+                'user_id' => $user->id,
+                'action' => 'logout',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+        }
+
         auth()->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
