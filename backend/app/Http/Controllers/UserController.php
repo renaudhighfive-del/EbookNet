@@ -120,14 +120,15 @@ class UserController extends Controller
         ]);
     }
 
-    // Delete user
+    // Deactivate user instead of deleting
     public function destroy($id): JsonResponse
     {
         $user = User::findOrFail($id);
-        $user->delete();
+        $user->update(['status' => 'inactive']);
 
         return response()->json([
-            'message' => 'Utilisateur supprimé avec succès.',
+            'message' => 'Utilisateur désactivé avec succès.',
+            'user' => $user,
         ]);
     }
 }
