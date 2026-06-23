@@ -14,7 +14,7 @@ const form = ref({
   language: 'fr',
   abstract: '',
   keywords: '',
-  file: null
+  file: null,
 })
 
 function handleFileChange(event) {
@@ -34,17 +34,19 @@ async function handleSubmit() {
 }
 </script>
 
-
-
 <template>
   <AuthenticatedLayout>
     <div>
-      <h1 class="text-3xl font-bold text-navy-800 font-serif mb-2">
-        Déposer un document
-      </h1>
-      <p class="text-gray-500 mb-8">
-        Soumettez une nouvelle référence documentaire au catalogue
-      </p>
+      <div class="flex items-center gap-4 mb-6">
+        <router-link
+          to="/my-documents"
+          class="text-gray-500 hover:text-navy-800 flex items-center gap-1 text-sm"
+        >
+          ← Retour à mes dépôts
+        </router-link>
+      </div>
+      <h1 class="text-3xl font-bold text-navy-800 font-serif mb-2">Déposer un document</h1>
+      <p class="text-gray-500 mb-8">Soumettez une nouvelle référence documentaire au catalogue</p>
       <form @submit.prevent="handleSubmit" class="bg-white rounded-2xl p-8 shadow-soft max-w-2xl">
         <div class="space-y-6">
           <!-- Title -->
@@ -170,9 +172,7 @@ async function handleSubmit() {
             </label>
             <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-beige">
               <UploadCloud class="w-12 h-12 mx-auto mb-3 text-gray-400" />
-              <p class="text-gray-500 mb-2">
-                Glissez-déposez votre fichier ici, ou
-              </p>
+              <p class="text-gray-500 mb-2">Glissez-déposez votre fichier ici, ou</p>
               <label for="file" class="text-teal-600 font-medium cursor-pointer hover:underline">
                 cliquez pour sélectionner
               </label>
@@ -184,9 +184,7 @@ async function handleSubmit() {
                 required
                 class="hidden"
               />
-              <p v-if="form.file" class="text-teal-700 mt-2">
-                ✅ {{ form.file.name }}
-              </p>
+              <p v-if="form.file" class="text-teal-700 mt-2">✅ {{ form.file.name }}</p>
             </div>
           </div>
           <!-- Keywords -->
@@ -220,4 +218,3 @@ async function handleSubmit() {
     </div>
   </AuthenticatedLayout>
 </template>
-

@@ -8,7 +8,7 @@ const profile = ref({
   first_name: 'Jean',
   last_name: 'Dupont',
   email: 'jean.dupont@example.com',
-  phone: '+229 90 00 00 00'
+  phone: '+229 90 00 00 00',
 })
 
 const initials = computed(() => {
@@ -28,9 +28,7 @@ function handleSave() {
 <template>
   <AuthenticatedLayout>
     <div>
-      <h1 class="text-3xl font-bold text-navy-800 font-serif mb-2">
-        Mon profil
-      </h1>
+      <h1 class="text-3xl font-bold text-navy-800 font-serif mb-2">Mon profil</h1>
       <p class="text-gray-500 mb-8">
         Gérer vos informations personnelles et les paramètres de votre compte
       </p>
@@ -39,7 +37,9 @@ function handleSave() {
         <form @submit.prevent="handleSave" class="space-y-6">
           <!-- Avatar / Name Section -->
           <div class="flex items-center gap-4 pb-6 border-b border-gray-200">
-            <div class="w-20 h-20 bg-navy-800 rounded-full flex items-center justify-center text-white text-3xl font-bold">
+            <div
+              class="w-20 h-20 bg-navy-800 rounded-full flex items-center justify-center text-white text-3xl font-bold"
+            >
               {{ initials }}
             </div>
             <div>
@@ -56,7 +56,9 @@ function handleSave() {
           <!-- First & Last Name -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label for="firstName" class="block text-sm font-medium text-navy-800 mb-2">Prénom *</label>
+              <label for="firstName" class="block text-sm font-medium text-navy-800 mb-2"
+                >Prénom *</label
+              >
               <input
                 type="text"
                 id="firstName"
@@ -66,7 +68,9 @@ function handleSave() {
               />
             </div>
             <div>
-              <label for="lastName" class="block text-sm font-medium text-navy-800 mb-2">Nom *</label>
+              <label for="lastName" class="block text-sm font-medium text-navy-800 mb-2"
+                >Nom *</label
+              >
               <input
                 type="text"
                 id="lastName"
@@ -80,7 +84,9 @@ function handleSave() {
           <!-- Email & Phone -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label for="email" class="block text-sm font-medium text-navy-800 mb-2">Adresse email *</label>
+              <label for="email" class="block text-sm font-medium text-navy-800 mb-2"
+                >Adresse email *</label
+              >
               <input
                 type="email"
                 id="email"
@@ -90,7 +96,9 @@ function handleSave() {
               />
             </div>
             <div>
-              <label for="phone" class="block text-sm font-medium text-navy-800 mb-2">Téléphone</label>
+              <label for="phone" class="block text-sm font-medium text-navy-800 mb-2"
+                >Téléphone</label
+              >
               <input
                 type="tel"
                 id="phone"
@@ -105,7 +113,9 @@ function handleSave() {
             <h3 class="font-semibold text-navy-800 mb-4">Mot de passe</h3>
             <div class="space-y-4">
               <div>
-                <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-2">Mot de passe actuel</label>
+                <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-2"
+                  >Mot de passe actuel</label
+                >
                 <input
                   type="password"
                   id="currentPassword"
@@ -115,7 +125,9 @@ function handleSave() {
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">Nouveau mot de passe</label>
+                  <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2"
+                    >Nouveau mot de passe</label
+                  >
                   <input
                     type="password"
                     id="newPassword"
@@ -124,7 +136,9 @@ function handleSave() {
                   />
                 </div>
                 <div>
-                  <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirmer le nouveau mot de passe</label>
+                  <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2"
+                    >Confirmer le nouveau mot de passe</label
+                  >
                   <input
                     type="password"
                     id="confirmPassword"
@@ -154,5 +168,3 @@ function handleSave() {
     </div>
   </AuthenticatedLayout>
 </template>
-
-

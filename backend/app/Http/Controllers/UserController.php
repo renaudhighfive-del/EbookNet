@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\ActivityLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -10,85 +11,118 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    // Get all users (for RH and Admin)
+    // ─── Helper pour logs d'activité ─────────────────────────────────────────────
+    private function logActivity(Request $request, string $action, ?int $targetId = null): void
+    {
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => $action,
+            'target_table' => 'users',
+            'target_id' => $targetId,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+    }
+
+    // ─── RH + Admin ───────────────────────────────────────────────────────────
+
+    /** GET /hr/users — Liste paginée (filtre : role, status, search) */
     public function index(Request $request): JsonResponse
     {
         $query = User::query();
 
-        // Filter by role
-        if ($request->has('role')) {
-            $query->where('role', $request->role);
+        if ($request->filled('role'))   $query->where('role',   $request->role);
+        if ($request->filled('status')) $query->where('status', $request->status);
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn($q) => $q
+                ->where('first_name', 'like', "%$s%")
+                ->orWhere('last_name',  'like', "%$s%")
+                ->orWhere('email',      'like', "%$s%")
+            );
         }
 
-        // Filter by status
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $users = $query->orderBy('created_at', 'desc')->paginate(10);
-
-        return response()->json($users);
+        $perPage = min((int) $request->get('per_page', 10), 100);
+        return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
     }
 
-    // Get single user
-    public function show($id): JsonResponse
+    /** GET /hr/users/:id — Détail avec relations */
+    public function show(int $id): JsonResponse
     {
         $user = User::findOrFail($id);
         $user->load(['depositRequests', 'depositRequestReviews', 'activityLogs']);
-
         return response()->json(['user' => $user]);
     }
 
-    // Create user (for RH and Admin)
+    /** POST /hr/users — Créer un compte
+     *  RH  : rôle max = responsable_demande (admin bloqué côté logique)
+     *  Admin : tous les rôles autorisés
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
-            'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'nullable|string|max:50',
-            'password' => 'required|string|min:8',
-            'role' => ['sometimes', Rule::in(['user', 'responsable_rh', 'responsable_demande', 'admin'])],
-            'status' => ['sometimes', Rule::in(['active', 'inactive', 'suspended'])],
+            'last_name'  => 'required|string|max:100',
+            'email'      => 'required|email|max:255|unique:users',
+            'phone'      => 'nullable|string|max:50',
+            'password'   => 'required|string|min:8',
+            'role'       => ['sometimes', Rule::in(['user', 'responsable_rh', 'responsable_demande', 'admin'])],
+            'status'     => ['sometimes', Rule::in(['active', 'inactive'])],
         ]);
 
-        // Only admin can set role to admin
-        $authenticatedUser = $request->user();
-        if (isset($validated['role']) && $validated['role'] === 'admin' && $authenticatedUser->role !== 'admin') {
+        // RH ne peut pas créer un admin
+        if (isset($validated['role'])
+            && $validated['role'] === 'admin'
+            && $request->user()->role !== 'admin'
+        ) {
             $validated['role'] = 'user';
         }
 
         $validated['password'] = Hash::make($validated['password']);
-        $validated['role'] ??= 'user';
+        $validated['role']   ??= 'user';
         $validated['status'] ??= 'active';
 
         $user = User::create($validated);
+        $this->logActivity($request, "Création utilisateur: {$user->first_name} {$user->last_name} ({$user->role})", $user->id);
 
         return response()->json([
             'message' => 'Utilisateur créé avec succès.',
-            'user' => $user,
+            'user'    => $user,
         ], 201);
     }
 
-    // Update user
-    public function update(Request $request, $id): JsonResponse
+    /** PUT /hr/users/:id — Modifier infos (nom, email, téléphone, mdp)
+     *  RH  : ne peut pas changer le rôle
+     *  Admin : peut changer le rôle via ce endpoint ou /admin/users/:id/role
+     */
+    public function update(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
-        $authenticatedUser = $request->user();
 
         $validated = $request->validate([
             'first_name' => 'sometimes|string|max:100',
-            'last_name' => 'sometimes|string|max:100',
-            'email' => ['sometimes', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'phone' => 'nullable|string|max:50',
-            'password' => 'sometimes|string|min:8',
-            'role' => ['sometimes', Rule::in(['user', 'responsable_rh', 'responsable_demande', 'admin'])],
-            'status' => ['sometimes', Rule::in(['active', 'inactive', 'suspended'])],
+            'last_name'  => 'sometimes|string|max:100',
+            'email'      => ['sometimes', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'phone'      => 'nullable|string|max:50',
+            'password'   => 'sometimes|string|min:8',
+            'role'       => ['sometimes', Rule::in(['user', 'responsable_rh', 'responsable_demande', 'admin'])],
+            'status'     => ['sometimes', Rule::in(['active', 'inactive'])],
         ]);
 
-        // Only admin can change role
-        if (isset($validated['role']) && $authenticatedUser->role !== 'admin') {
-            unset($validated['role']);
+        // RH peut modifier le rôle mais seulement pour user, responsable_rh, responsable_demande (pas admin)
+        if (isset($validated['role'])) {
+            if ($request->user()->role === 'admin') {
+                // Admin peut modifier tous les rôles
+            } elseif ($request->user()->role === 'responsable_rh') {
+                // RH peut seulement modifier vers user, responsable_rh, responsable_demande
+                if (!in_array($validated['role'], ['user', 'responsable_rh', 'responsable_demande'])) {
+                    unset($validated['role']);
+                }
+            } else {
+                // Autres rôles ne peuvent pas modifier le rôle
+                unset($validated['role']);
+            }
         }
 
         if (isset($validated['password'])) {
@@ -96,39 +130,137 @@ class UserController extends Controller
         }
 
         $user->update($validated);
+        $this->logActivity($request, "Modification utilisateur: {$user->first_name} {$user->last_name}", $user->id);
 
-        return response()->json([
-            'message' => 'Utilisateur mis à jour avec succès.',
-            'user' => $user,
-        ]);
+        return response()->json(['message' => 'Utilisateur mis à jour.', 'user' => $user]);
     }
 
-    // Update user status (patch)
-    public function updateStatus(Request $request, $id): JsonResponse
+    /** PATCH /hr/users/:id/status — Changer statut active ↔ inactive (RH + Admin)
+     *  La suspension passe par /hr/users/:id/request-suspend (RH propose)
+     *  ou /admin/users/:id/suspend (Admin directement)
+     */
+    public function updateStatus(Request $request, int $id): JsonResponse
     {
-        $user = User::findOrFail($id);
-
+        $user      = User::findOrFail($id);
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['active', 'inactive', 'suspended'])],
+            'status' => ['required', Rule::in(['active', 'inactive'])],
         ]);
-
         $user->update($validated);
-
-        return response()->json([
-            'message' => 'Statut de l\'utilisateur mis à jour avec succès.',
-            'user' => $user,
-        ]);
+        $this->logActivity($request, "Changement statut utilisateur: {$user->first_name} {$user->last_name} → {$validated['status']}", $user->id);
+        return response()->json(['message' => 'Statut mis à jour.', 'user' => $user]);
     }
 
-    // Deactivate user instead of deleting
-    public function destroy($id): JsonResponse
+    /** DELETE /hr/users/:id — Archivage du compte (soft-delete)
+     *  Passe le statut à 'inactive' — le compte est conservé en BDD mais inaccessible.
+     */
+    public function archive(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
         $user->update(['status' => 'inactive']);
+        $this->logActivity($request, "Archivage utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        return response()->json(['message' => 'Compte archivé avec succès.', 'user' => $user]);
+    }
 
-        return response()->json([
-            'message' => 'Utilisateur désactivé avec succès.',
-            'user' => $user,
+    /** PATCH /hr/users/:id/request-suspend — RH propose une suspension
+     *  Passe le statut à 'pending_suspension' — l'admin doit valider
+     */
+    public function requestSuspend(Request $request, int $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+        $user->update(['status' => 'pending_suspension']);
+        $this->logActivity($request, "Demande suspension utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        return response()->json(['message' => 'Demande de suspension soumise à l\'admin.', 'user' => $user]);
+    }
+
+    // ─── Admin uniquement ─────────────────────────────────────────────────────
+
+    /** PATCH /admin/users/:id/suspend — Suspendre un compte directement (admin) */
+    public function suspend(Request $request, int $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+        $user->update(['status' => 'suspended']);
+        $this->logActivity($request, "Suspension utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        return response()->json(['message' => 'Compte suspendu.', 'user' => $user]);
+    }
+
+    /** PATCH /admin/users/:id/role — Changer le rôle */
+    public function updateRole(Request $request, int $id): JsonResponse
+    {
+        $user      = User::findOrFail($id);
+        $validated = $request->validate([
+            'role' => ['required', Rule::in(['user', 'responsable_rh', 'responsable_demande', 'admin'])],
         ]);
+        $user->update($validated);
+        $this->logActivity($request, "Changement rôle utilisateur: {$user->first_name} {$user->last_name} → {$validated['role']}", $user->id);
+        return response()->json(['message' => 'Rôle mis à jour.', 'user' => $user]);
+    }
+
+    /** PATCH /admin/users/:id/restore — Restaurer un compte archivé/suspendu */
+    public function restore(Request $request, int $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+        $user->update(['status' => 'active']);
+        $this->logActivity($request, "Restauration utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        return response()->json(['message' => 'Compte restauré.', 'user' => $user]);
+    }
+
+    /** PATCH /admin/users/:id/approve — Approuver un compte inactif (nouvelles inscriptions)
+     *  Active le compte → l'utilisateur peut se connecter
+     */
+    public function approve(Request $request, int $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+        $user->update(['status' => 'active']);
+        $this->logActivity($request, "Approbation utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        return response()->json(['message' => 'Compte approuvé et activé.', 'user' => $user]);
+    }
+
+    /** PATCH /admin/users/:id/validate-suspend — Valider la suspension proposée par le RH */
+    public function validateSuspend(Request $request, int $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+        $user->update(['status' => 'suspended']);
+        $this->logActivity($request, "Validation suspension utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        return response()->json(['message' => 'Suspension validée.', 'user' => $user]);
+    }
+
+    /** GET /admin/stats — Statistiques globales pour le dashboard admin */
+    public function getStats(): JsonResponse
+    {
+        return response()->json([
+            'total_references' => \App\Models\Reference::count(),
+            'pending_deposits' => \App\Models\DepositRequest::where('status', 'pending')->count(),
+            'active_users' => User::where('status', 'active')->count(),
+            'total_downloads' => \App\Models\Download::count(),
+            'total_views' => \App\Models\View::count(),
+            'unread_notifications' => \App\Models\Notification::where('is_read', false)->count(),
+        ]);
+    }
+
+    /** GET /admin/stats/deposits-by-month — Dépôts par mois pour le graphique */
+    public function getDepositsByMonth(): JsonResponse
+    {
+        $deposits = \App\Models\DepositRequest::selectRaw('
+            DATE_FORMAT(created_at, "%Y-%m") as month,
+            COUNT(*) as total,
+            SUM(CASE WHEN status = "approved" THEN 1 ELSE 0 END) as approved,
+            SUM(CASE WHEN status = "rejected" THEN 1 ELSE 0 END) as rejected
+        ')
+        ->where('created_at', '>=', now()->subMonths(6))
+        ->groupBy('month')
+        ->orderBy('month')
+        ->get();
+
+        return response()->json($deposits);
+    }
+
+    /** GET /admin/stats/references-by-category — Références par catégorie pour le graphique */
+    public function getReferencesByCategory(): JsonResponse
+    {
+        $categories = \App\Models\Category::withCount('references')
+            ->orderBy('references_count', 'desc')
+            ->get(['id', 'name', 'references_count']);
+
+        return response()->json($categories);
     }
 }

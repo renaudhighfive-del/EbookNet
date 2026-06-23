@@ -4,25 +4,44 @@ import ResponsableLayout from '@/layouts/ResponsableLayout.vue'
 
 const decision = ref(null)
 const justification = ref('')
+const isSubmitting = ref(false)
 
 const canSubmit = computed(() => {
   if (!decision.value) return false
   if (decision.value === 'reject' && justification.value.length < 50) return false
   return true
 })
-</script>
 
+const handleSubmit = async () => {
+  isSubmitting.value = true
+  // TODO: submit to backend
+  console.log('Decision:', decision.value, 'Justification:', justification.value)
+  setTimeout(() => {
+    isSubmitting.value = false
+    alert('Votre décision a été soumise avec succès !')
+  }, 2000)
+}
+</script>
 
 <template>
   <ResponsableLayout>
-    <template #title>Examiner une demande</template>
+    <template #title>
+      <div class="flex items-center gap-2">
+        <router-link
+          to="/manager/deposits"
+          class="text-gray-300 hover:text-white flex items-center gap-1 text-sm"
+        >
+          ← Retour
+        </router-link>
+        <span>|</span>
+        <span>Examiner une demande</span>
+      </div>
+    </template>
 
     <!-- Status Banner -->
     <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex items-center gap-3">
       <span class="text-2xl">📋</span>
-      <p class="text-blue-800">
-        Demande assignée le 10 juin 2024 — En attente de votre examen
-      </p>
+      <p class="text-blue-800">Demande assignée le 10 juin 2024 — En attente de votre examen</p>
     </div>
 
     <!-- Warning Banner -->
@@ -42,7 +61,9 @@ const canSubmit = computed(() => {
         </div>
         <div class="p-6 space-y-6">
           <!-- Cover Placeholder -->
-          <div class="bg-gradient-to-br from-navy-100 to-navy-200 rounded-xl w-full h-56 flex items-center justify-center mb-6">
+          <div
+            class="bg-gradient-to-br from-navy-100 to-navy-200 rounded-xl w-full h-56 flex items-center justify-center mb-6"
+          >
             <span class="text-6xl text-navy-600/60">📗</span>
           </div>
 
@@ -50,7 +71,9 @@ const canSubmit = computed(() => {
           <div class="space-y-4 text-sm">
             <div>
               <span class="text-gray-500 block">Titre</span>
-              <span class="text-navy-800 font-medium">Étude sur le Commerce Transfrontalier au Bénin</span>
+              <span class="text-navy-800 font-medium"
+                >Étude sur le Commerce Transfrontalier au Bénin</span
+              >
             </div>
             <div>
               <span class="text-gray-500 block">Type</span>
@@ -83,15 +106,20 @@ const canSubmit = computed(() => {
             <div>
               <span class="text-gray-500 block">Mots-clés</span>
               <div class="flex flex-wrap gap-2 mt-1">
-                <span class="bg-teal-100 text-teal-700 px-2 py-1 rounded-full text-xs">commerce</span>
-                <span class="bg-teal-100 text-teal-700 px-2 py-1 rounded-full text-xs">transfrontalier</span>
+                <span class="bg-teal-100 text-teal-700 px-2 py-1 rounded-full text-xs"
+                  >commerce</span
+                >
+                <span class="bg-teal-100 text-teal-700 px-2 py-1 rounded-full text-xs"
+                  >transfrontalier</span
+                >
                 <span class="bg-teal-100 text-teal-700 px-2 py-1 rounded-full text-xs">Bénin</span>
               </div>
             </div>
             <div>
               <span class="text-gray-500 block">Résumé</span>
               <p class="text-gray-700 leading-relaxed mt-1">
-                Cette étude examine les dynamiques du commerce transfrontalier entre le Bénin et ses voisins, en analysant les défis et opportunités pour les acteurs économiques locaux.
+                Cette étude examine les dynamiques du commerce transfrontalier entre le Bénin et ses
+                voisins, en analysant les défis et opportunités pour les acteurs économiques locaux.
               </p>
             </div>
             <div>
@@ -105,7 +133,9 @@ const canSubmit = computed(() => {
           </div>
 
           <div class="pt-4 border-t border-gray-200">
-            <button class="w-full flex items-center justify-center gap-2 border border-navy-700 text-navy-700 py-3 rounded-xl font-medium hover:bg-navy-50 transition-colors">
+            <button
+              class="w-full flex items-center justify-center gap-2 border border-navy-700 text-navy-700 py-3 rounded-xl font-medium hover:bg-navy-50 transition-colors"
+            >
               📥 Télécharger le fichier pour examen (PDF • 4.2 Mo)
             </button>
           </div>
@@ -114,7 +144,9 @@ const canSubmit = computed(() => {
 
       <!-- Right Panel: PDF Preview -->
       <div class="bg-white rounded-2xl overflow-hidden shadow-soft">
-        <div class="bg-navy-50 px-6 py-4 border-b border-navy-100 flex items-center justify-between">
+        <div
+          class="bg-navy-50 px-6 py-4 border-b border-navy-100 flex items-center justify-between"
+        >
           <h3 class="text-navy-800 font-semibold flex items-center gap-2">
             <span class="text-xl">📖</span> Prévisualisation
           </h3>
@@ -142,7 +174,8 @@ const canSubmit = computed(() => {
       <div class="mb-6">
         <h3 class="text-xl font-bold text-navy-800 font-serif mb-2">⚖️ Votre décision</h3>
         <p class="text-gray-600 text-sm">
-          Votre avis sera transmis à l'administrateur pour la finalisation de la publication ou du rejet.
+          Votre avis sera transmis à l'administrateur pour la finalisation de la publication ou du
+          rejet.
         </p>
       </div>
 
@@ -178,7 +211,7 @@ const canSubmit = computed(() => {
             v-model="justification"
             :class="[
               'w-full rounded-xl px-4 py-3 text-gray-800 focus:outline-none',
-              justification.length < 50 ? 'border-2 border-red-300' : 'border-2 border-gray-200'
+              justification.length < 50 ? 'border-2 border-red-300' : 'border-2 border-gray-200',
             ]"
             rows="6"
             placeholder="Expliquez les raisons du refus de cette demande..."
@@ -197,16 +230,18 @@ const canSubmit = computed(() => {
       <!-- Submit -->
       <div class="mt-6">
         <button
-          :disabled="!canSubmit"
+          @click="handleSubmit"
+          :disabled="!canSubmit || isSubmitting"
           class="w-full py-3 rounded-xl font-semibold text-lg"
-          :class="canSubmit ? 'bg-teal-600 text-white hover:bg-teal-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
+          :class="
+            canSubmit && !isSubmitting
+              ? 'bg-teal-600 text-white hover:bg-teal-700'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          "
         >
-          Soumettre ma décision
+          {{ isSubmitting ? '...' : 'Soumettre ma décision' }}
         </button>
       </div>
     </div>
-
   </ResponsableLayout>
 </template>
-
-

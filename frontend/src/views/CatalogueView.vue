@@ -33,7 +33,7 @@ const documents = ref([
     type: 'Livre',
     year: 2021,
     access: 'restricted',
-    coverColor: 'from-navy to-blue-800'
+    coverColor: 'from-navy to-blue-800',
   },
   {
     id: 2,
@@ -43,7 +43,7 @@ const documents = ref([
     type: 'Manuel',
     year: 2022,
     access: 'public',
-    coverColor: 'from-teal-700 to-teal-900'
+    coverColor: 'from-teal-700 to-teal-900',
   },
   {
     id: 3,
@@ -53,7 +53,7 @@ const documents = ref([
     type: 'Livre',
     year: 2019,
     access: 'public',
-    coverColor: 'from-amber-800 to-yellow-900'
+    coverColor: 'from-amber-800 to-yellow-900',
   },
   {
     id: 4,
@@ -63,17 +63,17 @@ const documents = ref([
     type: 'Mémoire',
     year: 2024,
     access: 'restricted',
-    coverColor: 'from-green-700 to-green-900'
+    coverColor: 'from-green-700 to-green-900',
   },
   {
     id: 5,
-    title: 'Géographie Économique de l\'Afrique de l\'Ouest',
+    title: "Géographie Économique de l'Afrique de l'Ouest",
     authors: ['Prof. Lucien Agbo'],
     category: 'Géographie',
     type: 'Livre',
     year: 2021,
     access: 'public',
-    coverColor: 'from-yellow-700 to-amber-900'
+    coverColor: 'from-yellow-700 to-amber-900',
   },
   {
     id: 6,
@@ -83,7 +83,7 @@ const documents = ref([
     type: 'Thèse',
     year: 2022,
     access: 'public',
-    coverColor: 'from-purple-800 to-indigo-900'
+    coverColor: 'from-purple-800 to-indigo-900',
   },
   {
     id: 7,
@@ -93,7 +93,7 @@ const documents = ref([
     type: 'Livre',
     year: 2023,
     access: 'restricted',
-    coverColor: 'from-rose-800 to-pink-900'
+    coverColor: 'from-rose-800 to-pink-900',
   },
   {
     id: 8,
@@ -103,7 +103,7 @@ const documents = ref([
     type: 'Guide',
     year: 2020,
     access: 'public',
-    coverColor: 'from-slate-700 to-gray-900'
+    coverColor: 'from-slate-700 to-gray-900',
   },
   {
     id: 9,
@@ -113,7 +113,7 @@ const documents = ref([
     type: 'Rapport',
     year: 2024,
     access: 'public',
-    coverColor: 'from-red-700 to-rose-900'
+    coverColor: 'from-red-700 to-rose-900',
   },
 ])
 </script>
@@ -124,14 +124,12 @@ const documents = ref([
       <!-- Page Title -->
       <div class="flex items-center justify-between mb-8">
         <div>
-          <h1 class="text-3xl font-bold text-navy font-serif">
-            Catalogue documentaire
-          </h1>
-          <p class="text-gray-500 text-sm mt-1">
-            Explorez l'intégralité de notre fonds numérique.
-          </p>
+          <h1 class="text-3xl font-bold text-navy font-serif">Catalogue documentaire</h1>
+          <p class="text-gray-500 text-sm mt-1">Explorez l'intégralité de notre fonds numérique.</p>
         </div>
-        <span class="inline-block bg-teal/10 text-teal px-4 py-2 rounded-full text-sm font-semibold">
+        <span
+          class="inline-block bg-teal/10 text-teal px-4 py-2 rounded-full text-sm font-semibold"
+        >
           1 248 références
         </span>
       </div>
@@ -149,7 +147,11 @@ const documents = ref([
             <div class="mb-6">
               <div class="relative">
                 <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input type="text" placeholder="Rechercher..." class="w-full bg-surface-2 border border-transparent rounded-lg pl-10 pr-4 py-2 text-sm text-gray-700 focus:outline-none focus:border-teal">
+                <input
+                  type="text"
+                  placeholder="Rechercher..."
+                  class="w-full bg-surface-2 border border-transparent rounded-lg pl-10 pr-4 py-2 text-sm text-gray-700 focus:outline-none focus:border-teal"
+                />
               </div>
             </div>
 
@@ -158,8 +160,14 @@ const documents = ref([
               <h4 class="font-semibold text-navy mb-3 text-sm">Catégorie</h4>
               <div class="space-y-2 max-h-64 overflow-y-auto pr-2">
                 <template v-for="cat in categories" :key="cat.id">
-                  <label class="flex items-center gap-3 cursor-pointer hover:bg-surface-2 p-2 rounded-lg transition-colors">
-                    <input type="checkbox" :checked="cat.id === 1" class="rounded border-gray-300 text-teal focus:ring-teal">
+                  <label
+                    class="flex items-center gap-3 cursor-pointer hover:bg-surface-2 p-2 rounded-lg transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="cat.id === 1"
+                      class="rounded border-gray-300 text-teal focus:ring-teal"
+                    />
                     <span class="text-gray-700 text-sm flex-1">{{ cat.name }}</span>
                     <span class="text-gray-400 text-xs font-mono">({{ cat.count }})</span>
                   </label>
@@ -175,8 +183,13 @@ const documents = ref([
               <h4 class="font-semibold text-navy mb-3 text-sm">Type de document</h4>
               <div class="space-y-2">
                 <template v-for="type in types" :key="type.id">
-                  <label class="flex items-center gap-3 cursor-pointer hover:bg-surface-2 p-2 rounded-lg transition-colors">
-                    <input type="checkbox" class="rounded border-gray-300 text-teal focus:ring-teal">
+                  <label
+                    class="flex items-center gap-3 cursor-pointer hover:bg-surface-2 p-2 rounded-lg transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      class="rounded border-gray-300 text-teal focus:ring-teal"
+                    />
                     <span class="text-gray-700 text-sm flex-1">{{ type.name }}</span>
                     <span class="text-gray-400 text-xs font-mono">({{ type.count }})</span>
                   </label>
@@ -188,18 +201,34 @@ const documents = ref([
             <div class="mb-6 pb-6 border-b border-gray-100">
               <h4 class="font-semibold text-navy mb-3 text-sm">Langue</h4>
               <div class="space-y-2">
-                <label class="flex items-center gap-3 cursor-pointer hover:bg-surface-2 p-2 rounded-lg transition-colors">
-                  <input type="checkbox" checked class="rounded border-gray-300 text-teal focus:ring-teal">
+                <label
+                  class="flex items-center gap-3 cursor-pointer hover:bg-surface-2 p-2 rounded-lg transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked
+                    class="rounded border-gray-300 text-teal focus:ring-teal"
+                  />
                   <span class="text-gray-700 text-sm flex-1">Français</span>
                   <span class="text-gray-400 text-xs font-mono">(987)</span>
                 </label>
-                <label class="flex items-center gap-3 cursor-pointer hover:bg-surface-2 p-2 rounded-lg transition-colors">
-                  <input type="checkbox" class="rounded border-gray-300 text-teal focus:ring-teal">
+                <label
+                  class="flex items-center gap-3 cursor-pointer hover:bg-surface-2 p-2 rounded-lg transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    class="rounded border-gray-300 text-teal focus:ring-teal"
+                  />
                   <span class="text-gray-700 text-sm flex-1">Anglais</span>
                   <span class="text-gray-400 text-xs font-mono">(198)</span>
                 </label>
-                <label class="flex items-center gap-3 cursor-pointer hover:bg-surface-2 p-2 rounded-lg transition-colors">
-                  <input type="checkbox" class="rounded border-gray-300 text-teal focus:ring-teal">
+                <label
+                  class="flex items-center gap-3 cursor-pointer hover:bg-surface-2 p-2 rounded-lg transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    class="rounded border-gray-300 text-teal focus:ring-teal"
+                  />
                   <span class="text-gray-700 text-sm flex-1">Autre</span>
                   <span class="text-gray-400 text-xs font-mono">(63)</span>
                 </label>
@@ -219,15 +248,21 @@ const documents = ref([
           <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
             <!-- Active Filter Chips -->
             <div class="flex flex-wrap gap-2">
-              <span class="bg-teal/10 text-teal px-3 py-1 rounded-full text-xs flex items-center gap-2">
+              <span
+                class="bg-teal/10 text-teal px-3 py-1 rounded-full text-xs flex items-center gap-2"
+              >
                 Droit & Législation
                 <X class="w-3 h-3 cursor-pointer hover:text-teal-800" />
               </span>
-              <span class="bg-teal/10 text-teal px-3 py-1 rounded-full text-xs flex items-center gap-2">
+              <span
+                class="bg-teal/10 text-teal px-3 py-1 rounded-full text-xs flex items-center gap-2"
+              >
                 Français
                 <X class="w-3 h-3 cursor-pointer hover:text-teal-800" />
               </span>
-              <span class="bg-teal/10 text-teal px-3 py-1 rounded-full text-xs flex items-center gap-2">
+              <span
+                class="bg-teal/10 text-teal px-3 py-1 rounded-full text-xs flex items-center gap-2"
+              >
                 2020-2024
                 <X class="w-3 h-3 cursor-pointer hover:text-teal-800" />
               </span>
@@ -236,7 +271,9 @@ const documents = ref([
             <!-- Sort Dropdown -->
             <div class="flex items-center gap-2">
               <span class="text-gray-600 text-sm">Trier par:</span>
-              <select class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal shadow-sm">
+              <select
+                class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal shadow-sm"
+              >
                 <option>Pertinence</option>
                 <option>Plus récent</option>
                 <option>Plus consulté</option>
@@ -254,23 +291,47 @@ const documents = ref([
           <div class="flex items-center justify-between mt-12">
             <div class="flex items-center gap-2">
               <span class="text-gray-500 text-sm">Afficher</span>
-              <select class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-800">
+              <select
+                class="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-800"
+              >
                 <option>12</option>
                 <option>24</option>
                 <option>48</option>
               </select>
             </div>
             <div class="flex items-center gap-1">
-              <button class="p-2 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors">
+              <button
+                class="p-2 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors"
+              >
                 <ChevronLeft class="w-5 h-5" />
               </button>
-              <button class="px-3 py-1.5 rounded-lg bg-navy text-white text-sm font-medium">1</button>
-              <button class="px-3 py-1.5 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors text-sm">2</button>
-              <button class="px-3 py-1.5 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors text-sm">3</button>
-              <button class="px-3 py-1.5 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors text-sm">4</button>
+              <button class="px-3 py-1.5 rounded-lg bg-navy text-white text-sm font-medium">
+                1
+              </button>
+              <button
+                class="px-3 py-1.5 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors text-sm"
+              >
+                2
+              </button>
+              <button
+                class="px-3 py-1.5 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors text-sm"
+              >
+                3
+              </button>
+              <button
+                class="px-3 py-1.5 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors text-sm"
+              >
+                4
+              </button>
               <span class="px-2 text-gray-400 text-sm">...</span>
-              <button class="px-3 py-1.5 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors text-sm">104</button>
-              <button class="p-2 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors">
+              <button
+                class="px-3 py-1.5 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors text-sm"
+              >
+                104
+              </button>
+              <button
+                class="p-2 rounded-lg hover:bg-white text-gray-500 hover:text-navy transition-colors"
+              >
                 <ChevronRight class="w-5 h-5" />
               </button>
             </div>
@@ -280,4 +341,3 @@ const documents = ref([
     </div>
   </PublicLayout>
 </template>
-

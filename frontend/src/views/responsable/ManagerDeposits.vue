@@ -8,7 +8,7 @@ const tabs = [
   { id: 'pending', label: 'À examiner', count: 3 },
   { id: 'approved', label: 'Validées', count: 1 },
   { id: 'rejected', label: 'Refusées', count: 1 },
-  { id: 'all', label: 'Toutes', count: 5 }
+  { id: 'all', label: 'Toutes', count: 5 },
 ]
 
 const pendingDeposits = ref([
@@ -21,7 +21,7 @@ const pendingDeposits = ref([
     typeColor: 'bg-teal-100 text-teal-700',
     assignedDate: '10 juin 2024',
     isPriority: true,
-    warning: 'Assignée il y a 4 jours'
+    warning: 'Assignée il y a 4 jours',
   },
   {
     id: 8,
@@ -32,29 +32,30 @@ const pendingDeposits = ref([
     typeColor: 'bg-amber-100 text-amber-700',
     assignedDate: '12 juin 2024',
     isPriority: false,
-    warning: null
+    warning: null,
   },
   {
     id: 9,
-    title: 'Rapport sur l\'Économie Rurale du Zou',
+    title: "Rapport sur l'Économie Rurale du Zou",
     deposant: 'Afi Dossou',
     type: 'Rapport',
     typeIcon: '📊',
     typeColor: 'bg-navy-100 text-navy-700',
     assignedDate: '13 juin 2024',
     isPriority: false,
-    warning: null
-  }
+    warning: null,
+  },
 ])
 </script>
-
 
 <template>
   <ResponsableLayout>
     <template #title>
       <div class="flex items-center gap-3">
         <span>Demandes qui me sont assignées</span>
-        <span class="bg-red-600 text-white text-xs px-2 py-1 rounded-full font-bold">3 à examiner</span>
+        <span class="bg-red-600 text-white text-xs px-2 py-1 rounded-full font-bold"
+          >3 à examiner</span
+        >
       </div>
     </template>
 
@@ -68,7 +69,7 @@ const pendingDeposits = ref([
         :class="[
           activeTab === tab.id
             ? 'text-navy-800 border-b-2 border-teal-600'
-            : 'text-gray-500 hover:text-navy-800'
+            : 'text-gray-500 hover:text-navy-800',
         ]"
       >
         {{ tab.label }} <span class="text-gray-400">({{ tab.count }})</span>
@@ -105,7 +106,9 @@ const pendingDeposits = ref([
             >
               ⚠️ {{ deposit.warning }}
             </div>
-            <span class="inline-block bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs mb-4">
+            <span
+              class="inline-block bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs mb-4"
+            >
               En attente d'examen
             </span>
           </div>
@@ -124,7 +127,5 @@ const pendingDeposits = ref([
       <div class="text-6xl mb-4">✅</div>
       <p class="text-gray-500">Aucune demande validée pour le moment</p>
     </div>
-
   </ResponsableLayout>
 </template>
-

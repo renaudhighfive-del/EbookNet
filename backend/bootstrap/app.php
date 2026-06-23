@@ -19,7 +19,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Toujours retourner du JSON sur les routes API
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Retourner 401 JSON au lieu de rediriger vers Route[login]
+        $exceptions->render(function (
+            \Illuminate\Auth\AuthenticationException $e,
+            Request $request
+        ) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Non authentifié. Veuillez vous connecter.',
+                ], 401);
+            }
+        });
     })->create();

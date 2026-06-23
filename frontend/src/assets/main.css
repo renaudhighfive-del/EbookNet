@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Custom global styles */
 * {
@@ -7,7 +7,7 @@
 }
 
 body {
-  background-color: #F8F7F4;
+  background-color: #f8f7f4;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
@@ -18,11 +18,11 @@ html {
 
 /* Custom classes for gradients */
 .bg-navy-gradient {
-  background: linear-gradient(135deg, #1B2A4A 0%, #0F5F56 100%);
+  background: linear-gradient(135deg, #1b2a4a 0%, #0f5f56 100%);
 }
 
 /* Star pattern decoration */
 .bg-star-pattern {
-  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.1) 1px, transparent 0);
   background-size: 30px 30px;
 }

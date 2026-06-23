@@ -26,10 +26,29 @@ class AuthController extends Controller
         }
 
         $user = auth()->user();
+
+        // Bloquer les comptes inactifs (en attente d'approbation)
+        if ($user->status === 'inactive') {
+            auth()->logout();
+            return response()->json([
+                'message' => 'Votre compte est en attente de validation par un administrateur. Vous serez notifié par e-mail une fois votre compte activé.',
+                'status'  => 'pending_approval',
+            ], 403);
+        }
+
+        // Bloquer les comptes suspendus
+        if ($user->status === 'suspended') {
+            auth()->logout();
+            return response()->json([
+                'message' => 'Votre compte a été suspendu. Veuillez contacter l\'administration.',
+                'status'  => 'suspended',
+            ], 403);
+        }
+
         $user->update(['last_login_at' => now()]);
         $user->loadMissing(['depositRequests', 'notifications']);
 
-        // Log login activity
+        // Log login activity (temporarily disabled)
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'login',
@@ -47,20 +66,18 @@ class AuthController extends Controller
     {
         $user = User::create([
             'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'password' => Hash::make($request->password),
-            'role' => 'user',
-            'status' => 'active',
+            'last_name'  => $request->last_name,
+            'email'      => $request->email,
+            'phone'      => $request->phone,
+            'password'   => Hash::make($request->password),
+            'role'       => 'user',
+            'status'     => 'inactive', // En attente d'approbation RH/Admin
         ]);
 
-        auth()->login($user);
-        $user->update(['last_login_at' => now()]);
-
+        // Ne pas connecter automatiquement — compte inactif jusqu'à validation
         return response()->json([
-            'message' => 'Inscription réussie.',
-            'user' => $user,
+            'message' => 'Inscription réussie. Votre compte est en attente de validation par un administrateur. Vous recevrez une confirmation dès son activation.',
+            'status'  => 'pending_approval',
         ], 201);
     }
 
@@ -69,7 +86,7 @@ class AuthController extends Controller
         $user = auth()->user();
 
         if ($user) {
-            // Log logout activity
+            // Log logout activity (temporarily disabled)
             ActivityLog::create([
                 'user_id' => $user->id,
                 'action' => 'logout',

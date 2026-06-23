@@ -9,7 +9,7 @@ const tabs = [
   { id: 'all', label: 'Tous' },
   { id: 'consulted', label: 'Consultés' },
   { id: 'downloaded', label: 'Téléchargés' },
-  { id: 'favorites', label: 'Favoris' }
+  { id: 'favorites', label: 'Favoris' },
 ]
 
 const documents = ref([
@@ -20,7 +20,7 @@ const documents = ref([
     category: 'Droit',
     year: 2021,
     lastAccess: 'Il y a 2h',
-    coverColor: 'from-navy-800 to-navy-950'
+    coverColor: 'from-navy-800 to-navy-950',
   },
   {
     id: 2,
@@ -29,17 +29,15 @@ const documents = ref([
     category: 'Informatique',
     year: 2022,
     lastAccess: 'Il y a 1 jour',
-    coverColor: 'from-teal-700 to-teal-900'
-  }
+    coverColor: 'from-teal-700 to-teal-900',
+  },
 ])
 </script>
 
 <template>
   <AuthenticatedLayout>
     <div>
-      <h1 class="text-3xl font-bold text-navy-800 font-serif mb-2">
-        Mes documents
-      </h1>
+      <h1 class="text-3xl font-bold text-navy-800 font-serif mb-2">Mes documents</h1>
       <p class="text-gray-500 mb-8">
         Consultez votre historique de lecture et vos documents favoris
       </p>
@@ -53,7 +51,7 @@ const documents = ref([
           :class="[
             activeTab === tab.id
               ? 'bg-navy-800 text-white'
-              : 'text-gray-500 hover:text-navy-800 hover:bg-gray-100'
+              : 'text-gray-500 hover:text-navy-800 hover:bg-gray-100',
           ]"
         >
           {{ tab.label }}
@@ -67,7 +65,10 @@ const documents = ref([
           :key="doc.id"
           class="bg-white rounded-2xl p-5 shadow-soft flex gap-4 items-start"
         >
-          <div class="w-24 h-32 bg-gradient-to-br flex items-center justify-center rounded-xl shrink-0" :class="doc.coverColor">
+          <div
+            class="w-24 h-32 bg-gradient-to-br flex items-center justify-center rounded-xl shrink-0"
+            :class="doc.coverColor"
+          >
             <BookMarked class="w-12 h-12 text-white/30" />
           </div>
           <div class="flex-1">
@@ -88,7 +89,9 @@ const documents = ref([
               {{ doc.authors.join(', ') }}
             </p>
             <div class="flex items-center gap-3 text-xs text-gray-500">
-              <span class="bg-teal-50 text-teal-700 px-2 py-1 rounded-full">{{ doc.category }}</span>
+              <span class="bg-teal-50 text-teal-700 px-2 py-1 rounded-full">{{
+                doc.category
+              }}</span>
               <span>{{ doc.year }}</span>
               <span>{{ doc.lastAccess }}</span>
             </div>
@@ -98,4 +101,3 @@ const documents = ref([
     </div>
   </AuthenticatedLayout>
 </template>
-

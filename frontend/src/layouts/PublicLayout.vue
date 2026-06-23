@@ -1,59 +1,45 @@
 <template>
   <div class="min-h-screen bg-beige">
     <!-- Navbar -->
-    <header class="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-gray-200/50 transition-all duration-300">
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-200/50 transition-all duration-300">
       <div class="max-w-7xl mx-auto px-6 lg:px-8">
         <div class="flex items-center justify-between h-20">
           <!-- Logo -->
           <router-link to="/" class="flex items-center gap-3 group">
-            <div class="w-12 h-12 bg-navy-800 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:bg-teal-600 group-hover:scale-105">
-              <span class="text-white text-2xl">📖</span>
+            <div class="w-11 h-11 bg-[#1B2A4A] rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:bg-[#0D9488] group-hover:scale-105">
+              <BookOpen class="w-5 h-5 text-white" />
             </div>
-            <span class="text-2xl font-serif font-bold text-navy-900 tracking-tight">
-              BibliNum
-            </span>
+            <span class="text-xl font-serif font-bold text-[#1B2A4A] tracking-tight">BibliNum</span>
           </router-link>
 
-          <!-- Nav links -->
+          <!-- Nav -->
           <nav class="hidden md:flex items-center gap-8">
-            <router-link
-              to="/"
-              class="text-sm font-medium text-slate-600 hover:text-navy-900 transition-all duration-200"
-              :class="{ 'text-navy-900 font-semibold': $route.path === '/' }"
-            >
-              Accueil
-            </router-link>
-            <router-link
-              to="/catalogue"
-              class="text-sm font-medium text-slate-600 hover:text-navy-900 transition-all duration-200"
-              :class="{ 'text-navy-900 font-semibold': $route.path === '/catalogue' }"
-            >
-              Catalogue
-            </router-link>
-            <router-link
-              to="/recherche"
-              class="text-sm font-medium text-slate-600 hover:text-navy-900 transition-all duration-200"
-              :class="{ 'text-navy-900 font-semibold': $route.path === '/recherche' }"
-            >
-              Recherche
-            </router-link>
+            <router-link to="/"
+              class="text-sm font-medium text-slate-600 hover:text-[#1B2A4A] transition-colors"
+              :class="{ 'text-[#1B2A4A] font-semibold': $route.path === '/' }"
+            >Accueil</router-link>
+            <router-link to="/catalogue"
+              class="text-sm font-medium text-slate-600 hover:text-[#1B2A4A] transition-colors"
+              :class="{ 'text-[#1B2A4A] font-semibold': $route.path === '/catalogue' }"
+            >Catalogue</router-link>
+            <router-link to="/recherche"
+              class="text-sm font-medium text-slate-600 hover:text-[#1B2A4A] transition-colors"
+              :class="{ 'text-[#1B2A4A] font-semibold': $route.path === '/recherche' }"
+            >Recherche</router-link>
           </nav>
 
           <!-- Login button -->
-          <router-link
-            to="/connexion"
-            class="group inline-flex items-center gap-2 px-6 py-2.5 border-2 border-navy-900 text-navy-900 rounded-2xl font-semibold hover:bg-navy-900 hover:text-white transition-all duration-300"
+          <router-link to="/connexion"
+            class="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-[#1B2A4A] text-[#1B2A4A] rounded-xl font-semibold hover:bg-[#1B2A4A] hover:text-white transition-all duration-200 text-sm"
           >
-            <span>Connexion</span>
+            <LogIn class="w-4 h-4" />
+            Connexion
           </router-link>
         </div>
       </div>
     </header>
 
-    <!-- Main content -->
-    <main class="pb-24">
-      <slot />
-    </main>
+    <main class="pb-24"><slot /></main>
 
     <!-- Footer -->
     <footer class="bg-[#1B2A4A] text-white pt-12 pb-6">
@@ -61,20 +47,20 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
           <div class="md:col-span-2">
             <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 bg-[#0D9488] rounded-lg flex items-center justify-center">
-                <span class="text-lg">📖</span>
+              <div class="w-9 h-9 bg-[#0D9488] rounded-lg flex items-center justify-center">
+                <BookOpen class="w-4 h-4 text-white" />
               </div>
-              <span class="text-xl font-serif font-bold">BibliNum</span>
+              <span class="text-lg font-serif font-bold">BibliNum</span>
             </div>
             <p class="text-slate-300 leading-relaxed mb-5 max-w-sm text-sm">
               Bibliothèque Numérique du Bénin — Centraliser, sécuriser et diffuser le patrimoine documentaire académique.
             </p>
-            <div class="space-y-2.5 text-slate-300 text-xs">
+            <div class="space-y-2 text-slate-300 text-xs">
               <div class="flex items-center gap-2">
-                <span>📍</span> Cotonou, Bénin
+                <MapPin class="w-3.5 h-3.5 shrink-0" /> Cotonou, Bénin
               </div>
               <div class="flex items-center gap-2">
-                <span>✉️</span> contact@biblium.bj
+                <Mail class="w-3.5 h-3.5 shrink-0" /> contact@biblium.bj
               </div>
             </div>
           </div>
@@ -108,4 +94,6 @@
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+import { BookOpen, LogIn, MapPin, Mail } from '@lucide/vue'
+</script>

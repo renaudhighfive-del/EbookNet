@@ -43,8 +43,6 @@ const similarDocs = [
 ]
 </script>
 
-
-
 <template>
   <PublicLayout>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -58,7 +56,9 @@ const similarDocs = [
       </nav>
 
       <!-- Login Banner -->
-      <div class="bg-[#E8A020]/10 border-l-4 border-[#E8A020] p-4 rounded-r-xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div
+        class="bg-[#E8A020]/10 border-l-4 border-[#E8A020] p-4 rounded-r-xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-4"
+      >
         <div class="flex items-center gap-3">
           <BookOpen class="w-6 h-6 text-[#E8A020]" />
           <span class="text-[#E8A020] font-medium">
@@ -86,11 +86,15 @@ const similarDocs = [
         <aside class="w-full lg:w-80 flex-shrink-0">
           <!-- Cover -->
           <div class="sticky top-24">
-            <div class="bg-gradient-to-br from-[#1B2A4A] to-[#2D4A7A] rounded-xl aspect-[3/4] shadow-lg flex items-center justify-center mb-4">
+            <div
+              class="bg-gradient-to-br from-[#1B2A4A] to-[#2D4A7A] rounded-xl aspect-[3/4] shadow-lg flex items-center justify-center mb-4"
+            >
               <BookOpen class="w-32 h-32 text-white/30" />
             </div>
             <div class="text-center mb-4">
-              <span class="inline-flex items-center gap-2 bg-[#E8A020] text-white px-4 py-1.5 rounded-full text-sm font-medium">
+              <span
+                class="inline-flex items-center gap-2 bg-[#E8A020] text-white px-4 py-1.5 rounded-full text-sm font-medium"
+              >
                 <Lock class="w-4 h-4" />
                 Réservé aux membres inscrits
               </span>
@@ -111,7 +115,10 @@ const similarDocs = [
 
         <!-- Right Column -->
         <main class="flex-1">
-          <h1 class="text-3xl md:text-4xl font-bold text-[#1B2A4A] mb-2" style="font-family: 'Playfair Display', serif;">
+          <h1
+            class="text-3xl md:text-4xl font-bold text-[#1B2A4A] mb-2"
+            style="font-family: 'Playfair Display', serif"
+          >
             Introduction au Droit Constitutionnel Béninois
           </h1>
           <p class="text-lg text-[#6B7280] italic mb-6">Principes fondamentaux et jurisprudence</p>
@@ -119,10 +126,14 @@ const similarDocs = [
           <!-- Authors -->
           <div class="flex items-center gap-3 mb-6">
             <div class="flex -space-x-2">
-              <div class="w-10 h-10 rounded-full bg-[#1B2A4A] flex items-center justify-center text-white font-medium text-sm border-2 border-white">
+              <div
+                class="w-10 h-10 rounded-full bg-[#1B2A4A] flex items-center justify-center text-white font-medium text-sm border-2 border-white"
+              >
                 PA
               </div>
-              <div class="w-10 h-10 rounded-full bg-[#2D4A7A] flex items-center justify-center text-white font-medium text-sm border-2 border-white">
+              <div
+                class="w-10 h-10 rounded-full bg-[#2D4A7A] flex items-center justify-center text-white font-medium text-sm border-2 border-white"
+              >
                 MZ
               </div>
             </div>
@@ -153,7 +164,9 @@ const similarDocs = [
             </div>
             <div class="flex items-center gap-2">
               <span class="text-[#6B7280]">Catégorie:</span>
-              <span class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm">Droit & Législation</span>
+              <span class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm"
+                >Droit & Législation</span
+              >
             </div>
             <div class="flex items-center gap-2">
               <span class="text-[#6B7280]">Pages:</span>
@@ -167,28 +180,50 @@ const similarDocs = [
 
           <!-- Keywords -->
           <div class="flex flex-wrap gap-2 mb-6">
-            <span class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30">droit constitutionnel</span>
-            <span class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30">Bénin</span>
-            <span class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30">juridique</span>
-            <span class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30">constitution</span>
-            <span class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30">jurisprudence</span>
+            <span
+              class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30"
+              >droit constitutionnel</span
+            >
+            <span
+              class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30"
+              >Bénin</span
+            >
+            <span
+              class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30"
+              >juridique</span
+            >
+            <span
+              class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30"
+              >constitution</span
+            >
+            <span
+              class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30"
+              >jurisprudence</span
+            >
           </div>
 
           <!-- Abstract -->
           <div class="bg-[#F1F0EC] rounded-xl p-6 mb-6">
             <h2 class="font-semibold text-[#1B2A4A] mb-3">Résumé</h2>
             <p class="text-[#1A1A2E] leading-relaxed">
-              Cet ouvrage propose une analyse approfondie des principes du droit constitutionnel béninois, depuis l'indépendance jusqu'à la Constitution de 1990.
+              Cet ouvrage propose une analyse approfondie des principes du droit constitutionnel
+              béninois, depuis l'indépendance jusqu'à la Constitution de 1990.
             </p>
           </div>
 
           <!-- Action Buttons -->
           <div class="flex flex-col sm:flex-row gap-4 mb-10">
-            <button disabled class="flex-1 flex items-center justify-center gap-2 bg-[#E5E7EB] text-[#9CA3AF] px-6 py-3 rounded-xl font-medium cursor-not-allowed">
+            <button
+              disabled
+              class="flex-1 flex items-center justify-center gap-2 bg-[#E5E7EB] text-[#9CA3AF] px-6 py-3 rounded-xl font-medium cursor-not-allowed"
+            >
               <Lock class="w-5 h-5" />
               Lire en ligne
             </button>
-            <button disabled class="flex-1 flex items-center justify-center gap-2 bg-[#E5E7EB] text-[#9CA3AF] px-6 py-3 rounded-xl font-medium cursor-not-allowed">
+            <button
+              disabled
+              class="flex-1 flex items-center justify-center gap-2 bg-[#E5E7EB] text-[#9CA3AF] px-6 py-3 rounded-xl font-medium cursor-not-allowed"
+            >
               <Lock class="w-5 h-5" />
               Télécharger
             </button>
@@ -196,15 +231,14 @@ const similarDocs = [
 
           <!-- Similar Documents -->
           <section class="border-t border-[#E5E7EB] pt-10">
-            <h2 class="text-2xl font-bold text-[#1B2A4A] mb-6" style="font-family: 'Playfair Display', serif;">
+            <h2
+              class="text-2xl font-bold text-[#1B2A4A] mb-6"
+              style="font-family: 'Playfair Display', serif"
+            >
               Documents similaires
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <DocumentCard
-                v-for="doc in similarDocs"
-                :key="doc.id"
-                :document="doc"
-              />
+              <DocumentCard v-for="doc in similarDocs" :key="doc.id" :document="doc" />
             </div>
           </section>
         </main>
@@ -212,4 +246,3 @@ const similarDocs = [
     </div>
   </PublicLayout>
 </template>
-

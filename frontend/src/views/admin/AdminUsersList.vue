@@ -1,182 +1,779 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import AdminLayout from '../../layouts/AdminLayout.vue'
+import { useUserStore } from '@/stores/user'
+import {
+  Search,
+  UserPlus,
+  Pencil,
+  Eye,
+  UserX,
+  UserCheck,
+  Ban,
+  Archive,
+  Users,
+  CheckCircle,
+  XCircle,
+  Shield,
+  ShieldAlert,
+} from '@lucide/vue'
+
+const router = useRouter()
+const userStore = useUserStore()
+
+const {
+  getRoleLabel,
+  getRoleClass,
+  getStatusLabel,
+  getStatusClass,
+  getAvatarColor,
+  getUserInitials,
+  formatDate,
+  isActionLoading,
+} = userStore
+
+const users = computed(() => userStore.users)
+const usersData = computed(() => userStore.pagination)
+const isLoading = computed(() => userStore.isLoading)
+
+const searchQuery = ref('')
+const searchTimeout = ref(null)
+const filterRole = ref('')
+const filterStatus = ref('')
+const toast = ref({ message: '', type: 'success' })
+const roleModal = ref({ user: null, newRole: '' })
+const modal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  confirmLabel: '',
+  danger: false,
+  action: null,
+})
+
+// Modal de création/modification d'utilisateur
+const userModal = ref({
+  visible: false,
+  isEdit: false,
+  userId: null,
+  form: {
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'user',
+    status: 'active',
+  },
+  serverErrors: {},
+})
+
+const openCreateModal = () => {
+  userModal.value.visible = true
+  userModal.value.isEdit = false
+  userModal.value.userId = null
+  userModal.value.form = {
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'user',
+    status: 'active',
+  }
+  userModal.value.serverErrors = {}
+}
+
+const openEditModal = async (user) => {
+  try {
+    const userData = await userStore.fetchUser(user.id)
+    userModal.value.visible = true
+    userModal.value.isEdit = true
+    userModal.value.userId = user.id
+    userModal.value.form = {
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      email: userData.email,
+      phone: userData.phone || '',
+      password: '',
+      role: userData.role,
+      status: userData.status,
+    }
+    userModal.value.serverErrors = {}
+  } catch {
+    showToast("Impossible de charger les informations de l'utilisateur.", 'error')
+  }
+}
+
+const closeUserModal = () => {
+  userModal.value.visible = false
+}
+
+const handleUserSubmit = async () => {
+  userModal.value.serverErrors = {}
+  const payload = { ...userModal.value.form }
+  if (userModal.value.isEdit && !payload.password) delete payload.password
+
+  try {
+    if (userModal.value.isEdit) {
+      await userStore.updateUser(userModal.value.userId, payload)
+      showToast('Modifications enregistrées avec succès.', 'success')
+    } else {
+      await userStore.createUser(payload)
+      showToast('Compte créé avec succès.', 'success')
+    }
+    closeUserModal()
+    fetchUsers(1)
+  } catch (err) {
+    if (err.response?.status === 422) {
+      userModal.value.serverErrors = err.response.data.errors ?? {}
+      showToast('Veuillez corriger les erreurs dans le formulaire.', 'error')
+    } else {
+      showToast(err.response?.data?.message ?? 'Une erreur est survenue.', 'error')
+    }
+  }
+}
+
+const visiblePages = computed(() => {
+  if (!usersData.value.last_page) return []
+  const c = usersData.value.current_page,
+    l = usersData.value.last_page
+  const pages = []
+  for (let i = Math.max(1, c - 2); i <= Math.min(l, c + 2); i++) pages.push(i)
+  return pages
+})
+
+const fetchUsers = (page = 1) => {
+  const params = { page }
+  if (filterRole.value) params.role = filterRole.value
+  if (filterStatus.value) params.status = filterStatus.value
+  if (searchQuery.value) params.search = searchQuery.value
+  userStore.fetchUsers(params).catch(() => showToast('Erreur lors du chargement.', 'error'))
+}
+
+const onSearchInput = () => {
+  clearTimeout(searchTimeout.value)
+  searchTimeout.value = setTimeout(() => fetchUsers(1), 400)
+}
+
+const goToCreate = () => openCreateModal()
+
+/* Configurations des actions avec confirmation */
+const confirmAction = ({ type, user }) => {
+  const cfgs = {
+    approve: {
+      title: 'Approuver le compte',
+      message: `Activer le compte de ${user.first_name} ${user.last_name} ? L'utilisateur pourra se connecter immédiatement.`,
+      confirmLabel: 'Approuver',
+      danger: false,
+      fn: () => userStore.approveUser(user.id),
+    },
+    'validate-suspend': {
+      title: 'Valider la suspension',
+      message: `Confirmer la suspension proposée par le RH pour ${user.first_name} ${user.last_name} ?`,
+      confirmLabel: 'Valider la suspension',
+      danger: true,
+      fn: () => userStore.validateSuspend(user.id),
+    },
+    deactivate: {
+      title: 'Désactiver le compte',
+      message: `Désactiver le compte de ${user.first_name} ${user.last_name} ?`,
+      confirmLabel: 'Désactiver',
+      danger: true,
+      fn: () => userStore.updateStatus(user.id, 'inactive'),
+    },
+    restore: {
+      title: 'Restaurer le compte',
+      message: `Restaurer et activer le compte de ${user.first_name} ${user.last_name} ?`,
+      confirmLabel: 'Restaurer',
+      danger: false,
+      fn: () => userStore.restoreUser(user.id),
+    },
+    suspend: {
+      title: 'Suspendre le compte',
+      message: `Suspendre le compte de ${user.first_name} ${user.last_name} ? Cette action bloquera immédiatement l'accès.`,
+      confirmLabel: 'Suspendre',
+      danger: true,
+      fn: () => userStore.suspendUser(user.id),
+    },
+    archive: {
+      title: 'Archiver le compte',
+      message: `Archiver définitivement le compte de ${user.first_name} ${user.last_name} ?`,
+      confirmLabel: 'Archiver',
+      danger: true,
+      fn: () => userStore.archiveUser(user.id),
+    },
+  }
+  const cfg = cfgs[type]
+  if (!cfg) return
+  modal.value = { visible: true, ...cfg, action: cfg.fn }
+}
+
+const executeModal = async () => {
+  try {
+    await modal.value.action()
+    showToast('Action effectuée avec succès.', 'success')
+    modal.value.visible = false
+  } catch {
+    showToast("Erreur lors de l'action.", 'error')
+  }
+}
+
+const openRoleModal = (user) => {
+  roleModal.value = { user, newRole: user.role }
+}
+
+const applyRoleChange = async () => {
+  try {
+    await userStore.updateRole(roleModal.value.user.id, roleModal.value.newRole)
+    showToast(`Rôle mis à jour : ${getRoleLabel(roleModal.value.newRole)}`, 'success')
+    roleModal.value.user = null
+  } catch {
+    showToast('Erreur lors de la mise à jour du rôle.', 'error')
+  }
+}
+
+const showToast = (message, type = 'success') => {
+  toast.value = { message, type }
+  setTimeout(() => (toast.value = { message: '', type: 'success' }), 3500)
+}
+
+onMounted(() => fetchUsers())
+</script>
+
+
 <template>
   <AdminLayout>
-    <!-- Top bar: search + add button -->
-    <div class="bg-white rounded-2xl p-4 shadow-soft border border-gray-100 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-      <div class="relative w-full md:w-96">
-        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Rechercher un utilisateur..."
-          class="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-teal-600 focus:ring-2 focus:ring-teal-100 outline-none transition-all"
-        />
+    <!-- Toast -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 translate-y-1"
+        leave-active-class="transition duration-150 ease-in"
+        leave-to-class="opacity-0 translate-y-1"
+      >
+        <div
+          v-if="toast.message"
+          class="fixed bottom-6 right-6 z-[60] px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium flex items-center gap-2"
+          :class="toast.type === 'success' ? 'bg-[#0D9488]' : 'bg-red-600'"
+        >
+          <component
+            :is="toast.type === 'success' ? CheckCircle : XCircle"
+            class="w-4 h-4 shrink-0"
+          />
+          {{ toast.message }}
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Toolbar -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div class="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+        <!-- Recherche -->
+        <div class="relative w-full sm:w-80">
+          <Search
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+          />
+          <input
+            v-model="searchQuery"
+            @input="onSearchInput"
+            type="text"
+            placeholder="Rechercher un utilisateur..."
+            class="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+          />
+        </div>
+        <!-- Filtre rôle -->
+        <select
+          v-model="filterRole"
+          @change="fetchUsers(1)"
+          class="bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#0D9488]"
+        >
+          <option value="">Tous les rôles</option>
+          <option value="admin">Administrateur</option>
+          <option value="responsable_rh">Responsable RH</option>
+          <option value="responsable_demande">Resp. Demandes</option>
+          <option value="user">Utilisateur</option>
+        </select>
+        <!-- Filtre statut -->
+        <select
+          v-model="filterStatus"
+          @change="fetchUsers(1)"
+          class="bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#0D9488]"
+        >
+          <option value="">Tous les statuts</option>
+          <option value="inactive">Inactifs (en attente)</option>
+          <option value="active">Actifs</option>
+          <option value="suspended">Suspendus</option>
+          <option value="pending_suspension">Suspension en attente</option>
+          <option value="archived">Archivés</option>
+        </select>
       </div>
-      <button class="bg-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-teal-700 transition-colors flex items-center gap-2">
-        <span>+</span>
-        Ajouter un utilisateur
+      <button
+        @click="goToCreate"
+        class="flex items-center gap-2 bg-[#0D9488] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#0a7a6f] transition-colors shrink-0"
+      >
+        <UserPlus class="w-4 h-4" />
+        Nouveau compte
       </button>
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white rounded-2xl p-4 shadow-soft border border-gray-100 mb-6 flex flex-wrap items-center gap-4">
-      <div class="flex items-center gap-2">
-        <label class="text-sm text-slate-600 font-medium">Rôle:</label>
-        <select v-model="filterRole" class="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-teal-600 outline-none">
-          <option value="">Tous</option>
-          <option value="admin">Administrateur</option>
-          <option value="responsable">Responsable</option>
-          <option value="user">Utilisateur</option>
-        </select>
-      </div>
-      <div class="flex items-center gap-2">
-        <label class="text-sm text-slate-600 font-medium">Statut:</label>
-        <select v-model="filterStatus" class="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-teal-600 outline-none">
-          <option value="">Tous</option>
-          <option value="actif">Actif</option>
-          <option value="inactif">Inactif</option>
-        </select>
-      </div>
+    <!-- Loading -->
+    <div v-if="isLoading" class="flex justify-center py-16">
+      <div
+        class="w-10 h-10 rounded-full border-2 border-t-[#0D9488] border-gray-200 animate-spin"
+      ></div>
+    </div>
+
+    <!-- Empty -->
+    <div
+      v-else-if="users.length === 0"
+      class="bg-white rounded-2xl border border-gray-100 py-16 text-center"
+    >
+      <Users class="w-10 h-10 text-gray-300 mx-auto mb-3" />
+      <p class="font-medium text-[#1B2A4A]">Aucun utilisateur trouvé</p>
+      <p class="text-sm text-gray-400 mt-1">Modifiez vos filtres ou créez un nouveau compte.</p>
     </div>
 
     <!-- Table -->
-    <div class="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+    <div v-else class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="border-b border-gray-200">
-              <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Utilisateur</th>
-              <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">E-mail</th>
-              <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Rôle</th>
-              <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
-              <th class="text-right p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+        <table class="w-full text-sm">
+          <thead class="bg-[#F8F7F4] border-b border-gray-100">
+            <tr>
+              <th
+                class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Utilisateur
+              </th>
+              <th
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Rôle
+              </th>
+              <th
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Statut
+              </th>
+              <th
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell"
+              >
+                Inscrit le
+              </th>
+              <th
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden xl:table-cell"
+              >
+                Dernière connexion
+              </th>
+              <th
+                class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-beige/50 transition-colors">
-              <td class="p-4">
+          <tbody class="divide-y divide-gray-50">
+            <tr v-for="user in users" :key="user.id" class="hover:bg-[#F8F7F4] transition-colors">
+              <!-- Utilisateur -->
+              <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
-                  <div :class="['w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg', user.color]">
-                    {{ user.initials }}
+                  <div
+                    class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+                    :class="getAvatarColor(user.id)"
+                  >
+                    {{ getUserInitials(user) }}
                   </div>
-                  <div>
-                    <p class="font-medium text-navy-900">{{ user.name }}</p>
-                    <p class="text-xs text-slate-500">Inscrit le {{ user.date }}</p>
+                  <div class="min-w-0">
+                    <p class="font-semibold text-[#1B2A4A] truncate">
+                      {{ user.first_name }} {{ user.last_name }}
+                    </p>
+                    <p class="text-xs text-gray-400 font-mono">
+                      {{ user.email }}
+                    </p>
                   </div>
                 </div>
               </td>
-              <td class="p-4 text-sm text-slate-600">{{ user.email }}</td>
-              <td class="p-4">
+              <!-- Rôle -->
+              <td class="px-4 py-3.5">
                 <span
                   :class="[
-                    'px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider',
-                    user.role === 'admin' ? 'bg-navy-100 text-navy-700' :
-                    user.role === 'responsable' ? 'bg-teal-100 text-teal-700' :
-                    'bg-slate-100 text-slate-700'
+                    'px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap',
+                    getRoleClass(user.role),
                   ]"
                 >
-                  {{ user.roleLabel }}
+                  {{ getRoleLabel(user.role) }}
                 </span>
               </td>
-              <td class="p-4">
+              <!-- Statut -->
+              <td class="px-4 py-3.5">
                 <span
                   :class="[
-                    'px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider',
-                    user.status === 'Actif' ? 'bg-teal-100 text-teal-700' : 'bg-slate-200 text-slate-600'
+                    'px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap',
+                    getStatusClass(user.status),
                   ]"
                 >
-                  {{ user.status }}
+                  {{ getStatusLabel(user.status) }}
                 </span>
               </td>
-              <td class="p-4 text-right">
-                <button class="text-slate-500 hover:text-navy-900 transition-colors mr-3">
-                  ✏️
-                </button>
-                <button class="text-slate-500 hover:text-red-700 transition-colors">
-                  🗑️
-                </button>
+              <!-- Inscrit le -->
+              <td class="px-4 py-3.5 text-xs text-gray-400 font-mono hidden lg:table-cell">
+                {{ formatDate(user.created_at) }}
+              </td>
+              <!-- Dernière connexion -->
+              <td class="px-4 py-3.5 text-xs text-gray-400 font-mono hidden xl:table-cell">
+                {{ user.last_login_at ? formatDate(user.last_login_at) : '—' }}
+              </td>
+              <td class="px-4 py-3.5">
+                <div class="flex items-center justify-end gap-1">
+                  <!-- Modifier -->
+                  <button
+                    @click="openEditModal(user)"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-[#1B2A4A] transition-colors"
+                    title="Modifier"
+                  >
+                    <Pencil class="w-4 h-4" />
+                  </button>
+
+                  <!-- Approuver compte inactif -->
+                  <button
+                    v-if="user.status === 'inactive'"
+                    @click="confirmAction({ type: 'approve', user })"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
+                    title="Approuver le compte"
+                  >
+                    <CheckCircle class="w-4 h-4" />
+                  </button>
+
+                  <!-- Valider suspension pending (demandée par RH) -->
+                  <button
+                    v-if="user.status === 'pending_suspension'"
+                    @click="confirmAction({ type: 'validate-suspend', user })"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                    title="Valider la suspension"
+                  >
+                    <ShieldAlert class="w-4 h-4" />
+                  </button>
+
+                  <!-- Désactiver si actif -->
+                  <button
+                    v-if="user.status === 'active'"
+                    @click="confirmAction({ type: 'deactivate', user })"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                    title="Désactiver"
+                  >
+                    <UserX class="w-4 h-4" />
+                  </button>
+
+                  <!-- Réactiver si inactif/pending/suspendu/archivé -->
+                  <button
+                    v-if="
+                      ['inactive', 'pending_suspension', 'suspended', 'archived'].includes(
+                        user.status,
+                      )
+                    "
+                    @click="confirmAction({ type: 'restore', user })"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-teal-50 hover:text-[#0D9488] transition-colors"
+                    title="Restaurer / Réactiver"
+                  >
+                    <UserCheck class="w-4 h-4" />
+                  </button>
+
+                  <!-- Suspendre directement (admin) -->
+                  <button
+                    v-if="!['suspended', 'archived'].includes(user.status)"
+                    @click="confirmAction({ type: 'suspend', user })"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    title="Suspendre"
+                  >
+                    <Ban class="w-4 h-4" />
+                  </button>
+
+                  <!-- Changer le rôle -->
+                  <button
+                    @click="openRoleModal(user)"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                    title="Changer le rôle"
+                  >
+                    <Shield class="w-4 h-4" />
+                  </button>
+
+                  <!-- Archiver -->
+                  <button
+                    v-if="user.status !== 'archived'"
+                    @click="confirmAction({ type: 'archive', user })"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    title="Archiver"
+                  >
+                    <Archive class="w-4 h-4" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    <!-- Pagination -->
+    <div v-if="usersData.last_page > 1" class="flex items-center justify-between mt-5">
+      <p class="text-sm text-gray-500">
+        {{ usersData.from }}–{{ usersData.to }} sur <strong>{{ usersData.total }}</strong>
+      </p>
+      <div class="flex items-center gap-1.5">
+        <button
+          @click="fetchUsers(usersData.current_page - 1)"
+          :disabled="!usersData.prev_page_url"
+          class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Précédent
+        </button>
+        <button
+          v-for="page in visiblePages"
+          :key="page"
+          @click="fetchUsers(page)"
+          :class="
+            page === usersData.current_page
+              ? 'bg-[#1B2A4A] text-white'
+              : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+          "
+          class="w-8 h-8 rounded-lg text-sm flex items-center justify-center"
+        >
+          {{ page }}
+        </button>
+        <button
+          @click="fetchUsers(usersData.current_page + 1)"
+          :disabled="!usersData.next_page_url"
+          class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Suivant
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal confirmation -->
+    <Teleport to="body">
+      <div
+        v-if="modal.visible"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      >
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full">
+          <h3 class="text-base font-bold text-[#1B2A4A] mb-2">{{ modal.title }}</h3>
+          <p class="text-sm text-gray-600 mb-6">{{ modal.message }}</p>
+          <div class="flex gap-3 justify-end">
+            <button
+              @click="modal.visible = false"
+              class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              Annuler
+            </button>
+            <button
+              @click="executeModal"
+              :disabled="isActionLoading"
+              :class="
+                modal.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#0D9488] hover:bg-[#0a7a6f]'
+              "
+              class="px-4 py-2 rounded-xl text-sm text-white font-semibold disabled:opacity-50"
+            >
+              {{ isActionLoading ? 'En cours...' : modal.confirmLabel }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Modal changement de rôle -->
+    <Teleport to="body">
+      <div
+        v-if="roleModal.user"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      >
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full">
+          <h3 class="text-base font-bold text-[#1B2A4A] mb-1">Changer le rôle</h3>
+          <p class="text-sm text-gray-500 mb-4">
+            {{ roleModal.user.first_name }} {{ roleModal.user.last_name }}
+          </p>
+          <select
+            v-model="roleModal.newRole"
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:border-[#0D9488]"
+          >
+            <option value="user">Utilisateur</option>
+            <option value="responsable_rh">Responsable RH</option>
+            <option value="responsable_demande">Resp. Demandes</option>
+            <option value="admin">Administrateur</option>
+          </select>
+          <div class="flex gap-3 justify-end">
+            <button
+              @click="roleModal.user = null"
+              class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              Annuler
+            </button>
+            <button
+              @click="applyRoleChange"
+              :disabled="isActionLoading"
+              class="px-4 py-2 rounded-xl bg-[#1B2A4A] text-white text-sm font-semibold hover:bg-[#162040] disabled:opacity-50"
+            >
+              {{ isActionLoading ? 'Enregistrement...' : 'Confirmer' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Modal création/modification utilisateur -->
+    <Teleport to="body">
+      <div
+        v-if="userModal.visible"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      >
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold text-[#1B2A4A]">
+              {{ userModal.isEdit ? 'Modifier le compte utilisateur' : 'Nouveau compte utilisateur' }}
+            </h3>
+            <button
+              @click="closeUserModal"
+              class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            >
+              <XCircle class="w-5 h-5" />
+            </button>
+          </div>
+
+          <form @submit.prevent="handleUserSubmit" class="space-y-4">
+            <!-- Nom -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+              <input
+                v-model="userModal.form.last_name"
+                type="text"
+                required
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+                :class="{ 'border-red-500': userModal.serverErrors.last_name }"
+              />
+              <p v-if="userModal.serverErrors.last_name" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.last_name[0] }}
+              </p>
+            </div>
+
+            <!-- Prénom -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+              <input
+                v-model="userModal.form.first_name"
+                type="text"
+                required
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+                :class="{ 'border-red-500': userModal.serverErrors.first_name }"
+              />
+              <p v-if="userModal.serverErrors.first_name" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.first_name[0] }}
+              </p>
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                v-model="userModal.form.email"
+                type="email"
+                required
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+                :class="{ 'border-red-500': userModal.serverErrors.email }"
+              />
+              <p v-if="userModal.serverErrors.email" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.email[0] }}
+              </p>
+            </div>
+
+            <!-- Téléphone -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone (optionnel)</label>
+              <input
+                v-model="userModal.form.phone"
+                type="tel"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+                :class="{ 'border-red-500': userModal.serverErrors.phone }"
+              />
+              <p v-if="userModal.serverErrors.phone" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.phone[0] }}
+              </p>
+            </div>
+
+            <!-- Mot de passe -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Mot de passe {{ userModal.isEdit ? '(laisser vide pour ne pas changer)' : '' }}
+              </label>
+              <input
+                v-model="userModal.form.password"
+                type="password"
+                :required="!userModal.isEdit"
+                :minlength="userModal.isEdit ? undefined : 8"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+                :class="{ 'border-red-500': userModal.serverErrors.password }"
+              />
+              <p v-if="userModal.serverErrors.password" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.password[0] }}
+              </p>
+            </div>
+
+            <!-- Rôle -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
+              <select
+                v-model="userModal.form.role"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                :class="{ 'border-red-500': userModal.serverErrors.role }"
+              >
+                <option value="user">Utilisateur</option>
+                <option value="responsable_rh">Responsable RH</option>
+                <option value="responsable_demande">Resp. Demandes</option>
+                <option value="admin">Administrateur</option>
+              </select>
+              <p v-if="userModal.serverErrors.role" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.role[0] }}
+              </p>
+            </div>
+
+            <!-- Statut -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+              <select
+                v-model="userModal.form.status"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                :class="{ 'border-red-500': userModal.serverErrors.status }"
+              >
+                <option value="active">Actif</option>
+                <option value="inactive">Inactif (en attente)</option>
+                <option value="suspended">Suspendu</option>
+                <option value="archived">Archivé</option>
+              </select>
+              <p v-if="userModal.serverErrors.status" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.status[0] }}
+              </p>
+            </div>
+
+            <div class="flex gap-3 justify-end pt-4">
+              <button
+                type="button"
+                @click="closeUserModal"
+                class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                :disabled="isLoading"
+                class="px-4 py-2 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] disabled:opacity-50"
+              >
+                {{ isLoading ? (userModal.isEdit ? 'Modification...' : 'Création...') : (userModal.isEdit ? 'Enregistrer' : 'Créer le compte') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
   </AdminLayout>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue'
-import AdminLayout from '../../layouts/AdminLayout.vue'
-
-const searchQuery = ref('')
-const filterRole = ref('')
-const filterStatus = ref('')
-
-const users = ref([
-  {
-    id: 1,
-    name: 'Marie Afouda',
-    initials: 'MA',
-    color: 'bg-teal-600',
-    email: 'marie@biblium.bj',
-    role: 'admin',
-    roleLabel: 'Administrateur',
-    status: 'Actif',
-    date: '15 Jan 2023',
-  },
-  {
-    id: 2,
-    name: 'Paul Kiki',
-    initials: 'PK',
-    color: 'bg-amber-600',
-    email: 'paul@biblium.bj',
-    role: 'responsable',
-    roleLabel: 'Responsable',
-    status: 'Actif',
-    date: '20 Mar 2023',
-  },
-  {
-    id: 3,
-    name: 'Fatou Agbodje',
-    initials: 'FA',
-    color: 'bg-navy-700',
-    email: 'fatou@biblium.bj',
-    role: 'responsable',
-    roleLabel: 'Responsable',
-    status: 'Actif',
-    date: '05 Mai 2023',
-  },
-  {
-    id: 4,
-    name: 'Jean Dossa',
-    initials: 'JD',
-    color: 'bg-slate-600',
-    email: 'jean@gmail.com',
-    role: 'user',
-    roleLabel: 'Utilisateur',
-    status: 'Actif',
-    date: '10 Juin 2024',
-  },
-])
-
-const filteredUsers = computed(() => {
-  let result = users.value
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(u =>
-      u.name.toLowerCase().includes(query) ||
-      u.email.toLowerCase().includes(query)
-    )
-  }
-
-  if (filterRole.value) {
-    result = result.filter(u => u.role === filterRole.value)
-  }
-
-  if (filterStatus.value) {
-    result = result.filter(u => u.status.toLowerCase() === filterStatus.value)
-  }
-
-  return result
-})
-</script>

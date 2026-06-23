@@ -16,10 +16,16 @@ import RHDashboard from '../views/rh/RHDashboard.vue'
 import RHUsers from '../views/rh/RHUsers.vue'
 import RHUserForm from '../views/rh/RHUserForm.vue'
 import RHUserDetail from '../views/rh/RHUserDetail.vue'
+import RHProfile from '../views/rh/RHProfile.vue'
+import RHActivityLogs from '../views/rh/RHActivityLogs.vue'
 import AdminDashboard from '../views/admin/AdminDashboard.vue'
 import AdminDepositRequests from '../views/admin/AdminDepositRequests.vue'
 import AdminReferencesList from '../views/admin/AdminReferencesList.vue'
 import AdminUsersList from '../views/admin/AdminUsersList.vue'
+import AdminCategories from '../views/admin/AdminCategories.vue'
+import AdminAuteurs from '../views/admin/AdminAuteurs.vue'
+import AdminEditeurs from '../views/admin/AdminEditeurs.vue'
+import AdminActivityLogs from '../views/admin/AdminActivityLogs.vue'
 import { setupAuthGuards } from './guards'
 
 const router = createRouter({
@@ -116,6 +122,16 @@ const router = createRouter({
       component: RHUserForm,
     },
     {
+      path: '/rh/profile',
+      name: 'rh-profile',
+      component: RHProfile,
+    },
+    {
+      path: '/rh/activity-logs',
+      name: 'rh-activity-logs',
+      component: RHActivityLogs,
+    },
+    {
       path: '/admin/dashboard',
       name: 'admin-dashboard',
       component: AdminDashboard,
@@ -136,9 +152,24 @@ const router = createRouter({
       component: AdminUsersList,
     },
     {
-      path: '/admin/parametres',
-      name: 'admin-parametres',
-      component: AdminDashboard,
+      path: '/admin/categories',
+      name: 'admin-categories',
+      component: AdminCategories,
+    },
+    {
+      path: '/admin/auteurs',
+      name: 'admin-auteurs',
+      component: AdminAuteurs,
+    },
+    {
+      path: '/admin/editeurs',
+      name: 'admin-editeurs',
+      component: AdminEditeurs,
+    },
+    {
+      path: '/admin/activity-logs',
+      name: 'admin-activity-logs',
+      component: AdminActivityLogs,
     },
   ],
   scrollBehavior(to, from, savedPosition) {
