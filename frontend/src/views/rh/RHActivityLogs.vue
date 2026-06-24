@@ -20,10 +20,23 @@ const visiblePages = computed(() => {
   return pages
 })
 
+const filteredLogs = computed(() => {
+  let result = logs.value
+  
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(log => 
+      log.action.toLowerCase().includes(query) ||
+      (log.user && `${log.user.first_name} ${log.user.last_name}`.toLowerCase().includes(query))
+    )
+  }
+  
+  return result
+})
+
 const fetchLogs = (page = 1) => {
   isLoading.value = true
   const params = { page }
-  if (searchQuery.value) params.action = searchQuery.value
   
   api.get('/hr/activity-logs', { params })
     .then(response => {
@@ -44,8 +57,7 @@ const fetchLogs = (page = 1) => {
 }
 
 const onSearchInput = () => {
-  clearTimeout(searchTimeout.value)
-  searchTimeout.value = setTimeout(() => fetchLogs(1), 400)
+  // Plus besoin de debounce car le filtrage est côté frontend
 }
 
 const formatDate = (dateString) => {
@@ -116,7 +128,7 @@ onMounted(() => fetchLogs())
 
     <!-- Empty -->
     <div
-      v-else-if="logs.length === 0"
+      v-else-if="filteredLogs.length === 0"
       class="bg-white rounded-2xl border border-gray-100 py-16 text-center"
     >
       <Clock class="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -127,7 +139,7 @@ onMounted(() => fetchLogs())
     <!-- Logs List -->
     <div v-else class="space-y-3">
       <div
-        v-for="log in logs"
+        v-for="log in filteredLogs"
         :key="log.id"
         class="bg-white rounded-xl border border-gray-100 p-4 hover:border-[#0D9488] transition-colors"
       >

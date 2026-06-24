@@ -176,84 +176,244 @@
                     {{ formatDate(user.created_at) }}
                   </td>
                   <td class="px-4 py-3.5">
-                    <router-link
-                      :to="`/rh/users/${user.id}/edit`"
+                    <button
+                      @click="openEditModal(user)"
                       class="text-gray-400 hover:text-[#1B2A4A] transition-colors"
                       title="Modifier"
                     >
                       <Pencil class="w-4 h-4" />
-                    </router-link>
+                    </button>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-
-        <!-- Actions rapides -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-soft flex flex-col">
-          <div class="px-6 py-4 border-b border-gray-50">
-            <h3 class="text-sm font-semibold text-[#1B2A4A]">Actions rapides</h3>
-          </div>
-          <div class="p-5 space-y-3 flex-1">
-            <div class="flex items-center justify-between p-3 rounded-xl bg-[#F8F7F4]">
-              <div class="flex items-center gap-2.5 text-sm text-gray-700">
-                <Users class="w-4 h-4 text-gray-400" />
-                <span>Total</span>
-              </div>
-              <span class="font-bold font-mono text-[#1B2A4A]">{{ stats.total }}</span>
-            </div>
-            <div class="flex items-center justify-between p-3 rounded-xl bg-teal-50">
-              <div class="flex items-center gap-2.5 text-sm text-teal-700">
-                <CircleCheck class="w-4 h-4" />
-                <span>Actifs</span>
-              </div>
-              <span class="font-bold font-mono text-[#0D9488]">{{ stats.active }}</span>
-            </div>
-            <div class="flex items-center justify-between p-3 rounded-xl bg-gray-50">
-              <div class="flex items-center gap-2.5 text-sm text-gray-600">
-                <CircleMinus class="w-4 h-4 text-gray-400" />
-                <span>Inactifs</span>
-              </div>
-              <span class="font-bold font-mono text-gray-600">{{ stats.inactive }}</span>
-            </div>
-            <div class="flex items-center justify-between p-3 rounded-xl bg-red-50">
-              <div class="flex items-center gap-2.5 text-sm text-red-600">
-                <Ban class="w-4 h-4" />
-                <span>Suspendus</span>
-              </div>
-              <span class="font-bold font-mono text-red-600">{{ stats.suspended }}</span>
-            </div>
-          </div>
-
-          <div class="p-5 border-t border-gray-50">
-            <router-link
-              to="/rh/users/new"
-              class="w-full flex items-center justify-center gap-2 bg-[#0D9488] text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-[#0a7a6f] transition-colors"
-            >
-              <UserPlus class="w-4 h-4" />
-              Créer un compte
-            </router-link>
-          </div>
-        </div>
       </div>
     </template>
+
+    <!-- Modal modification utilisateur -->
+    <Teleport to="body">
+      <div
+        v-if="userModal.visible"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      >
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold text-[#1B2A4A]">Modifier le compte utilisateur</h3>
+            <button
+              @click="closeUserModal"
+              class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            >
+              <XCircle class="w-5 h-5" />
+            </button>
+          </div>
+
+          <form @submit.prevent="handleUserSubmit" class="space-y-4">
+            <!-- Nom -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+              <input
+                v-model="userModal.form.last_name"
+                type="text"
+                required
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+                :class="{ 'border-red-500': userModal.serverErrors.last_name }"
+              />
+              <p v-if="userModal.serverErrors.last_name" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.last_name[0] }}
+              </p>
+            </div>
+
+            <!-- Prénom -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+              <input
+                v-model="userModal.form.first_name"
+                type="text"
+                required
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+                :class="{ 'border-red-500': userModal.serverErrors.first_name }"
+              />
+              <p v-if="userModal.serverErrors.first_name" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.first_name[0] }}
+              </p>
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                v-model="userModal.form.email"
+                type="email"
+                required
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+                :class="{ 'border-red-500': userModal.serverErrors.email }"
+              />
+              <p v-if="userModal.serverErrors.email" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.email[0] }}
+              </p>
+            </div>
+
+            <!-- Téléphone -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone (optionnel)</label>
+              <input
+                v-model="userModal.form.phone"
+                type="tel"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+                :class="{ 'border-red-500': userModal.serverErrors.phone }"
+              />
+              <p v-if="userModal.serverErrors.phone" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.phone[0] }}
+              </p>
+            </div>
+
+            <!-- Mot de passe -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe (laisser vide pour ne pas changer)</label>
+              <input
+                v-model="userModal.form.password"
+                type="password"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+                :class="{ 'border-red-500': userModal.serverErrors.password }"
+              />
+              <p v-if="userModal.serverErrors.password" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.password[0] }}
+              </p>
+            </div>
+
+            <!-- Rôle -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
+              <select
+                v-model="userModal.form.role"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                :class="{ 'border-red-500': userModal.serverErrors.role }"
+              >
+                <option value="user">Utilisateur</option>
+                <option value="responsable_rh">Responsable RH</option>
+                <option value="responsable_demande">Resp. Demandes</option>
+              </select>
+              <p v-if="userModal.serverErrors.role" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.role[0] }}
+              </p>
+            </div>
+
+            <!-- Statut -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+              <select
+                v-model="userModal.form.status"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                :class="{ 'border-red-500': userModal.serverErrors.status }"
+              >
+                <option value="active">Actif</option>
+                <option value="inactive">Inactif (en attente)</option>
+                <option value="suspended">Suspendu</option>
+                <option value="archived">Archivé</option>
+              </select>
+              <p v-if="userModal.serverErrors.status" class="text-xs text-red-500 mt-1">
+                {{ userModal.serverErrors.status[0] }}
+              </p>
+            </div>
+
+            <div class="flex gap-3 justify-end pt-4">
+              <button
+                type="button"
+                @click="closeUserModal"
+                class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                :disabled="isLoading"
+                class="px-4 py-2 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] disabled:opacity-50"
+              >
+                {{ isLoading ? 'Modification...' : 'Enregistrer' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
   </RHLayout>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
-import { Users, CircleCheck, CircleMinus, Ban, UserPlus, Pencil, ArrowRight } from '@lucide/vue'
+import { Users, CircleCheck, CircleMinus, Ban, UserPlus, Pencil, ArrowRight, XCircle } from '@lucide/vue'
 import RHLayout from '@/layouts/RHLayout.vue'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
+const router = useRouter()
 const userStore = useUserStore()
 const authStore = useAuthStore()
+
+// Modal de modification d'utilisateur
+const userModal = ref({
+  visible: false,
+  isEdit: true,
+  userId: null,
+  form: {
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'user',
+    status: 'active',
+  },
+  serverErrors: {},
+})
+
+const openEditModal = async (user) => {
+  try {
+    const userData = await userStore.fetchUser(user.id)
+    userModal.value.visible = true
+    userModal.value.isEdit = true
+    userModal.value.userId = user.id
+    userModal.value.form = {
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      email: userData.email,
+      phone: userData.phone || '',
+      password: '',
+      role: userData.role,
+      status: userData.status,
+    }
+    userModal.value.serverErrors = {}
+  } catch {
+    console.error("Impossible de charger les informations de l'utilisateur.")
+  }
+}
+
+const closeUserModal = () => {
+  userModal.value.visible = false
+}
+
+const handleUserSubmit = async () => {
+  userModal.value.serverErrors = {}
+  const payload = { ...userModal.value.form }
+  if (!payload.password) delete payload.password
+
+  try {
+    await userStore.updateUser(userModal.value.userId, payload)
+    closeUserModal()
+    userStore.fetchUsers({ per_page: 100 })
+  } catch (err) {
+    if (err.response?.status === 422) {
+      userModal.value.serverErrors = err.response.data.errors ?? {}
+    }
+  }
+}
 
 // Accès direct au store — pas de destructuration des computed/ref
 // pour préserver la réactivité

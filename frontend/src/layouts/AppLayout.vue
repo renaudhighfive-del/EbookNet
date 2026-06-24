@@ -247,6 +247,7 @@ import {
   BookMarked,
   FileUp,
   ClipboardList,
+  Archive,
 } from '@lucide/vue'
 
 const props = defineProps({
@@ -377,12 +378,14 @@ const navItems = computed(() => {
       { to: '/admin/activity-logs', icon: Activity, label: "Journal d'activité" },
       { separator: 'Administration' },
       { to: '/admin/utilisateurs', icon: Users, label: 'Utilisateurs' },
+      { to: '/admin/archive', icon: Archive, label: 'Archives' },
     ]
   if (userRole.value === 'responsable_rh')
     return [
       { to: '/rh/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
       { separator: 'Gestion' },
       { to: '/rh/users', icon: Users, label: 'Gestion des utilisateurs' },
+      { to: '/rh/archive', icon: Archive, label: 'Archives' },
       { separator: 'Journal' },
       { to: '/rh/activity-logs', icon: Activity, label: "Journal d'activité" },
       { separator: 'Compte' },

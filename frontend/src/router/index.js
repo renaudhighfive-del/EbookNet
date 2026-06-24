@@ -18,6 +18,7 @@ import RHUserForm from '../views/rh/RHUserForm.vue'
 import RHUserDetail from '../views/rh/RHUserDetail.vue'
 import RHProfile from '../views/rh/RHProfile.vue'
 import RHActivityLogs from '../views/rh/RHActivityLogs.vue'
+import RHArchive from '../views/rh/RHArchive.vue'
 import AdminDashboard from '../views/admin/AdminDashboard.vue'
 import AdminDepositRequests from '../views/admin/AdminDepositRequests.vue'
 import AdminReferencesList from '../views/admin/AdminReferencesList.vue'
@@ -26,6 +27,7 @@ import AdminCategories from '../views/admin/AdminCategories.vue'
 import AdminAuteurs from '../views/admin/AdminAuteurs.vue'
 import AdminEditeurs from '../views/admin/AdminEditeurs.vue'
 import AdminActivityLogs from '../views/admin/AdminActivityLogs.vue'
+import AdminArchive from '../views/admin/AdminArchive.vue'
 import { setupAuthGuards } from './guards'
 
 const router = createRouter({
@@ -132,6 +134,11 @@ const router = createRouter({
       component: RHActivityLogs,
     },
     {
+      path: '/rh/archive',
+      name: 'rh-archive',
+      component: RHArchive,
+    },
+    {
       path: '/admin/dashboard',
       name: 'admin-dashboard',
       component: AdminDashboard,
@@ -170,6 +177,11 @@ const router = createRouter({
       path: '/admin/activity-logs',
       name: 'admin-activity-logs',
       component: AdminActivityLogs,
+    },
+    {
+      path: '/admin/archive',
+      name: 'admin-archive',
+      component: AdminArchive,
     },
   ],
   scrollBehavior(to, from, savedPosition) {

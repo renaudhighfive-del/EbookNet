@@ -214,7 +214,7 @@
 
                   <!-- Désactiver compte actif -->
                   <button
-                    v-if="user.status === 'active'"
+                    v-if="user.status === 'active' && !isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'deactivate', user })"
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
                     title="Désactiver"
@@ -235,7 +235,7 @@
 
                   <!-- Proposer suspension (RH) — si compte actif -->
                   <button
-                    v-if="user.status === 'active'"
+                    v-if="user.status === 'active' && !isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'request-suspend', user })"
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                     title="Proposer une suspension"
@@ -245,7 +245,7 @@
 
                   <!-- Archiver -->
                   <button
-                    v-if="!['archived'].includes(user.status)"
+                    v-if="!['archived'].includes(user.status) && !isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'archive', user })"
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                     title="Archiver le compte"
@@ -518,6 +518,9 @@ const {
 
 const users = computed(() => userStore.users)
 const usersData = computed(() => userStore.pagination)
+const currentUserId = computed(() => authStore.user?.id)
+
+const isCurrentUser = (userId) => currentUserId.value === userId
 
 const searchQuery = ref('')
 const searchTimeout = ref(null)

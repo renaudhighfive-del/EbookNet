@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\ReferenceController;
 use Illuminate\Support\Facades\Route;
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -42,6 +43,7 @@ Route::middleware(['auth:sanctum', 'role:responsable_rh,admin'])
         Route::delete('/{id}',                [UserController::class, 'archive']);             // archivage
         Route::patch('/{id}/request-suspend', [UserController::class, 'requestSuspend']);     // RH propose suspension
         Route::patch('/{id}/approve',         [UserController::class, 'approve']);             // approuver compte inactif
+        Route::get('/archived',               [UserController::class, 'archivedUsers']);      // utilisateurs archivés
     });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -78,6 +80,24 @@ Route::middleware(['auth:sanctum', 'role:admin'])
         Route::get('/', [UserController::class, 'getStats']);
         Route::get('/deposits-by-month', [UserController::class, 'getDepositsByMonth']);
         Route::get('/references-by-category', [UserController::class, 'getReferencesByCategory']);
+    });
+
+// ════════════════════════════════════════════════════════════════════════════
+//  ARCHIVES — Admin uniquement
+// ════════════════════════════════════════════════════════════════════════════
+Route::middleware(['auth:sanctum', 'role:admin'])
+    ->prefix('admin')
+    ->group(function () {
+        Route::get('/references/archived', [UserController::class, 'archivedReferences']);
+    });
+
+// ════════════════════════════════════════════════════════════════════════════
+//  RÉFÉRENCES — Admin uniquement
+// ════════════════════════════════════════════════════════════════════════════
+Route::middleware(['auth:sanctum', 'role:admin'])
+    ->prefix('references')
+    ->group(function () {
+        Route::patch('/{id}/restore', [ReferenceController::class, 'restore']);
     });
 
 // ════════════════════════════════════════════════════════════════════════════

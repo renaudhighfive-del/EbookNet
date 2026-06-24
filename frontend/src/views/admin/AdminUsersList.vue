@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '../../layouts/AdminLayout.vue'
 import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
 import {
   Search,
   UserPlus,
@@ -21,6 +22,7 @@ import {
 
 const router = useRouter()
 const userStore = useUserStore()
+const authStore = useAuthStore()
 
 const {
   getRoleLabel,
@@ -36,6 +38,9 @@ const {
 const users = computed(() => userStore.users)
 const usersData = computed(() => userStore.pagination)
 const isLoading = computed(() => userStore.isLoading)
+const currentUserId = computed(() => authStore.user?.id)
+
+const isCurrentUser = (userId) => currentUserId.value === userId
 
 const searchQuery = ref('')
 const searchTimeout = ref(null)
@@ -457,7 +462,7 @@ onMounted(() => fetchUsers())
 
                   <!-- Désactiver si actif -->
                   <button
-                    v-if="user.status === 'active'"
+                    v-if="user.status === 'active' && !isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'deactivate', user })"
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
                     title="Désactiver"
@@ -481,7 +486,7 @@ onMounted(() => fetchUsers())
 
                   <!-- Suspendre directement (admin) -->
                   <button
-                    v-if="!['suspended', 'archived'].includes(user.status)"
+                    v-if="!['suspended', 'archived'].includes(user.status) && !isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'suspend', user })"
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                     title="Suspendre"
@@ -491,6 +496,7 @@ onMounted(() => fetchUsers())
 
                   <!-- Changer le rôle -->
                   <button
+                    v-if="!isCurrentUser(user.id)"
                     @click="openRoleModal(user)"
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors"
                     title="Changer le rôle"
@@ -500,7 +506,7 @@ onMounted(() => fetchUsers())
 
                   <!-- Archiver -->
                   <button
-                    v-if="user.status !== 'archived'"
+                    v-if="user.status !== 'archived' && !isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'archive', user })"
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                     title="Archiver"

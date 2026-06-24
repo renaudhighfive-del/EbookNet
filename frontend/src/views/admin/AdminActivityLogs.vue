@@ -21,11 +21,27 @@ const visiblePages = computed(() => {
   return pages
 })
 
+const filteredLogs = computed(() => {
+  let result = logs.value
+  
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(log => 
+      log.action.toLowerCase().includes(query) ||
+      (log.user && `${log.user.first_name} ${log.user.last_name}`.toLowerCase().includes(query))
+    )
+  }
+  
+  if (filterTable.value) {
+    result = result.filter(log => log.target_table === filterTable.value)
+  }
+  
+  return result
+})
+
 const fetchLogs = (page = 1) => {
   isLoading.value = true
   const params = { page }
-  if (searchQuery.value) params.action = searchQuery.value
-  if (filterTable.value) params.target_table = filterTable.value
   
   api.get('/admin/activity-logs', { params })
     .then(response => {
@@ -46,8 +62,7 @@ const fetchLogs = (page = 1) => {
 }
 
 const onSearchInput = () => {
-  clearTimeout(searchTimeout.value)
-  searchTimeout.value = setTimeout(() => fetchLogs(1), 400)
+  // Plus besoin de debounce car le filtrage est côté frontend
 }
 
 const formatDate = (dateString) => {
@@ -126,7 +141,6 @@ onMounted(() => fetchLogs())
         <!-- Filtre table -->
         <select
           v-model="filterTable"
-          @change="fetchLogs(1)"
           class="bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#0D9488]"
         >
           <option value="">Toutes les tables</option>
@@ -151,7 +165,7 @@ onMounted(() => fetchLogs())
 
     <!-- Empty -->
     <div
-      v-else-if="logs.length === 0"
+      v-else-if="filteredLogs.length === 0"
       class="bg-white rounded-2xl border border-gray-100 py-16 text-center"
     >
       <Clock class="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -162,7 +176,7 @@ onMounted(() => fetchLogs())
     <!-- Logs List -->
     <div v-else class="space-y-3">
       <div
-        v-for="log in logs"
+        v-for="log in filteredLogs"
         :key="log.id"
         class="bg-white rounded-xl border border-gray-100 p-4 hover:border-[#0D9488] transition-colors"
       >
@@ -254,8 +268,3 @@ onMounted(() => fetchLogs())
   </AdminLayout>
 </template>
 
-<script>
-const getUserInitials = (firstName, lastName) => {
-  return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase()
-}
-</script>

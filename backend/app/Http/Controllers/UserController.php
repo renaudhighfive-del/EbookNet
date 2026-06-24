@@ -263,4 +263,44 @@ class UserController extends Controller
 
         return response()->json($categories);
     }
+
+    /** GET /hr/users/archived — Liste des utilisateurs archivés (RH + Admin) */
+    public function archivedUsers(Request $request): JsonResponse
+    {
+        $query = User::where('status', 'archived');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn($q) => $q
+                ->where('first_name', 'like', "%$s%")
+                ->orWhere('last_name',  'like', "%$s%")
+                ->orWhere('email',      'like', "%$s%")
+            );
+        }
+
+        $perPage = min((int) $request->get('per_page', 10), 100);
+        return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
+    }
+
+    /** GET /admin/references/archived — Liste des références archivées (Admin uniquement) */
+    public function archivedReferences(Request $request): JsonResponse
+    {
+        $query = \App\Models\Reference::where('status', 'archived')
+            ->with(['category', 'publisher', 'uploadedBy']);
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn($q) => $q
+                ->where('title', 'like', "%$s%")
+                ->orWhere('isbn', 'like', "%$s%")
+            );
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        $perPage = min((int) $request->get('per_page', 10), 100);
+        return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
+    }
 }
