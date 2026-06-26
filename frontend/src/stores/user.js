@@ -7,6 +7,8 @@ export const useUserStore = defineStore('user', () => {
   // ─── State ──────────────────────────────────────────────────────────────
   const users = ref([])
   const pagination = ref({})
+  const archivedUsers = ref([])
+  const archivedPagination = ref({})
   const currentUser = ref(null)
   const isLoading = ref(false)
   const isActionLoading = ref(false)
@@ -67,6 +69,7 @@ export const useUserStore = defineStore('user', () => {
     error.value = null
     try {
       const res = await api.post('/hr/users', data)
+      users.value.unshift(res.data.user)
       return res.data
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur création.'
@@ -225,6 +228,25 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  /** GET /api/hr/users/archived — Liste des utilisateurs archivés (RH + Admin) */
+  async function fetchArchivedUsers(params = {}) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const res = await api.get('/hr/users/archived', { params })
+      archivedUsers.value = res.data.data ?? []
+      archivedPagination.value = res.data
+      return res.data
+    } catch (err) {
+      error.value = err.response?.data?.message ?? 'Erreur chargement utilisateurs archivés.'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+
+
   // ─── Utilitaires internes ────────────────────────────────────────────────
   function _patchInList(id, updated) {
     const i = users.value.findIndex((u) => u.id === Number(id))
@@ -305,6 +327,8 @@ export const useUserStore = defineStore('user', () => {
   return {
     users,
     pagination,
+    archivedUsers,
+    archivedPagination,
     currentUser,
     isLoading,
     isActionLoading,
@@ -314,6 +338,7 @@ export const useUserStore = defineStore('user', () => {
     // RH + Admin
     fetchUsers,
     fetchUser,
+    fetchArchivedUsers,
     createUser,
     updateUser,
     updateStatus,

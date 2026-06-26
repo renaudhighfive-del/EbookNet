@@ -38,7 +38,6 @@
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               v-model="searchUsers"
-              @input="fetchArchivedUsers"
               type="text"
               placeholder="Rechercher..."
               class="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0D9488] w-64"
@@ -46,7 +45,7 @@
           </div>
         </div>
 
-        <div v-if="archivedUsers.length === 0" class="py-10 text-center text-sm text-gray-400">
+        <div v-if="archivedUsers?.length === 0" class="py-10 text-center text-sm text-gray-400">
           Aucun utilisateur archivé.
         </div>
 
@@ -99,21 +98,21 @@
         </table>
 
         <!-- Pagination -->
-        <div v-if="usersData.last_page > 1" class="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
+        <div v-if="archivedPagination.last_page > 1" class="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
           <p class="text-xs text-gray-400">
-            Page {{ usersData.current_page }} sur {{ usersData.last_page }}
+            Page {{ archivedPagination.current_page }} sur {{ archivedPagination.last_page }}
           </p>
           <div class="flex gap-1">
             <button
-              @click="fetchArchivedUsers(usersData.current_page - 1)"
-              :disabled="!usersData.prev_page_url"
+              @click="fetchArchivedUsersWithParams(archivedPagination.current_page - 1)"
+              :disabled="!archivedPagination.prev_page_url"
               class="px-3 py-1 rounded-lg text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
             >
               Précédent
             </button>
             <button
-              @click="fetchArchivedUsers(usersData.current_page + 1)"
-              :disabled="!usersData.next_page_url"
+              @click="fetchArchivedUsersWithParams(archivedPagination.current_page + 1)"
+              :disabled="!archivedPagination.next_page_url"
               class="px-3 py-1 rounded-lg text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
             >
               Suivant
@@ -130,7 +129,6 @@
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               v-model="searchReferences"
-              @input="fetchArchivedReferences"
               type="text"
               placeholder="Rechercher..."
               class="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0D9488] w-64"
@@ -187,21 +185,21 @@
         </table>
 
         <!-- Pagination -->
-        <div v-if="referencesData.last_page > 1" class="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
+        <div v-if="refPagination.last_page > 1" class="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
           <p class="text-xs text-gray-400">
-            Page {{ referencesData.current_page }} sur {{ referencesData.last_page }}
+            Page {{ refPagination.current_page }} sur {{ refPagination.last_page }}
           </p>
           <div class="flex gap-1">
             <button
-              @click="fetchArchivedReferences(referencesData.current_page - 1)"
-              :disabled="!referencesData.prev_page_url"
+              @click="fetchArchivedReferencesWithParams(refPagination.current_page - 1)"
+              :disabled="!refPagination.prev_page_url"
               class="px-3 py-1 rounded-lg text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
             >
               Précédent
             </button>
             <button
-              @click="fetchArchivedReferences(referencesData.current_page + 1)"
-              :disabled="!referencesData.next_page_url"
+              @click="fetchArchivedReferencesWithParams(refPagination.current_page + 1)"
+              :disabled="!refPagination.next_page_url"
               class="px-3 py-1 rounded-lg text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
             >
               Suivant
@@ -242,65 +240,31 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { debounce } from 'lodash-es'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useUserStore } from '@/stores/user'
+import { useReferenceStore } from '@/stores/reference'
 import { Search, RotateCcw } from '@lucide/vue'
-import axios from 'axios'
 
 const userStore = useUserStore()
+const referenceStore = useReferenceStore()
 
 const activeTab = ref('users')
 const searchUsers = ref('')
 const searchReferences = ref('')
-const archivedUsers = ref([])
-const archivedReferences = ref([])
-const usersData = ref({ current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null })
-const referencesData = ref({ current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null })
-const isLoading = ref(false)
 const isActionLoading = ref(false)
 const confirmModal = ref({ visible: false, title: '', message: '', type: '', item: null })
 
-const { getRoleLabel, getRoleClass, getAvatarColor, getUserInitials, formatDate } = userStore
+const { getRoleLabel, getRoleClass, getAvatarColor, getUserInitials, formatDate, archivedUsers, archivedPagination, fetchArchivedUsers } = userStore
+const { archivedReferences, archivedPagination: refPagination, isLoading, fetchArchivedReferences, restoreReference } = referenceStore
 
-const fetchArchivedUsers = async (page = 1) => {
-  isLoading.value = true
-  try {
-    const response = await axios.get('/api/hr/users/archived', {
-      params: { page, per_page: 10, search: searchUsers.value }
-    })
-    archivedUsers.value = response.data.data
-    usersData.value = {
-      current_page: response.data.current_page,
-      last_page: response.data.last_page,
-      prev_page_url: response.data.prev_page_url,
-      next_page_url: response.data.next_page_url
-    }
-  } catch (error) {
-    console.error('Erreur lors du chargement des utilisateurs archivés:', error)
-  } finally {
-    isLoading.value = false
-  }
+const fetchArchivedUsersWithParams = async (page = 1) => {
+  await fetchArchivedUsers({ page, per_page: 10, search: searchUsers.value })
 }
 
-const fetchArchivedReferences = async (page = 1) => {
-  isLoading.value = true
-  try {
-    const response = await axios.get('/api/admin/references/archived', {
-      params: { page, per_page: 10, search: searchReferences.value }
-    })
-    archivedReferences.value = response.data.data
-    referencesData.value = {
-      current_page: response.data.current_page,
-      last_page: response.data.last_page,
-      prev_page_url: response.data.prev_page_url,
-      next_page_url: response.data.next_page_url
-    }
-  } catch (error) {
-    console.error('Erreur lors du chargement des références archivées:', error)
-  } finally {
-    isLoading.value = false
-  }
+const fetchArchivedReferencesWithParams = async (page = 1) => {
+  await fetchArchivedReferences({ page, per_page: 10, search: searchReferences.value })
 }
 
 const confirmRestoreUser = (user) => {
@@ -328,10 +292,10 @@ const executeRestore = async () => {
   try {
     if (confirmModal.value.type === 'user') {
       await userStore.restoreUser(confirmModal.value.item.id)
-      fetchArchivedUsers(usersData.value.current_page)
+      fetchArchivedUsersWithParams(archivedPagination.value?.current_page || 1)
     } else if (confirmModal.value.type === 'reference') {
-      await axios.patch(`/api/references/${confirmModal.value.item.id}/restore`)
-      fetchArchivedReferences(referencesData.value.current_page)
+      await restoreReference(confirmModal.value.item.id)
+      fetchArchivedReferencesWithParams(refPagination.value?.current_page || 1)
     }
     confirmModal.value.visible = false
   } catch (error) {
@@ -341,7 +305,16 @@ const executeRestore = async () => {
   }
 }
 
+const debouncedFetchUsers = debounce(() => fetchArchivedUsersWithParams(1), 300)
+const debouncedFetchReferences = debounce(() => fetchArchivedReferencesWithParams(1), 300)
+
+watch(searchUsers, debouncedFetchUsers)
+watch(searchReferences, debouncedFetchReferences)
+
 onMounted(() => {
-  fetchArchivedUsers()
+  Promise.all([
+    fetchArchivedUsersWithParams(),
+    fetchArchivedReferencesWithParams()
+  ])
 })
 </script>

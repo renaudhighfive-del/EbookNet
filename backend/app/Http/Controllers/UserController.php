@@ -31,6 +31,11 @@ class UserController extends Controller
     {
         $query = User::query();
 
+        // Exclure les admins pour les RH (seul l'admin peut voir les admins)
+        if ($request->user()->role === 'responsable_rh') {
+            $query->where('role', '!=', 'admin');
+        }
+
         if ($request->filled('role'))   $query->where('role',   $request->role);
         if ($request->filled('status')) $query->where('status', $request->status);
 
@@ -44,13 +49,44 @@ class UserController extends Controller
         }
 
         $perPage = min((int) $request->get('per_page', 10), 100);
-        return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
+        $paginator = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+        // Optimisation : une seule requête pour tous les counts
+        $countsQuery = User::selectRaw('role, COUNT(*) as count')
+            ->groupBy('role')
+            ->pluck('count', 'role')
+            ->toArray();
+
+        // Exclure admin des counts pour RH
+        if ($request->user()->role === 'responsable_rh') {
+            unset($countsQuery['admin']);
+        }
+
+        // S'assurer que tous les rôles sont présents
+        $defaultCounts = [
+            'admin' => 0,
+            'responsable_rh' => 0,
+            'responsable_demande' => 0,
+            'user' => 0,
+        ];
+        
+        // Pour RH, ne pas inclure admin dans les counts
+        if ($request->user()->role === 'responsable_rh') {
+            unset($defaultCounts['admin']);
+        }
+        
+        $counts = array_merge($defaultCounts, $countsQuery);
+
+        $response = $paginator->toArray();
+        $response['counts'] = $counts;
+
+        return response()->json($response);
     }
 
     /** GET /hr/users/:id — Détail avec relations */
-    public function show(int $id): JsonResponse
+    public function show(string|int $id): JsonResponse
     {
-        $user = User::findOrFail($id);
+        $user = User::findOrFail((int)$id);
         $user->load(['depositRequests', 'depositRequestReviews', 'activityLogs']);
         return response()->json(['user' => $user]);
     }
@@ -151,12 +187,12 @@ class UserController extends Controller
     }
 
     /** DELETE /hr/users/:id — Archivage du compte (soft-delete)
-     *  Passe le statut à 'inactive' — le compte est conservé en BDD mais inaccessible.
+     *  Passe le statut à 'archived' — le compte est conservé en BDD mais inaccessible.
      */
     public function archive(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
-        $user->update(['status' => 'inactive']);
+        $user->update(['status' => 'archived']);
         $this->logActivity($request, "Archivage utilisateur: {$user->first_name} {$user->last_name}", $user->id);
         return response()->json(['message' => 'Compte archivé avec succès.', 'user' => $user]);
     }
@@ -269,6 +305,11 @@ class UserController extends Controller
     {
         $query = User::where('status', 'archived');
 
+        // Exclure les admins pour les RH
+        if ($request->user()->role === 'responsable_rh') {
+            $query->where('role', '!=', 'admin');
+        }
+
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(fn($q) => $q
@@ -282,25 +323,5 @@ class UserController extends Controller
         return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
     }
 
-    /** GET /admin/references/archived — Liste des références archivées (Admin uniquement) */
-    public function archivedReferences(Request $request): JsonResponse
-    {
-        $query = \App\Models\Reference::where('status', 'archived')
-            ->with(['category', 'publisher', 'uploadedBy']);
-
-        if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(fn($q) => $q
-                ->where('title', 'like', "%$s%")
-                ->orWhere('isbn', 'like', "%$s%")
-            );
-        }
-
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
-
-        $perPage = min((int) $request->get('per_page', 10), 100);
-        return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
-    }
+   
 }

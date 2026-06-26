@@ -3,10 +3,10 @@
     <template #title>
       Gestion des utilisateurs
       <span
-        v-if="usersData.total"
+        v-if="userStore.pagination.total"
         class="ml-2 text-xs font-mono font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full"
       >
-        {{ usersData.total }}
+        {{ userStore.pagination.total }}
       </span>
     </template>
 
@@ -83,7 +83,7 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="isLoading" class="flex justify-center py-16">
+    <div v-if="userStore.isLoading" class="flex justify-center py-16">
       <div
         class="w-10 h-10 rounded-full border-2 border-t-[#0D9488] border-gray-200 animate-spin"
       ></div>
@@ -91,7 +91,7 @@
 
     <!-- Empty -->
     <div
-      v-else-if="users.length === 0"
+      v-else-if="userStore.users.value.length === 0"
       class="bg-white rounded-2xl border border-gray-100 py-16 text-center"
     >
       <Users class="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -138,49 +138,55 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="user in users" :key="user.id" class="hover:bg-[#F8F7F4] transition-colors">
+            <tr v-for="user in userStore.users.value" :key="user.id" class="hover:bg-[#F8F7F4] transition-colors">
               <!-- Utilisateur -->
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
                   <div
                     class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
-                    :class="getAvatarColor(user.id)"
+                    :class="userStore.getAvatarColor(user.id)"
                   >
-                    {{ getUserInitials(user) }}
+                    {{ userStore.getUserInitials(user) }}
                   </div>
                   <div class="min-w-0">
-                    <p class="font-semibold text-[#1B2A4A] truncate">
-                      {{ user.first_name }} {{ user.last_name }}
-                    </p>
-                    <p class="text-xs text-gray-400 truncate">{{ user.email }}</p>
+                    <div class="flex items-center gap-2">
+                      <p class="font-semibold text-[#1B2A4A] truncate">
+                        {{ user.first_name }} {{ user.last_name }}
+                      </p>
+                      <span
+                        v-if="isCurrentUser(user.id)"
+                        class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#EEF1F7] text-[#1B2A4A] uppercase tracking-wide shrink-0"
+                      >vous</span>
+                    </div>
+                    <p class="text-xs text-gray-400 font-mono truncate">{{ user.email }}</p>
                   </div>
                 </div>
               </td>
               <!-- Rôle -->
               <td class="px-4 py-3.5">
                 <span
-                  :class="getRoleClass(user.role)"
+                  :class="userStore.getRoleClass(user.role)"
                   class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
                 >
-                  {{ getRoleLabel(user.role) }}
+                  {{ userStore.getRoleLabel(user.role) }}
                 </span>
               </td>
               <!-- Statut -->
               <td class="px-4 py-3.5">
                 <span
-                  :class="getStatusClass(user.status)"
+                  :class="userStore.getStatusClass(user.status)"
                   class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap"
                 >
-                  {{ getStatusLabel(user.status) }}
+                  {{ userStore.getStatusLabel(user.status) }}
                 </span>
               </td>
               <!-- Date -->
               <td class="px-4 py-3.5 text-xs text-gray-400 font-mono hidden lg:table-cell">
-                {{ formatDate(user.created_at) }}
+                {{ userStore.formatDate(user.created_at) }}
               </td>
               <!-- Connexion -->
               <td class="px-4 py-3.5 text-xs text-gray-400 font-mono hidden xl:table-cell">
-                {{ user.last_login_at ? formatDate(user.last_login_at) : '—' }}
+                {{ user.last_login_at ? userStore.formatDate(user.last_login_at) : '—' }}
               </td>
               <!-- Actions -->
               <td class="px-4 py-3.5">
@@ -226,7 +232,7 @@
                   <button
                     v-if="['inactive', 'pending_suspension'].includes(user.status)"
                     @click="quickAction('activate', user)"
-                    :disabled="isActionLoading"
+                    :disabled="userStore.isActionLoading"
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-teal-50 hover:text-[#0D9488] transition-colors disabled:opacity-40"
                     title="Réactiver"
                   >
@@ -245,9 +251,15 @@
 
                   <!-- Archiver -->
                   <button
-                    v-if="!['archived'].includes(user.status) && !isCurrentUser(user.id)"
+                    v-if="!isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'archive', user })"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    :disabled="user.status === 'archived'"
+                    :class="[
+                      'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
+                      user.status === 'archived' 
+                        ? 'text-gray-300 cursor-not-allowed' 
+                        : 'text-gray-400 hover:bg-red-50 hover:text-red-600'
+                    ]"
                     title="Archiver le compte"
                   >
                     <Archive class="w-4 h-4" />
@@ -261,37 +273,46 @@
     </div>
 
     <!-- Pagination -->
-    <div v-if="usersData.last_page > 1" class="flex items-center justify-between mt-5">
-      <p class="text-sm text-gray-500">
-        {{ usersData.from }}–{{ usersData.to }} sur <strong>{{ usersData.total }}</strong>
-      </p>
-      <div class="flex items-center gap-1.5">
-        <button
-          @click="fetchUsers(usersData.current_page - 1)"
-          :disabled="!usersData.prev_page_url"
-          class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+    <div v-if="userStore.pagination.last_page && userStore.pagination.last_page >= 1" class="flex items-center justify-between mt-5">
+      <div class="flex items-center gap-2">
+        <span class="text-sm text-gray-500">Afficher</span>
+        <select
+          v-model="perPage"
+          @change="fetchUsers(1)"
+          class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
         >
-          Précédent
+          <option v-for="opt in perPageOptions" :key="opt" :value="opt">{{ opt }}</option>
+        </select>
+        <span class="text-sm text-gray-500">par page</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button
+          @click="fetchUsers(userStore.pagination.current_page - 1)"
+          :disabled="!userStore.pagination.prev_page_url"
+          class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronLeft class="w-4 h-4" />
         </button>
         <button
           v-for="page in visiblePages"
           :key="page"
-          @click="fetchUsers(page)"
-          :class="
-            page === usersData.current_page
-              ? 'bg-[#1B2A4A] text-white border-[#1B2A4A]'
-              : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
-          "
-          class="w-8 h-8 rounded-lg text-sm flex items-center justify-center"
+          @click="typeof page === 'number' ? fetchUsers(page) : null"
+          class="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
+          :class="page === userStore.pagination.current_page
+            ? 'bg-[#0D9488] text-white border-[#0D9488]'
+            : typeof page === 'number'
+              ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+              : 'border-transparent text-gray-400 cursor-default'"
+          :disabled="typeof page !== 'number'"
         >
           {{ page }}
         </button>
         <button
-          @click="fetchUsers(usersData.current_page + 1)"
-          :disabled="!usersData.next_page_url"
-          class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          @click="fetchUsers(userStore.pagination.current_page + 1)"
+          :disabled="!userStore.pagination.next_page_url"
+          class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
-          Suivant
+          <ChevronRight class="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -314,13 +335,13 @@
             </button>
             <button
               @click="executeModal"
-              :disabled="isActionLoading"
+              :disabled="userStore.isActionLoading"
               :class="
                 modal.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#0D9488] hover:bg-[#0a7a6f]'
               "
               class="px-4 py-2 rounded-xl text-sm text-white font-semibold disabled:opacity-50"
             >
-              {{ isActionLoading ? 'En cours...' : modal.confirmLabel }}
+              {{ userStore.isActionLoading ? 'En cours...' : modal.confirmLabel }}
             </button>
           </div>
         </div>
@@ -469,10 +490,10 @@
               </button>
               <button
                 type="submit"
-                :disabled="isLoading"
+                :disabled="userStore.isLoading"
                 class="px-4 py-2 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] disabled:opacity-50"
               >
-                {{ isLoading ? (userModal.isEdit ? 'Modification...' : 'Création...') : (userModal.isEdit ? 'Enregistrer' : 'Créer le compte') }}
+                {{ userStore.isLoading ? (userModal.isEdit ? 'Modification...' : 'Création...') : (userModal.isEdit ? 'Enregistrer' : 'Créer le compte') }}
               </button>
             </div>
           </form>
@@ -499,25 +520,13 @@ import {
   Users,
   CheckCircle,
   XCircle,
+  ChevronLeft,
+  ChevronRight,
 } from '@lucide/vue'
 
 const userStore = useUserStore()
 const authStore = useAuthStore()
 
-const {
-  isLoading,
-  isActionLoading,
-  getRoleLabel,
-  getRoleClass,
-  getStatusLabel,
-  getStatusClass,
-  getAvatarColor,
-  getUserInitials,
-  formatDate,
-} = userStore
-
-const users = computed(() => userStore.users)
-const usersData = computed(() => userStore.pagination)
 const currentUserId = computed(() => authStore.user?.id)
 
 const isCurrentUser = (userId) => currentUserId.value === userId
@@ -526,6 +535,7 @@ const searchQuery = ref('')
 const searchTimeout = ref(null)
 const filters = ref({ role: '', status: '' })
 const toast = ref({ message: '', type: 'success' })
+const perPage = ref(10)
 
 const modal = ref({
   visible: false,
@@ -619,17 +629,40 @@ const handleUserSubmit = async () => {
   }
 }
 
+const perPageOptions = [10, 25, 50, 100]
+
 const visiblePages = computed(() => {
-  if (!usersData.value.last_page) return []
-  const c = usersData.value.current_page,
-    l = usersData.value.last_page
+  if (!userStore.pagination.value.last_page) return []
+  const c = userStore.pagination.value.current_page,
+    l = userStore.pagination.value.last_page
   const pages = []
-  for (let i = Math.max(1, c - 2); i <= Math.min(l, c + 2); i++) pages.push(i)
+  
+  // Toujours afficher la première page
+  if (c > 3) pages.push(1)
+  
+  // Ellipsis après la première page si nécessaire
+  if (c > 4) pages.push('...')
+  
+  // Pages autour de la page courante
+  for (let i = Math.max(2, c - 1); i <= Math.min(l - 1, c + 1); i++) pages.push(i)
+  
+  // Ellipsis avant la dernière page si nécessaire
+  if (c < l - 3) pages.push('...')
+  
+  // Toujours afficher la dernière page
+  if (l > 1 && c < l - 1) pages.push(l)
+  
+  // Si peu de pages, afficher toutes
+  if (l <= 7) {
+    pages.length = 0
+    for (let i = 1; i <= l; i++) pages.push(i)
+  }
+  
   return pages
 })
 
 const fetchUsers = (page = 1) => {
-  const params = { page }
+  const params = { page, per_page: perPage.value }
   if (filters.value.role) params.role = filters.value.role
   if (filters.value.status) params.status = filters.value.status
   if (searchQuery.value) params.search = searchQuery.value

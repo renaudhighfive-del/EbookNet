@@ -107,6 +107,10 @@ const getTableLabel = (table) => {
   return labels[table] || table
 }
 
+const getUserInitials = (firstName, lastName) => {
+  return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase()
+}
+
 onMounted(() => fetchLogs())
 </script>
 

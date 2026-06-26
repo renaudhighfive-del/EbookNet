@@ -24,7 +24,7 @@ import AdminDepositRequests from '../views/admin/AdminDepositRequests.vue'
 import AdminReferencesList from '../views/admin/AdminReferencesList.vue'
 import AdminUsersList from '../views/admin/AdminUsersList.vue'
 import AdminCategories from '../views/admin/AdminCategories.vue'
-import AdminAuteurs from '../views/admin/AdminAuteurs.vue'
+import AdminAuthors from '../views/admin/AdminAuthors.vue'
 import AdminEditeurs from '../views/admin/AdminEditeurs.vue'
 import AdminActivityLogs from '../views/admin/AdminActivityLogs.vue'
 import AdminArchive from '../views/admin/AdminArchive.vue'
@@ -166,7 +166,7 @@ const router = createRouter({
     {
       path: '/admin/auteurs',
       name: 'admin-auteurs',
-      component: AdminAuteurs,
+      component: AdminAuthors,
     },
     {
       path: '/admin/editeurs',

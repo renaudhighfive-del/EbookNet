@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             PublisherSeeder::class,
             AuthorSeeder::class,
+            ReferenceSeeder::class,
         ]);
     }
 }

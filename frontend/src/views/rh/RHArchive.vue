@@ -15,7 +15,6 @@
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               v-model="search"
-              @input="fetchArchivedUsers"
               type="text"
               placeholder="Rechercher..."
               class="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0D9488] w-64"
@@ -23,7 +22,7 @@
           </div>
         </div>
 
-        <div v-if="archivedUsers.length === 0" class="py-10 text-center text-sm text-gray-400">
+        <div v-if="archivedUsers?.length === 0" class="py-10 text-center text-sm text-gray-400">
           Aucun utilisateur archivé.
         </div>
 
@@ -76,21 +75,21 @@
         </table>
 
         <!-- Pagination -->
-        <div v-if="usersData.last_page > 1" class="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
+        <div v-if="archivedPagination.last_page > 1" class="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
           <p class="text-xs text-gray-400">
-            Page {{ usersData.current_page }} sur {{ usersData.last_page }}
+            Page {{ archivedPagination.current_page }} sur {{ archivedPagination.last_page }}
           </p>
           <div class="flex gap-1">
             <button
-              @click="fetchArchivedUsers(usersData.current_page - 1)"
-              :disabled="!usersData.prev_page_url"
+              @click="fetchArchivedUsersWithParams(archivedPagination.current_page - 1)"
+              :disabled="!archivedPagination.prev_page_url"
               class="px-3 py-1 rounded-lg text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
             >
               Précédent
             </button>
             <button
-              @click="fetchArchivedUsers(usersData.current_page + 1)"
-              :disabled="!usersData.next_page_url"
+              @click="fetchArchivedUsersWithParams(archivedPagination.current_page + 1)"
+              :disabled="!archivedPagination.next_page_url"
               class="px-3 py-1 rounded-lg text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
             >
               Suivant
@@ -131,41 +130,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { debounce } from 'lodash-es'
 import RHLayout from '@/layouts/RHLayout.vue'
 import { useUserStore } from '@/stores/user'
 import { Search, RotateCcw } from '@lucide/vue'
-import axios from 'axios'
 
 const userStore = useUserStore()
 
 const search = ref('')
-const archivedUsers = ref([])
-const usersData = ref({ current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null })
-const isLoading = ref(false)
 const isActionLoading = ref(false)
 const confirmModal = ref({ visible: false, title: '', message: '', item: null })
 
-const { getRoleLabel, getRoleClass, getAvatarColor, getUserInitials, formatDate } = userStore
+const { getRoleLabel, getRoleClass, getAvatarColor, getUserInitials, formatDate, archivedUsers, archivedPagination, isLoading, fetchArchivedUsers } = userStore
 
-const fetchArchivedUsers = async (page = 1) => {
-  isLoading.value = true
-  try {
-    const response = await axios.get('/api/hr/users/archived', {
-      params: { page, per_page: 10, search: search.value }
-    })
-    archivedUsers.value = response.data.data
-    usersData.value = {
-      current_page: response.data.current_page,
-      last_page: response.data.last_page,
-      prev_page_url: response.data.prev_page_url,
-      next_page_url: response.data.next_page_url
-    }
-  } catch (error) {
-    console.error('Erreur lors du chargement des utilisateurs archivés:', error)
-  } finally {
-    isLoading.value = false
-  }
+const fetchArchivedUsersWithParams = async (page = 1) => {
+  await fetchArchivedUsers({ page, per_page: 10, search: search.value })
 }
 
 const confirmRestoreUser = (user) => {
@@ -181,7 +161,7 @@ const executeRestore = async () => {
   isActionLoading.value = true
   try {
     await userStore.restoreUser(confirmModal.value.item.id)
-    fetchArchivedUsers(usersData.value.current_page)
+    fetchArchivedUsersWithParams(archivedPagination.value?.current_page || 1)
     confirmModal.value.visible = false
   } catch (error) {
     console.error('Erreur lors de la restauration:', error)
@@ -190,7 +170,11 @@ const executeRestore = async () => {
   }
 }
 
+const debouncedFetch = debounce(() => fetchArchivedUsersWithParams(1), 300)
+
+watch(search, debouncedFetch)
+
 onMounted(() => {
-  fetchArchivedUsers()
+  fetchArchivedUsersWithParams()
 })
 </script>

@@ -334,11 +334,11 @@ const roleLabel = computed(
 const activeItemBg = computed(
   () =>
     ({
-      admin: 'rgba(13,148,136,.2)',
-      responsable_rh: 'rgba(217,119,6,.2)',
-      responsable_demande: 'rgba(13,148,136,.2)',
-      user: 'rgba(13,148,136,.2)',
-    })[userRole.value] ?? 'rgba(255,255,255,.08)',
+      admin: '#0D9488',
+      responsable_rh: '#D97706',
+      responsable_demande: '#0D9488',
+      user: '#0D9488',
+    })[userRole.value] ?? '#0D9488',
 )
 
 const homePath = computed(

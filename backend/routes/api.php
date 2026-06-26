@@ -1,14 +1,10 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\ActivityLogController;
-use App\Http\Controllers\ReferenceController;
+use App\Http\Controllers\DepositRequestController;
 use Illuminate\Support\Facades\Route;
 
-// ════════════════════════════════════════════════════════════════════════════
 //  AUTH — Public
-// ════════════════════════════════════════════════════════════════════════════
 Route::prefix('auth')->group(function () {
     Route::post('/register',        [AuthController::class, 'register']);
     Route::post('/login',           [AuthController::class, 'login']);
@@ -21,92 +17,39 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-// ════════════════════════════════════════════════════════════════════════════
-//  GESTION DES UTILISATEURS — RH + Admin
-//  Permissions communes :
-//    - Lister (filtre : role, status, search + pagination)
-//    - Créer (RH ne peut pas créer admin — bloqué côté controller)
-//    - Voir le détail
-//    - Modifier infos (nom, email, téléphone, mdp)
-//    - Activer ↔ Désactiver (active ↔ inactive)
-//    - Archiver (soft-delete → inactive, irréversible par RH)
-//    - Proposer une suspension (status → pending_suspension, admin valide)
-// ════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth:sanctum', 'role:responsable_rh,admin'])
-    ->prefix('hr/users')
-    ->group(function () {
-        Route::get('/',                       [UserController::class, 'index']);
-        Route::post('/',                      [UserController::class, 'store']);
-        Route::get('/{id}',                   [UserController::class, 'show']);
-        Route::put('/{id}',                   [UserController::class, 'update']);
-        Route::patch('/{id}/status',          [UserController::class, 'updateStatus']);       // active ↔ inactive
-        Route::delete('/{id}',                [UserController::class, 'archive']);             // archivage
-        Route::patch('/{id}/request-suspend', [UserController::class, 'requestSuspend']);     // RH propose suspension
-        Route::patch('/{id}/approve',         [UserController::class, 'approve']);             // approuver compte inactif
-        Route::get('/archived',               [UserController::class, 'archivedUsers']);      // utilisateurs archivés
-    });
+//  GESTION DES UTILISATEURS — RH 
+require __DIR__ . '/allroutes/rh_users.php';
 
-// ════════════════════════════════════════════════════════════════════════════
-//  JOURNAL D'ACTIVITÉ — RH
-// ════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth:sanctum', 'role:responsable_rh'])
-    ->get('/hr/activity-logs', [ActivityLogController::class, 'indexForRH']);
+//  GESTION DES UTILISATEURS & ACTIONS AVANCÉES — ADMIN
+require __DIR__ . '/allroutes/admin_users.php';
 
-// ════════════════════════════════════════════════════════════════════════════
-//  ACTIONS AVANCÉES — Admin uniquement
-//  Permissions supplémentaires :
-//    - Approuver un compte inactif (nouvelles inscriptions)
-//    - Suspendre directement
-//    - Valider une suspension proposée par le RH
-//    - Changer le rôle
-//    - Restaurer un compte suspendu/archivé
-// ════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth:sanctum', 'role:admin'])
-    ->prefix('admin/users')
-    ->group(function () {
-        Route::patch('/{id}/approve',          [UserController::class, 'approve']);         // approuver inscription
-        Route::patch('/{id}/suspend',          [UserController::class, 'suspend']);         // suspension directe
-        Route::patch('/{id}/validate-suspend', [UserController::class, 'validateSuspend']); // valider suspension RH
-        Route::patch('/{id}/role',             [UserController::class, 'updateRole']);      // changer rôle
-        Route::patch('/{id}/restore',          [UserController::class, 'restore']);         // restaurer → active
-    });
+//  JOURNAL D'ACTIVITÉ — RH & ADMIN
+require __DIR__ . '/allroutes/journal_activity_admin&rh.php';
 
-// ════════════════════════════════════════════════════════════════════════════
+//  GESTION DES CATÉGORIES — Admin uniquement
+require __DIR__ . '/allroutes/categories.php';
+
+//  GESTION DES AUTEURS — Admin uniquement
+require __DIR__ . '/allroutes/authors.php';
+
 //  STATISTIQUES ADMIN — Dashboard dynamique
-// ════════════════════════════════════════════════════════════════════════════
+require __DIR__ . '/allroutes/dashboard_admin.php';
+
+//  DEMANDES DE DÉPÔT — Admin uniquement
 Route::middleware(['auth:sanctum', 'role:admin'])
-    ->prefix('admin/stats')
+    ->prefix('admin/deposits')
     ->group(function () {
-        Route::get('/', [UserController::class, 'getStats']);
-        Route::get('/deposits-by-month', [UserController::class, 'getDepositsByMonth']);
-        Route::get('/references-by-category', [UserController::class, 'getReferencesByCategory']);
+        Route::get('/', [DepositRequestController::class, 'index']);
+        Route::get('/{id}', [DepositRequestController::class, 'show']);
+        Route::patch('/{id}/assign', [DepositRequestController::class, 'assign']);
+        Route::patch('/{id}/approve', [DepositRequestController::class, 'approve']);
+        Route::patch('/{id}/reject', [DepositRequestController::class, 'reject']);
+        Route::patch('/{id}/publish', [DepositRequestController::class, 'publish']);
     });
 
-// ════════════════════════════════════════════════════════════════════════════
-//  ARCHIVES — Admin uniquement
-// ════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth:sanctum', 'role:admin'])
-    ->prefix('admin')
-    ->group(function () {
-        Route::get('/references/archived', [UserController::class, 'archivedReferences']);
-    });
+//  RÉFÉRENCES  — Admin uniquement
+require __DIR__ . '/allroutes/reference_admin.php';
 
-// ════════════════════════════════════════════════════════════════════════════
-//  RÉFÉRENCES — Admin uniquement
-// ════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth:sanctum', 'role:admin'])
-    ->prefix('references')
-    ->group(function () {
-        Route::patch('/{id}/restore', [ReferenceController::class, 'restore']);
-    });
 
-// ════════════════════════════════════════════════════════════════════════════
-//  JOURNAL D'ACTIVITÉ — Admin
-// ════════════════════════════════════════════════════════════════════════════
-Route::middleware(['auth:sanctum', 'role:admin'])
-    ->get('/admin/activity-logs', [ActivityLogController::class, 'indexForAdmin']);
-
-// ════════════════════════════════════════════════════════════════════════════
 //  TEST
-// ════════════════════════════════════════════════════════════════════════════
 Route::get('/test', fn () => response()->json(['status' => true, 'message' => 'API OK']));
