@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Author;
+use App\Http\Requests\Author\StoreAuthorRequest;
+use App\Http\Requests\Author\UpdateAuthorRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,11 +16,11 @@ class AuthorController extends Controller
         $query = Author::withCount('references');
 
         if ($request->filled('search')) {
-            $s = $request->search;
+            $search = $request->search;
             $query->where(fn($q) => $q
-                ->where('first_name', 'like', "%$s%")
-                ->orWhere('last_name', 'like', "%$s%")
-                ->orWhere('nationality', 'like', "%$s%")
+                ->where('first_name', 'like', '%' . $search . '%')
+                ->orWhere('last_name', 'like', '%' . $search . '%')
+                ->orWhere('nationality', 'like', '%' . $search . '%')
             );
         }
 
@@ -26,7 +28,7 @@ class AuthorController extends Controller
             $query->where('nationality', $request->nationality);
         }
 
-        $perPage = min((int) $request->get('per_page', 10), 100);
+        $perPage = min((int) $request->input('per_page', 10), 100);
         $paginator = $query->orderBy('last_name', 'asc')->paginate($perPage);
 
         return response()->json($paginator);
@@ -50,37 +52,19 @@ class AuthorController extends Controller
     }
 
     /** POST /admin/authors — Créer un auteur */
-    public function store(Request $request): JsonResponse
+    public function store(StoreAuthorRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'biography' => 'nullable|string|max:5000',
-            'nationality' => 'nullable|string|max:100',
-            'birth_date' => 'nullable|date',
-            'death_date' => 'nullable|date|after:birth_date',
-        ]);
-
-        $author = Author::create($validated);
+     
+        $author = Author::create($request->validated());
 
         return response()->json(['message' => 'Auteur créé avec succès.', 'author' => $author], 201);
     }
 
     /** PUT /admin/authors/:id — Modifier un auteur */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateAuthorRequest $request, int $id): JsonResponse
     {
         $author = Author::withCount('references')->findOrFail($id);
-
-        $validated = $request->validate([
-            'first_name' => 'sometimes|required|string|max:255',
-            'last_name' => 'sometimes|required|string|max:255',
-            'biography' => 'nullable|string|max:5000',
-            'nationality' => 'nullable|string|max:100',
-            'birth_date' => 'nullable|date',
-            'death_date' => 'nullable|date|after:birth_date',
-        ]);
-
-        $author->update($validated);
+        $author->update($request->validated());
 
         return response()->json(['message' => 'Auteur mis à jour avec succès.', 'author' => $author]);
     }

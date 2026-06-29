@@ -40,8 +40,8 @@ const detailsModal = ref({ visible: false, category: null, references: [] })
 // ─── Filtrage frontend ─────────────────────────────────────────────────────────
 
 const filteredCategories = computed(() => {
-  if (!categoryStore.categories.value) return []
-  let filtered = [...categoryStore.categories.value]
+  if (!categoryStore.categories) return []
+  let filtered = [...categoryStore.categories]
 
   // Filtrer par statut
   if (filterStatus.value) {
@@ -242,7 +242,7 @@ onMounted(() => {
       </div>
 
       <!-- Table -->
-      <div v-else-if="paginatedCategories.length > 0" class="overflow-x-auto">
+      <div v-else-if="categoryStore.categories && paginatedCategories.length > 0" class="overflow-x-auto">
         <table class="w-full">
           <thead>
             <tr class="border-b border-gray-100 pb-3">

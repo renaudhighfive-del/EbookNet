@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+// import { useRouter } from 'vue-router'
 import AdminLayout from '../../layouts/AdminLayout.vue'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
@@ -19,10 +19,10 @@ import {
   ShieldAlert,
   ChevronLeft,
   ChevronRight,
-  Link,
+  // Link,
 } from '@lucide/vue'
 
-const router = useRouter()
+// const router = useRouter()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 
@@ -53,11 +53,11 @@ const userModal = ref({
 // ── Tabs ───────────────────────────────────────────────────────────────────
 
 const tabs = computed(() => [
-  { key: '',                    label: 'Tous',           count: userStore.pagination.value?.total ?? 0 },
-  { key: 'admin',               label: 'Admins',         count: userStore.pagination.value?.counts?.admin ?? 0 },
-  { key: 'responsable_rh',      label: 'Resp. RH',       count: userStore.pagination.value?.counts?.responsable_rh ?? 0 },
-  { key: 'responsable_demande', label: 'Resp. Demandes', count: userStore.pagination.value?.counts?.responsable_demande ?? 0 },
-  { key: 'user',                label: 'Utilisateurs',   count: userStore.pagination.value?.counts?.user ?? 0 },
+  { key: '',                    label: 'Tous',           count: userStore.pagination?.total ?? 0 },
+  { key: 'admin',               label: 'Admins',         count: userStore.pagination?.counts?.admin ?? 0 },
+  { key: 'responsable_rh',      label: 'Resp. RH',       count: userStore.pagination?.counts?.responsable_rh ?? 0 },
+  { key: 'responsable_demande', label: 'Resp. Demandes', count: userStore.pagination?.counts?.responsable_demande ?? 0 },
+  { key: 'user',                label: 'Utilisateurs',   count: userStore.pagination?.counts?.user ?? 0 },
 ])
 
 const selectTab = (key) => {
@@ -71,9 +71,9 @@ const selectTab = (key) => {
 const perPageOptions = [10, 25, 50, 100]
 
 const visiblePages = computed(() => {
-  if (!userStore.pagination.value?.last_page) return []
-  const c = userStore.pagination.value.current_page
-  const l = userStore.pagination.value.last_page
+  if (!userStore.pagination?.last_page) return []
+  const c = userStore.pagination.current_page
+  const l = userStore.pagination.last_page
   const pages = []
   
   // Toujours afficher la première page
@@ -233,7 +233,7 @@ onMounted(() => fetchUsers())
       >
         <div
           v-if="toast.message"
-          class="fixed bottom-6 right-6 z-[60] flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium"
+          class="fixed bottom-6 right-6 z-60 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium"
           :class="toast.type === 'success' ? 'bg-[#0D9488]' : 'bg-red-500'"
         >
           <component :is="toast.type === 'success' ? CheckCircle : XCircle" class="w-4 h-4 shrink-0" />
@@ -285,7 +285,7 @@ onMounted(() => fetchUsers())
     <!-- ── Toolbar : recherche + filtres ─────────────────────────────── -->
     <div class="flex flex-wrap items-center gap-3 mb-5">
       <!-- Recherche -->
-      <div class="relative flex-1 min-w-[220px]">
+      <div class="relative flex-1 min-w-55">
         <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
         <input
           v-model="searchQuery"
@@ -335,20 +335,8 @@ onMounted(() => fetchUsers())
       <div class="w-9 h-9 rounded-full border-2 border-t-[#0D9488] border-gray-100 animate-spin"></div>
     </div>
 
-    <!-- ── Empty ──────────────────────────────────────────────────────── -->
-    <div
-      v-else-if="userStore.users.value.length === 0"
-      class="bg-white rounded-2xl border border-gray-100 py-20 flex flex-col items-center text-center"
-    >
-      <div class="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
-        <Users class="w-7 h-7 text-gray-300" />
-      </div>
-      <p class="font-semibold text-[#1B2A4A] mb-1">Aucun utilisateur trouvé</p>
-      <p class="text-sm text-gray-400">Modifiez vos filtres ou créez un nouveau compte.</p>
-    </div>
-
     <!-- ── Table ──────────────────────────────────────────────────────── -->
-    <div v-else class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+    <div v-else-if="userStore.users && userStore.users.length > 0" class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <!-- Head -->
@@ -369,7 +357,7 @@ onMounted(() => fetchUsers())
           <!-- Body -->
           <tbody class="divide-y divide-gray-50">
             <tr
-              v-for="user in userStore.users.value"
+              v-for="user in userStore.users || []"
               :key="user.id"
               class="group hover:bg-[#F8F7F4] transition-colors"
               :class="{ 'bg-red-50/30': user.status === 'suspended', 'opacity-60': user.status === 'archived' }"
@@ -535,6 +523,18 @@ onMounted(() => fetchUsers())
           </tbody>
         </table>
       </div>
+    </div>
+
+    <!-- ── Empty ──────────────────────────────────────────────────────── -->
+    <div
+      v-else
+      class="bg-white rounded-2xl border border-gray-100 py-20 flex flex-col items-center text-center"
+    >
+      <div class="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
+        <Users class="w-7 h-7 text-gray-300" />
+      </div>
+      <p class="font-semibold text-[#1B2A4A] mb-1">Aucun utilisateur trouvé</p>
+      <p class="text-sm text-gray-400">Modifiez vos filtres ou créez un nouveau compte.</p>
     </div>
 
     <!-- ── Pagination ──────────────────────────────────────────────────── -->

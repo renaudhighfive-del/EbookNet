@@ -1,15 +1,14 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DepositRequestController;
 use Illuminate\Support\Facades\Route;
 
 //  AUTH — Public
 Route::prefix('auth')->group(function () {
-    Route::post('/register',        [AuthController::class, 'register']);
-    Route::post('/login',           [AuthController::class, 'login']);
-    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/reset-password',  [AuthController::class, 'resetPassword']);
+    Route::post('/register',        [AuthController::class, 'register'])->middleware('throttle:3,60');
+    Route::post('/login',           [AuthController::class, 'login'])->middleware('throttle:5,60');
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,60');
+    Route::post('/reset-password',  [AuthController::class, 'resetPassword'])->middleware('throttle:3,60');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -32,22 +31,16 @@ require __DIR__ . '/allroutes/categories.php';
 //  GESTION DES AUTEURS — Admin uniquement
 require __DIR__ . '/allroutes/authors.php';
 
+//  GESTION DES ÉDITEURS — Admin uniquement
+require __DIR__ . '/allroutes/publishers.php';
+
 //  STATISTIQUES ADMIN — Dashboard dynamique
 require __DIR__ . '/allroutes/dashboard_admin.php';
 
 //  DEMANDES DE DÉPÔT — Admin uniquement
-Route::middleware(['auth:sanctum', 'role:admin'])
-    ->prefix('admin/deposits')
-    ->group(function () {
-        Route::get('/', [DepositRequestController::class, 'index']);
-        Route::get('/{id}', [DepositRequestController::class, 'show']);
-        Route::patch('/{id}/assign', [DepositRequestController::class, 'assign']);
-        Route::patch('/{id}/approve', [DepositRequestController::class, 'approve']);
-        Route::patch('/{id}/reject', [DepositRequestController::class, 'reject']);
-        Route::patch('/{id}/publish', [DepositRequestController::class, 'publish']);
-    });
+require __DIR__ . '/allroutes/deposit_request.php';
 
-//  RÉFÉRENCES  — Admin uniquement
+//  RÉFÉRENCES — Admin uniquement
 require __DIR__ . '/allroutes/reference_admin.php';
 
 

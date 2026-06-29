@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\DepositRequest;
+use App\Http\Requests\Deposit\AssignDepositRequest;
+use App\Http\Requests\Deposit\RejectDepositRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,11 +23,11 @@ class DepositRequestController extends Controller
 
         // Recherche
         if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(function ($q) use ($s) {
-                $q->where('title', 'like', "%{$s}%")
-                  ->orWhereHas('applicant', fn($q) => $q->where('first_name', 'like', "%{$s}%")
-                                                    ->orWhere('last_name', 'like', "%{$s}%"));
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                  ->orWhereHas('applicant', fn($q) => $q->where('first_name', 'like', '%' . $search . '%')
+                                                    ->orWhere('last_name', 'like', '%' . $search . '%'));
             });
         }
 
@@ -46,10 +48,8 @@ class DepositRequestController extends Controller
     }
 
     /** PATCH /admin/deposits/{id}/assign — Assigner un responsable à une demande */
-    public function assign(Request $request, int $id): JsonResponse
+    public function assign(AssignDepositRequest $request, int $id): JsonResponse
     {
-        $request->validate(['assigned_manager_id' => 'required|exists:users,id']);
-
         $deposit = DepositRequest::findOrFail($id);
         $deposit->update([
             'assigned_manager_id' => $request->assigned_manager_id,
@@ -80,10 +80,8 @@ class DepositRequestController extends Controller
     }
 
     /** PATCH /admin/deposits/{id}/reject — Rejeter une demande (manager) */
-    public function reject(Request $request, int $id): JsonResponse
+    public function reject(RejectDepositRequest $request, int $id): JsonResponse
     {
-        $request->validate(['justification' => 'required|string']);
-
         $deposit = DepositRequest::findOrFail($id);
 
         if ($deposit->status !== 'assigned') {
@@ -104,7 +102,7 @@ class DepositRequestController extends Controller
     /** PATCH /admin/deposits/{id}/publish — Publier une référence (admin final) */
     public function publish(Request $request, int $id): JsonResponse
     {
-        $deposit = DepositRequest::findOrFail($id);
+        $deposit = DepositRequest::with('category')->findOrFail($id);
 
         if ($deposit->status !== 'approved_by_manager') {
             return response()->json(['message' => 'Cette demande doit être approuvée par le manager avant publication.'], 400);
@@ -116,16 +114,20 @@ class DepositRequestController extends Controller
             'abstract' => $deposit->description,
             'publication_year' => $deposit->publication_year,
             'category_id' => $deposit->category_id,
+            'file_path' => $deposit->proposed_file,
             'status' => 'published',
             'uploaded_by' => $deposit->applicant_id,
         ]);
 
-        // Marquer la demande comme publiée
-        $deposit->update(['status' => 'published']);
+        // Associer le dépôt à la référence créée
+        $deposit->update([
+            'status' => 'published',
+            'reference_id' => $reference->id,
+        ]);
 
         return response()->json([
             'message' => 'Référence publiée avec succès.',
-            'reference' => $reference,
+            'reference' => $reference->load('category'),
             'deposit_request' => $deposit,
         ]);
     }

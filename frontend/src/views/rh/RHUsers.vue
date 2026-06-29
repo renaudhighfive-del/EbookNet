@@ -1,3 +1,242 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import RHLayout from '@/layouts/RHLayout.vue'
+import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
+import {
+  Search,
+  UserPlus,
+  Eye,
+  Pencil,
+  UserX,
+  UserCheck,
+  Ban,
+  Archive,
+  Users,
+  CheckCircle,
+  XCircle,
+  ChevronLeft,
+  ChevronRight,
+} from '@lucide/vue'
+
+const userStore = useUserStore()
+const authStore = useAuthStore()
+
+const currentUserId = computed(() => authStore.user?.id)
+
+const isCurrentUser = (userId) => currentUserId.value === userId
+
+const searchQuery = ref('')
+const searchTimeout = ref(null)
+const filters = ref({ role: '', status: '' })
+const toast = ref({ message: '', type: 'success' })
+const perPage = ref(10)
+
+const modal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  confirmLabel: '',
+  danger: false,
+  action: null,
+})
+
+// Modal de création/modification d'utilisateur
+const userModal = ref({
+  visible: false,
+  isEdit: false,
+  userId: null,
+  form: {
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'user',
+    status: 'active',
+  },
+  serverErrors: {},
+})
+
+const openCreateModal = () => {
+  userModal.value.visible = true
+  userModal.value.isEdit = false
+  userModal.value.userId = null
+  userModal.value.form = {
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'user',
+    status: 'active',
+  }
+  userModal.value.serverErrors = {}
+}
+
+const openEditModal = async (user) => {
+  try {
+    const userData = await userStore.fetchUser(user.id)
+    userModal.value.visible = true
+    userModal.value.isEdit = true
+    userModal.value.userId = user.id
+    userModal.value.form = {
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      email: userData.email,
+      phone: userData.phone || '',
+      password: '',
+      role: userData.role,
+      status: userData.status,
+    }
+    userModal.value.serverErrors = {}
+  } catch {
+    showToast("Impossible de charger les informations de l'utilisateur.", 'error')
+  }
+}
+
+const closeUserModal = () => {
+  userModal.value.visible = false
+}
+
+const handleUserSubmit = async () => {
+  userModal.value.serverErrors = {}
+  const payload = { ...userModal.value.form }
+  if (userModal.value.isEdit && !payload.password) delete payload.password
+
+  try {
+    if (userModal.value.isEdit) {
+      await userStore.updateUser(userModal.value.userId, payload)
+      showToast('Modifications enregistrées avec succès.', 'success')
+    } else {
+      await userStore.createUser(payload)
+      showToast('Compte créé avec succès.', 'success')
+    }
+    closeUserModal()
+    fetchUsers(1)
+  } catch (err) {
+    if (err.response?.status === 422) {
+      userModal.value.serverErrors = err.response.data.errors ?? {}
+      showToast('Veuillez corriger les erreurs dans le formulaire.', 'error')
+    } else {
+      showToast(err.response?.data?.message ?? 'Une erreur est survenue.', 'error')
+    }
+  }
+}
+
+const perPageOptions = [10, 25, 50, 100]
+
+const visiblePages = computed(() => {
+  if (!userStore.pagination.last_page) return []
+  const c = userStore.pagination.current_page,
+    l = userStore.pagination.last_page
+  const pages = []
+  
+  // Toujours afficher la première page
+  if (c > 3) pages.push(1)
+  
+  // Ellipsis après la première page si nécessaire
+  if (c > 4) pages.push('...')
+  
+  // Pages autour de la page courante
+  for (let i = Math.max(2, c - 1); i <= Math.min(l - 1, c + 1); i++) pages.push(i)
+  
+  // Ellipsis avant la dernière page si nécessaire
+  if (c < l - 3) pages.push('...')
+  
+  // Toujours afficher la dernière page
+  if (l > 1 && c < l - 1) pages.push(l)
+  
+  // Si peu de pages, afficher toutes
+  if (l <= 7) {
+    pages.length = 0
+    for (let i = 1; i <= l; i++) pages.push(i)
+  }
+  
+  return pages
+})
+
+const fetchUsers = (page = 1) => {
+  const params = { page, per_page: perPage.value }
+  if (filters.value.role) params.role = filters.value.role
+  if (filters.value.status) params.status = filters.value.status
+  if (searchQuery.value) params.search = searchQuery.value
+  userStore.fetchUsers(params).catch(() => showToast('Erreur lors du chargement.', 'error'))
+}
+
+const onSearchInput = () => {
+  clearTimeout(searchTimeout.value)
+  searchTimeout.value = setTimeout(() => fetchUsers(1), 400)
+}
+
+/* Actions rapides sans confirmation */
+const quickAction = async (type, user) => {
+  try {
+    if (type === 'activate') {
+      await userStore.updateStatus(user.id, 'active')
+      showToast('Compte réactivé.', 'success')
+    }
+  } catch {
+    showToast("Erreur lors de l'action.", 'error')
+  }
+}
+
+/* Ouvrir modal de confirmation */
+const confirmAction = ({ type, user }) => {
+  const configs = {
+    approve: {
+      title: 'Approuver le compte',
+      message: `Activer le compte de ${user.first_name} ${user.last_name} ? L'utilisateur pourra se connecter.`,
+      confirmLabel: 'Approuver',
+      danger: false,
+      fn: () => userStore.approveUser(user.id),
+    },
+    deactivate: {
+      title: 'Désactiver le compte',
+      message: `Désactiver le compte de ${user.first_name} ${user.last_name} ? L'utilisateur ne pourra plus se connecter.`,
+      confirmLabel: 'Désactiver',
+      danger: true,
+      fn: () => userStore.updateStatus(user.id, 'inactive'),
+    },
+    'request-suspend': {
+      title: 'Demande de suspension',
+      message: `Proposer la suspension de ${user.first_name} ${user.last_name} ? L'administrateur devra valider cette décision.`,
+      confirmLabel: 'Soumettre la demande',
+      danger: true,
+      fn: () => userStore.requestSuspend(user.id),
+    },
+    archive: {
+      title: 'Archiver le compte',
+      message: `Archiver définitivement le compte de ${user.first_name} ${user.last_name} ? Cette action n'est réversible que par l'admin.`,
+      confirmLabel: 'Archiver',
+      danger: true,
+      fn: () => userStore.archiveUser(user.id),
+    },
+  }
+  const cfg = configs[type]
+  if (!cfg) return
+  modal.value = { visible: true, ...cfg, action: cfg.fn }
+}
+
+const executeModal = async () => {
+  try {
+    await modal.value.action()
+    showToast('Action effectuée avec succès.', 'success')
+    modal.value.visible = false
+  } catch {
+    showToast("Erreur lors de l'action.", 'error')
+  }
+}
+
+const showToast = (message, type = 'success') => {
+  toast.value = { message, type }
+  setTimeout(() => (toast.value = { message: '', type: 'success' }), 3500)
+}
+
+onMounted(() => fetchUsers())
+</script>
+
+
 <template>
   <RHLayout>
     <template #title>
@@ -20,7 +259,7 @@
       >
         <div
           v-if="toast.message"
-          class="fixed bottom-6 right-6 z-[60] px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium flex items-center gap-2"
+          class="fixed bottom-6 right-6 z-60 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium flex items-center gap-2"
           :class="toast.type === 'success' ? 'bg-[#0D9488]' : 'bg-red-600'"
         >
           <component
@@ -89,18 +328,8 @@
       ></div>
     </div>
 
-    <!-- Empty -->
-    <div
-      v-else-if="userStore.users.value.length === 0"
-      class="bg-white rounded-2xl border border-gray-100 py-16 text-center"
-    >
-      <Users class="w-10 h-10 text-gray-300 mx-auto mb-3" />
-      <p class="font-medium text-[#1B2A4A]">Aucun utilisateur trouvé</p>
-      <p class="text-sm text-gray-400 mt-1">Modifiez vos filtres ou créez un nouveau compte.</p>
-    </div>
-
     <!-- Table -->
-    <div v-else class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+    <div v-else-if="userStore.users && userStore.users.length > 0" class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="bg-[#F8F7F4] border-b border-gray-100">
@@ -138,7 +367,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="user in userStore.users.value" :key="user.id" class="hover:bg-[#F8F7F4] transition-colors">
+            <tr v-for="user in userStore.users || []" :key="user.id" class="hover:bg-[#F8F7F4] transition-colors">
               <!-- Utilisateur -->
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
@@ -270,6 +499,16 @@
           </tbody>
         </table>
       </div>
+    </div>
+
+    <!-- Empty -->
+    <div
+      v-else
+      class="bg-white rounded-2xl border border-gray-100 py-16 text-center"
+    >
+      <Users class="w-10 h-10 text-gray-300 mx-auto mb-3" />
+      <p class="font-medium text-[#1B2A4A]">Aucun utilisateur trouvé</p>
+      <p class="text-sm text-gray-400 mt-1">Modifiez vos filtres ou créez un nouveau compte.</p>
     </div>
 
     <!-- Pagination -->
@@ -503,240 +742,3 @@
   </RHLayout>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import RHLayout from '@/layouts/RHLayout.vue'
-import { useUserStore } from '@/stores/user'
-import { useAuthStore } from '@/stores/auth'
-import {
-  Search,
-  UserPlus,
-  Eye,
-  Pencil,
-  UserX,
-  UserCheck,
-  Ban,
-  Archive,
-  Users,
-  CheckCircle,
-  XCircle,
-  ChevronLeft,
-  ChevronRight,
-} from '@lucide/vue'
-
-const userStore = useUserStore()
-const authStore = useAuthStore()
-
-const currentUserId = computed(() => authStore.user?.id)
-
-const isCurrentUser = (userId) => currentUserId.value === userId
-
-const searchQuery = ref('')
-const searchTimeout = ref(null)
-const filters = ref({ role: '', status: '' })
-const toast = ref({ message: '', type: 'success' })
-const perPage = ref(10)
-
-const modal = ref({
-  visible: false,
-  title: '',
-  message: '',
-  confirmLabel: '',
-  danger: false,
-  action: null,
-})
-
-// Modal de création/modification d'utilisateur
-const userModal = ref({
-  visible: false,
-  isEdit: false,
-  userId: null,
-  form: {
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    password: '',
-    role: 'user',
-    status: 'active',
-  },
-  serverErrors: {},
-})
-
-const openCreateModal = () => {
-  userModal.value.visible = true
-  userModal.value.isEdit = false
-  userModal.value.userId = null
-  userModal.value.form = {
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    password: '',
-    role: 'user',
-    status: 'active',
-  }
-  userModal.value.serverErrors = {}
-}
-
-const openEditModal = async (user) => {
-  try {
-    const userData = await userStore.fetchUser(user.id)
-    userModal.value.visible = true
-    userModal.value.isEdit = true
-    userModal.value.userId = user.id
-    userModal.value.form = {
-      first_name: userData.first_name,
-      last_name: userData.last_name,
-      email: userData.email,
-      phone: userData.phone || '',
-      password: '',
-      role: userData.role,
-      status: userData.status,
-    }
-    userModal.value.serverErrors = {}
-  } catch {
-    showToast("Impossible de charger les informations de l'utilisateur.", 'error')
-  }
-}
-
-const closeUserModal = () => {
-  userModal.value.visible = false
-}
-
-const handleUserSubmit = async () => {
-  userModal.value.serverErrors = {}
-  const payload = { ...userModal.value.form }
-  if (userModal.value.isEdit && !payload.password) delete payload.password
-
-  try {
-    if (userModal.value.isEdit) {
-      await userStore.updateUser(userModal.value.userId, payload)
-      showToast('Modifications enregistrées avec succès.', 'success')
-    } else {
-      await userStore.createUser(payload)
-      showToast('Compte créé avec succès.', 'success')
-    }
-    closeUserModal()
-    fetchUsers(1)
-  } catch (err) {
-    if (err.response?.status === 422) {
-      userModal.value.serverErrors = err.response.data.errors ?? {}
-      showToast('Veuillez corriger les erreurs dans le formulaire.', 'error')
-    } else {
-      showToast(err.response?.data?.message ?? 'Une erreur est survenue.', 'error')
-    }
-  }
-}
-
-const perPageOptions = [10, 25, 50, 100]
-
-const visiblePages = computed(() => {
-  if (!userStore.pagination.value.last_page) return []
-  const c = userStore.pagination.value.current_page,
-    l = userStore.pagination.value.last_page
-  const pages = []
-  
-  // Toujours afficher la première page
-  if (c > 3) pages.push(1)
-  
-  // Ellipsis après la première page si nécessaire
-  if (c > 4) pages.push('...')
-  
-  // Pages autour de la page courante
-  for (let i = Math.max(2, c - 1); i <= Math.min(l - 1, c + 1); i++) pages.push(i)
-  
-  // Ellipsis avant la dernière page si nécessaire
-  if (c < l - 3) pages.push('...')
-  
-  // Toujours afficher la dernière page
-  if (l > 1 && c < l - 1) pages.push(l)
-  
-  // Si peu de pages, afficher toutes
-  if (l <= 7) {
-    pages.length = 0
-    for (let i = 1; i <= l; i++) pages.push(i)
-  }
-  
-  return pages
-})
-
-const fetchUsers = (page = 1) => {
-  const params = { page, per_page: perPage.value }
-  if (filters.value.role) params.role = filters.value.role
-  if (filters.value.status) params.status = filters.value.status
-  if (searchQuery.value) params.search = searchQuery.value
-  userStore.fetchUsers(params).catch(() => showToast('Erreur lors du chargement.', 'error'))
-}
-
-const onSearchInput = () => {
-  clearTimeout(searchTimeout.value)
-  searchTimeout.value = setTimeout(() => fetchUsers(1), 400)
-}
-
-/* Actions rapides sans confirmation */
-const quickAction = async (type, user) => {
-  try {
-    if (type === 'activate') {
-      await userStore.updateStatus(user.id, 'active')
-      showToast('Compte réactivé.', 'success')
-    }
-  } catch {
-    showToast("Erreur lors de l'action.", 'error')
-  }
-}
-
-/* Ouvrir modal de confirmation */
-const confirmAction = ({ type, user }) => {
-  const configs = {
-    approve: {
-      title: 'Approuver le compte',
-      message: `Activer le compte de ${user.first_name} ${user.last_name} ? L'utilisateur pourra se connecter.`,
-      confirmLabel: 'Approuver',
-      danger: false,
-      fn: () => userStore.approveUser(user.id),
-    },
-    deactivate: {
-      title: 'Désactiver le compte',
-      message: `Désactiver le compte de ${user.first_name} ${user.last_name} ? L'utilisateur ne pourra plus se connecter.`,
-      confirmLabel: 'Désactiver',
-      danger: true,
-      fn: () => userStore.updateStatus(user.id, 'inactive'),
-    },
-    'request-suspend': {
-      title: 'Demande de suspension',
-      message: `Proposer la suspension de ${user.first_name} ${user.last_name} ? L'administrateur devra valider cette décision.`,
-      confirmLabel: 'Soumettre la demande',
-      danger: true,
-      fn: () => userStore.requestSuspend(user.id),
-    },
-    archive: {
-      title: 'Archiver le compte',
-      message: `Archiver définitivement le compte de ${user.first_name} ${user.last_name} ? Cette action n'est réversible que par l'admin.`,
-      confirmLabel: 'Archiver',
-      danger: true,
-      fn: () => userStore.archiveUser(user.id),
-    },
-  }
-  const cfg = configs[type]
-  if (!cfg) return
-  modal.value = { visible: true, ...cfg, action: cfg.fn }
-}
-
-const executeModal = async () => {
-  try {
-    await modal.value.action()
-    showToast('Action effectuée avec succès.', 'success')
-    modal.value.visible = false
-  } catch {
-    showToast("Erreur lors de l'action.", 'error')
-  }
-}
-
-const showToast = (message, type = 'success') => {
-  toast.value = { message, type }
-  setTimeout(() => (toast.value = { message: '', type: 'success' }), 3500)
-}
-
-onMounted(() => fetchUsers())
-</script>

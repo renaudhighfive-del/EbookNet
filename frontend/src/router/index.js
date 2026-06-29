@@ -30,160 +30,192 @@ import AdminActivityLogs from '../views/admin/AdminActivityLogs.vue'
 import AdminArchive from '../views/admin/AdminArchive.vue'
 import { setupAuthGuards } from './guards'
 
+const routes = [
+  {
+    path: '/',
+    name: 'home',
+    component: HomeView,
+    meta: { public: true },
+  },
+  {
+    path: '/catalogue',
+    name: 'catalogue',
+    component: CatalogueView,
+    meta: { public: true },
+  },
+  {
+    path: '/catalogue/:id',
+    name: 'document-detail',
+    component: DocumentDetailView,
+    meta: { public: true },
+  },
+  {
+    path: '/recherche',
+    name: 'search',
+    component: SearchView,
+    meta: { public: true },
+  },
+  {
+    path: '/connexion',
+    name: 'auth',
+    component: AuthView,
+    meta: { public: true },
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: Dashboard,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/my-documents',
+    name: 'my-documents',
+    component: MyDocuments,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/deposit-request',
+    name: 'deposit-request',
+    component: DepositRequest,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: Profile,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/manager/dashboard',
+    name: 'manager-dashboard',
+    component: ManagerDashboard,
+    meta: { requiresAuth: true, roles: ['responsable_demande', 'admin'] },
+  },
+  {
+    path: '/manager/deposits',
+    name: 'manager-deposits',
+    component: ManagerDeposits,
+    meta: { requiresAuth: true, roles: ['responsable_demande', 'admin'] },
+  },
+  {
+    path: '/manager/deposits/:id/review',
+    name: 'manager-deposit-review',
+    component: ManagerDepositReview,
+    meta: { requiresAuth: true, roles: ['responsable_demande', 'admin'] },
+  },
+  {
+    path: '/manager/profile',
+    name: 'manager-profile',
+    component: ManagerProfile,
+    meta: { requiresAuth: true, roles: ['responsable_demande', 'admin'] },
+  },
+  {
+    path: '/rh/dashboard',
+    name: 'rh-dashboard',
+    component: RHDashboard,
+    meta: { requiresAuth: true, roles: ['responsable_rh', 'admin'] },
+  },
+  {
+    path: '/rh/users',
+    name: 'rh-users',
+    component: RHUsers,
+    meta: { requiresAuth: true, roles: ['responsable_rh', 'admin'] },
+  },
+  {
+    path: '/rh/users/new',
+    name: 'rh-user-new',
+    component: RHUserForm,
+    meta: { requiresAuth: true, roles: ['responsable_rh', 'admin'] },
+  },
+  {
+    path: '/rh/users/:id',
+    name: 'rh-user-detail',
+    component: RHUserDetail,
+    meta: { requiresAuth: true, roles: ['responsable_rh', 'admin'] },
+  },
+  {
+    path: '/rh/users/:id/edit',
+    name: 'rh-user-edit',
+    component: RHUserForm,
+    meta: { requiresAuth: true, roles: ['responsable_rh', 'admin'] },
+  },
+  {
+    path: '/rh/profile',
+    name: 'rh-profile',
+    component: RHProfile,
+    meta: { requiresAuth: true, roles: ['responsable_rh', 'admin'] },
+  },
+  {
+    path: '/rh/activity-logs',
+    name: 'rh-activity-logs',
+    component: RHActivityLogs,
+    meta: { requiresAuth: true, roles: ['responsable_rh', 'admin'] },
+  },
+  {
+    path: '/rh/archive',
+    name: 'rh-archive',
+    component: RHArchive,
+    meta: { requiresAuth: true, roles: ['responsable_rh', 'admin'] },
+  },
+  {
+    path: '/admin/dashboard',
+    name: 'admin-dashboard',
+    component: AdminDashboard,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/demandes',
+    name: 'admin-demandes',
+    component: AdminDepositRequests,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/references',
+    name: 'admin-references',
+    component: AdminReferencesList,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/utilisateurs',
+    name: 'admin-utilisateurs',
+    component: AdminUsersList,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/categories',
+    name: 'admin-categories',
+    component: AdminCategories,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/auteurs',
+    name: 'admin-auteurs',
+    component: AdminAuthors,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/editeurs',
+    name: 'admin-editeurs',
+    component: AdminEditeurs,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/activity-logs',
+    name: 'admin-activity-logs',
+    component: AdminActivityLogs,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/archive',
+    name: 'admin-archive',
+    component: AdminArchive,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+]
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/catalogue',
-      name: 'catalogue',
-      component: CatalogueView,
-    },
-    {
-      path: '/catalogue/:id',
-      name: 'document-detail',
-      component: DocumentDetailView,
-    },
-    {
-      path: '/recherche',
-      name: 'search',
-      component: SearchView,
-    },
-    {
-      path: '/connexion',
-      name: 'auth',
-      component: AuthView,
-    },
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: Dashboard,
-    },
-    {
-      path: '/my-documents',
-      name: 'my-documents',
-      component: MyDocuments,
-    },
-    {
-      path: '/deposit-request',
-      name: 'deposit-request',
-      component: DepositRequest,
-    },
-    {
-      path: '/profile',
-      name: 'profile',
-      component: Profile,
-    },
-    {
-      path: '/manager/dashboard',
-      name: 'manager-dashboard',
-      component: ManagerDashboard,
-    },
-    {
-      path: '/manager/deposits',
-      name: 'manager-deposits',
-      component: ManagerDeposits,
-    },
-    {
-      path: '/manager/deposits/:id/review',
-      name: 'manager-deposit-review',
-      component: ManagerDepositReview,
-    },
-    {
-      path: '/manager/profile',
-      name: 'manager-profile',
-      component: ManagerProfile,
-    },
-    {
-      path: '/rh/dashboard',
-      name: 'rh-dashboard',
-      component: RHDashboard,
-    },
-    {
-      path: '/rh/users',
-      name: 'rh-users',
-      component: RHUsers,
-    },
-    {
-      path: '/rh/users/new',
-      name: 'rh-user-new',
-      component: RHUserForm,
-    },
-    {
-      path: '/rh/users/:id',
-      name: 'rh-user-detail',
-      component: RHUserDetail,
-    },
-    {
-      path: '/rh/users/:id/edit',
-      name: 'rh-user-edit',
-      component: RHUserForm,
-    },
-    {
-      path: '/rh/profile',
-      name: 'rh-profile',
-      component: RHProfile,
-    },
-    {
-      path: '/rh/activity-logs',
-      name: 'rh-activity-logs',
-      component: RHActivityLogs,
-    },
-    {
-      path: '/rh/archive',
-      name: 'rh-archive',
-      component: RHArchive,
-    },
-    {
-      path: '/admin/dashboard',
-      name: 'admin-dashboard',
-      component: AdminDashboard,
-    },
-    {
-      path: '/admin/demandes',
-      name: 'admin-demandes',
-      component: AdminDepositRequests,
-    },
-    {
-      path: '/admin/references',
-      name: 'admin-references',
-      component: AdminReferencesList,
-    },
-    {
-      path: '/admin/utilisateurs',
-      name: 'admin-utilisateurs',
-      component: AdminUsersList,
-    },
-    {
-      path: '/admin/categories',
-      name: 'admin-categories',
-      component: AdminCategories,
-    },
-    {
-      path: '/admin/auteurs',
-      name: 'admin-auteurs',
-      component: AdminAuthors,
-    },
-    {
-      path: '/admin/editeurs',
-      name: 'admin-editeurs',
-      component: AdminEditeurs,
-    },
-    {
-      path: '/admin/activity-logs',
-      name: 'admin-activity-logs',
-      component: AdminActivityLogs,
-    },
-    {
-      path: '/admin/archive',
-      name: 'admin-archive',
-      component: AdminArchive,
-    },
-  ],
+  routes,
   scrollBehavior(to, from, savedPosition) {
     return savedPosition || { top: 0 }
   },

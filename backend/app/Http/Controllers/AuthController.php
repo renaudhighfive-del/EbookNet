@@ -48,7 +48,6 @@ class AuthController extends Controller
         $user->update(['last_login_at' => now()]);
         $user->loadMissing(['depositRequests', 'notifications']);
 
-        // Log login activity (temporarily disabled)
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'login',
@@ -86,7 +85,6 @@ class AuthController extends Controller
         $user = auth()->user();
 
         if ($user) {
-            // Log logout activity (temporarily disabled)
             ActivityLog::create([
                 'user_id' => $user->id,
                 'action' => 'logout',
@@ -118,9 +116,9 @@ class AuthController extends Controller
             $request->only('email')
         );
 
-        return $status === Password::RESET_LINK_SENT
-            ? response()->json(['message' => 'Lien de réinitialisation envoyé.'])
-            : response()->json(['message' => 'Erreur lors de l\'envoi du lien.'], 500);
+        return response()->json([
+            'message' => 'Si cette adresse e-mail existe dans notre système, un lien de réinitialisation vous a été envoyé.',
+        ]);
     }
 
     public function resetPassword(ResetPasswordRequest $request): JsonResponse

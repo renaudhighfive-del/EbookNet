@@ -2,17 +2,23 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import api from '@/services/api'
 import { Eye, EyeOff, BookOpen, Library, Download, Clock, CheckCircle } from '@lucide/vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 const activeTab = ref('login')
+const showForgotPassword = ref(false)
 const showLoginPassword = ref(false)
 const showRegisterPassword = ref(false)
 const isLoading = ref(false)
 const loginError = ref('')
+const registerError = ref('')
 const registerSuccess = ref(false)
+const forgotForm = ref({ email: '' })
+const forgotSent = ref(false)
+const forgotError = ref('')
 
 const loginForm = ref({ email: '', password: '' })
 const registerForm = ref({
@@ -59,8 +65,24 @@ const handleLogin = async () => {
   }
 }
 
+const handleForgotPassword = async () => {
+  isLoading.value = true
+  forgotError.value = ''
+  forgotSent.value = false
+  try {
+    await api.post('/auth/forgot-password', { email: forgotForm.value.email })
+    forgotSent.value = true
+  } catch (error) {
+    forgotError.value = error.response?.data?.message
+      ?? "Une erreur est survenue. Veuillez réessayer."
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const handleRegister = async () => {
   isLoading.value = true
+  registerError.value = ''
   try {
     await authStore.register({
       first_name: registerForm.value.firstName,
@@ -71,7 +93,12 @@ const handleRegister = async () => {
     })
     registerSuccess.value = true
   } catch (error) {
-    console.error('Registration failed:', error)
+    const data = error.response?.data
+    if (data?.errors) {
+      registerError.value = Object.values(data.errors).flat().join(' ')
+    } else {
+      registerError.value = data?.message ?? "Une erreur est survenue lors de l'inscription."
+    }
   } finally {
     isLoading.value = false
   }
@@ -135,8 +162,8 @@ const handleRegister = async () => {
     <!-- Panneau droit -->
     <div class="flex-1 flex items-center justify-center p-8 bg-white">
       <div class="w-full max-w-md">
-        <!-- Onglets -->
-        <div class="flex border-b border-gray-200 mb-8">
+        <!-- Onglets (cachés si mot de passe oublié) -->
+        <div v-if="!showForgotPassword" class="flex border-b border-gray-200 mb-8">
           <button
             @click="activeTab = 'login'"
             class="flex-1 pb-3 text-center text-sm font-semibold transition-colors"
@@ -218,9 +245,11 @@ const handleRegister = async () => {
               </div>
             </div>
             <div class="text-right">
-              <a href="#" class="text-[#0D9488] text-sm font-medium hover:underline"
-                >Mot de passe oublié ?</a
-              >
+              <button
+                type="button"
+                @click="showForgotPassword = true"
+                class="text-[#0D9488] text-sm font-medium hover:underline"
+              >Mot de passe oublié ?</button>
             </div>
             <button
               type="submit"
@@ -245,6 +274,71 @@ const handleRegister = async () => {
               S'inscrire
             </button>
           </p>
+        </div>
+
+        <!-- ── MOT DE PASSE OUBLIÉ ── -->
+        <div v-else-if="showForgotPassword">
+          <button
+            type="button"
+            @click="showForgotPassword = false; forgotSent = false; forgotError = ''"
+            class="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1B2A4A] mb-6 transition-colors"
+          >
+            <span>← Retour à la connexion</span>
+          </button>
+
+          <h2 class="text-2xl font-bold text-[#1B2A4A] mb-2 font-serif">Mot de passe oublié</h2>
+          <p class="text-sm text-gray-500 mb-6">
+            Saisissez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.
+          </p>
+
+          <div
+            v-if="forgotError"
+            class="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-start gap-2.5"
+          >
+            <div
+              class="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center shrink-0 mt-0.5"
+            >
+              <span class="text-white text-[10px] font-bold">!</span>
+            </div>
+            {{ forgotError }}
+          </div>
+
+          <div
+            v-if="forgotSent"
+            class="bg-teal-50 border border-teal-200 rounded-2xl p-6 text-center"
+          >
+            <div
+              class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center mx-auto mb-4"
+            >
+              <CheckCircle class="w-6 h-6 text-[#0D9488]" />
+            </div>
+            <h3 class="text-lg font-bold text-[#1B2A4A] mb-2 font-serif">E-mail envoyé !</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Si cette adresse e-mail existe dans notre système, vous recevrez un lien de réinitialisation.
+            </p>
+          </div>
+
+          <form v-if="!forgotSent" @submit.prevent="handleForgotPassword" class="space-y-4">
+            <div>
+              <label
+                class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5"
+              >Adresse e-mail</label>
+              <input
+                v-model="forgotForm.email"
+                type="email"
+                required
+                class="w-full bg-[#F8F7F4] border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-[#0D9488]"
+                placeholder="email@exemple.com"
+              />
+            </div>
+            <button
+              type="submit"
+              :disabled="isLoading"
+              class="w-full bg-[#0D9488] text-white py-3 rounded-xl text-sm font-semibold hover:bg-[#0a7a6f] transition-colors disabled:opacity-50"
+            >
+              {{ isLoading ? 'Envoi...' : 'Envoyer le lien' }}
+            </button>
+          </form>
         </div>
 
         <!-- ── INSCRIPTION ── -->
@@ -273,6 +367,19 @@ const handleRegister = async () => {
             >
               Retour à la connexion
             </button>
+          </div>
+
+          <!-- Erreur inscription -->
+          <div
+            v-if="registerError"
+            class="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-start gap-2.5"
+          >
+            <div
+              class="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center shrink-0 mt-0.5"
+            >
+              <span class="text-white text-[10px] font-bold">!</span>
+            </div>
+            {{ registerError }}
           </div>
 
           <!-- Formulaire d'inscription -->
@@ -342,7 +449,7 @@ const handleRegister = async () => {
                     v-model="registerForm.password"
                     :type="showRegisterPassword ? 'text' : 'password'"
                     required
-                    minlength="6"
+                    minlength="8"
                     class="w-full bg-[#F8F7F4] border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-[#0D9488]"
                     placeholder="••••••••"
                   />

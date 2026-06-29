@@ -37,8 +37,8 @@ const detailsModal = ref({ visible: false, author: null })
 // ─── Filtrage frontend ─────────────────────────────────────────────────────────
 
 const filteredAuthors = computed(() => {
-  if (!authorStore.authors.value) return []
-  let filtered = [...authorStore.authors.value]
+  if (!authorStore.authors) return []
+  let filtered = [...authorStore.authors]
 
   // Filtrer par nationalité
   if (filterNationality.value) {
@@ -226,7 +226,7 @@ onMounted(() => {
           class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#0D9488]"
         >
           <option value="">Toutes les nationalités</option>
-          <option v-for="nationality in [...new Set(authorStore.authors.value?.map(a => a.nationality).filter(Boolean) || [])]" :key="nationality" :value="nationality">
+          <option v-for="nationality in [...new Set(authorStore.authors?.map(a => a.nationality).filter(Boolean) || [])]" :key="nationality" :value="nationality">
             {{ nationality }}
           </option>
         </select>
@@ -238,7 +238,7 @@ onMounted(() => {
       </div>
 
       <!-- Table -->
-      <div v-else-if="paginatedAuthors.length > 0" class="overflow-x-auto">
+      <div v-else-if="authorStore.authors && paginatedAuthors.length > 0" class="overflow-x-auto">
         <table class="w-full">
           <thead>
             <tr class="border-b border-gray-100 pb-3">

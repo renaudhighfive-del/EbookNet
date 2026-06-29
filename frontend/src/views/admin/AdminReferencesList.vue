@@ -1,120 +1,880 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useReferenceStore } from '@/stores/reference'
+import { useCategoryStore } from '@/stores/category'
+import { usePublisherStore } from '@/stores/publisher'
+import { useAuthorStore } from '@/stores/author'
+import AdminLayout from '@/layouts/AdminLayout.vue'
+import { Search, Plus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, BookOpen, X } from '@lucide/vue'
+
+const referenceStore = useReferenceStore()
+const categoryStore = useCategoryStore()
+const publisherStore = usePublisherStore()
+const authorStore = useAuthorStore()
+
+// ─── State ──────────────────────────────────────────────────────────────
+
+const searchQuery = ref('')
+const filterStatus = ref('')
+const filterDocumentType = ref('')
+const filterLanguage = ref('')
+const currentPage = ref(1)
+const perPage = ref(25)
+const perPageOptions = [10, 25, 50, 100]
+const searchTimeout = ref(null)
+
+const toast = ref({ message: '', type: 'success' })
+
+// Data for dropdowns
+const categories = ref([])
+const publishers = ref([])
+const authors = ref([])
+
+const modal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  confirmLabel: '',
+  danger: false,
+  action: null,
+  data: null,
+})
+
+const referenceModal = ref({
+  visible: false,
+  isEdit: false,
+  referenceId: null,
+  form: {
+    title: '',
+    subtitle: '',
+    abstract: '',
+    isbn: '',
+    publication_year: null,
+    document_type: 'livre',
+    language: 'fr',
+    pages: null,
+    category_id: null,
+    publisher_id: null,
+    cover_image: '',
+    file_path: '',
+    status: 'draft',
+    authors: [],
+    keywords: [],
+  },
+  newKeyword: '',
+})
+
+const detailsModal = ref({
+  visible: false,
+  reference: null,
+})
+
+// ─── Computed ────────────────────────────────────────────────────────────
+
+const filteredReferences = computed(() => {
+  if (!referenceStore.references) return []
+  let filtered = [...referenceStore.references]
+
+  if (filterStatus.value) {
+    filtered = filtered.filter((r) => r.status === filterStatus.value)
+  }
+
+  if (filterDocumentType.value) {
+    filtered = filtered.filter((r) => r.document_type === filterDocumentType.value)
+  }
+
+  if (filterLanguage.value) {
+    filtered = filtered.filter((r) => r.language === filterLanguage.value)
+  }
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter((r) =>
+      r.title.toLowerCase().includes(query) ||
+      (r.subtitle && r.subtitle.toLowerCase().includes(query)) ||
+      (r.isbn && r.isbn.toLowerCase().includes(query))
+    )
+  }
+
+  return filtered
+})
+
+const paginatedReferences = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  const end = start + perPage.value
+  return filteredReferences.value.slice(start, end)
+})
+
+const totalPages = computed(() => Math.ceil(filteredReferences.value.length / perPage.value))
+
+const visiblePages = computed(() => {
+  const c = currentPage.value
+  const l = totalPages.value
+  const pages = []
+
+  if (l <= 7) {
+    for (let i = 1; i <= l; i++) pages.push(i)
+  } else {
+    if (c > 3) pages.push(1)
+    if (c > 4) pages.push('...')
+    for (let i = Math.max(2, c - 1); i <= Math.min(l - 1, c + 1); i++) pages.push(i)
+    if (c < l - 3) pages.push('...')
+    if (l > 1 && c < l - 1) pages.push(l)
+  }
+
+  return pages
+})
+
+// ─── Actions ─────────────────────────────────────────────────────────────
+
+const fetchReferencesWithParams = () => {
+  const params = {
+    page: currentPage.value,
+    per_page: perPage.value,
+    search: searchQuery.value || undefined,
+    status: filterStatus.value || undefined,
+    document_type: filterDocumentType.value || undefined,
+    language: filterLanguage.value || undefined,
+  }
+  Object.keys(params).forEach((key) => params[key] === undefined && (delete params[key]))
+  referenceStore.fetchReferences(params).catch(() => showToast('Erreur lors du chargement.', 'error'))
+}
+
+const onSearchInput = () => {
+  clearTimeout(searchTimeout.value)
+  searchTimeout.value = setTimeout(() => {
+    currentPage.value = 1
+    fetchReferencesWithParams()
+  }, 300)
+}
+
+const resetPage = () => {
+  currentPage.value = 1
+  fetchReferencesWithParams()
+}
+
+const changePage = (page) => {
+  currentPage.value = page
+  fetchReferencesWithParams()
+}
+
+const showToast = (message, type = 'success') => {
+  toast.value = { message, type }
+  setTimeout(() => (toast.value = { message: '', type: 'success' }), 3500)
+}
+
+// ─── Modals ─────────────────────────────────────────────────────────────
+
+const openCreateModal = () => {
+  referenceModal.value = {
+    visible: true,
+    isEdit: false,
+    referenceId: null,
+    form: {
+      title: '',
+      subtitle: '',
+      abstract: '',
+      isbn: '',
+      publication_year: null,
+      document_type: 'livre',
+      language: 'fr',
+      pages: null,
+      category_id: null,
+      publisher_id: null,
+      cover_image: '',
+      file_path: '',
+      status: 'draft',
+      authors: [],
+      keywords: [],
+    },
+    newKeyword: '',
+  }
+}
+
+const openEditModal = async (reference) => {
+  try {
+    const data = await referenceStore.fetchReference(reference.id)
+    referenceModal.value = {
+      visible: true,
+      isEdit: true,
+      referenceId: reference.id,
+      form: {
+        title: data.title,
+        subtitle: data.subtitle || '',
+        abstract: data.abstract || '',
+        isbn: data.isbn || '',
+        publication_year: data.publication_year,
+        document_type: data.document_type,
+        language: data.language,
+        pages: data.pages,
+        category_id: data.category_id,
+        publisher_id: data.publisher_id,
+        cover_image: data.cover_image || '',
+        file_path: data.file_path || '',
+        status: data.status,
+        authors: data.authors?.map(a => a.id) || [],
+        keywords: data.keywords?.map(k => k.keyword) || [],
+      },
+      newKeyword: '',
+    }
+  } catch (err) {
+    showToast('Erreur lors du chargement des détails.', 'error', err)
+  }
+}
+
+const openViewModal = async (reference) => {
+  try {
+    const data = await referenceStore.fetchReference(reference.id)
+    detailsModal.value = {
+      visible: true,
+      reference: data,
+    }
+  } catch (err) {
+    showToast('Erreur lors du chargement des détails.', 'error', err)
+  }
+}
+
+const closeReferenceModal = () => {
+  referenceModal.value.visible = false
+}
+
+const addKeyword = () => {
+  const trimmedKeyword = referenceModal.value.newKeyword.trim()
+  if (trimmedKeyword && !referenceModal.value.form.keywords.includes(trimmedKeyword)) {
+    referenceModal.value.form.keywords.push(trimmedKeyword)
+    referenceModal.value.newKeyword = ''
+  }
+}
+
+const removeKeyword = (index) => {
+  referenceModal.value.form.keywords.splice(index, 1)
+}
+
+const confirmDelete = (reference) => {
+  modal.value = {
+    visible: true,
+    title: 'Supprimer la référence',
+    message: `Êtes-vous sûr de vouloir supprimer "${reference.title}" ?`,
+    confirmLabel: 'Supprimer',
+    danger: true,
+    action: 'delete',
+    data: reference,
+  }
+}
+
+const executeModal = async () => {
+  try {
+    if (modal.value.action === 'delete') {
+      await referenceStore.deleteReference(modal.value.data.id)
+      showToast('Référence supprimée avec succès.')
+    }
+    modal.value.visible = false
+    fetchReferencesWithParams()
+  } catch (err) {
+    showToast('Erreur lors de l\'action.', 'error', err)
+  }
+}
+
+const submitReferenceForm = async () => {
+  try {
+    if (referenceModal.value.isEdit) {
+      await referenceStore.updateReference(referenceModal.value.referenceId, referenceModal.value.form)
+      showToast('Référence mise à jour avec succès.')
+    } else {
+      await referenceStore.createReference(referenceModal.value.form)
+      showToast('Référence créée avec succès.')
+    }
+    closeReferenceModal()
+    fetchReferencesWithParams()
+  } catch (err) {
+    showToast('Erreur lors de l\'enregistrement.', 'error', err)
+  }
+}
+
+// ─── Lifecycle ───────────────────────────────────────────────────────────
+
+onMounted(async () => {
+  try {
+    // Charger les références, catégories, éditeurs et auteurs en parallèle
+    await Promise.all([
+      fetchReferencesWithParams(),
+      (async () => {
+        const cats = await categoryStore.fetchAllCategories()
+        categories.value = cats || []
+      })(),
+      (async () => {
+        const pubs = await publisherStore.fetchAllPublishers()
+        publishers.value = pubs || []
+      })(),
+      (async () => {
+        const auths = await authorStore.fetchAllAuthors()
+        authors.value = auths || []
+      })(),
+    ])
+  } catch (err) {
+    showToast('Erreur lors du chargement des données.', 'error', err)
+  }
+})
+</script>
+
+
 <template>
   <AdminLayout>
-    <!-- Toolbar -->
-    <div class="bg-white rounded-2xl border border-gray-100 mb-5 p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-      <div class="relative w-full sm:w-80">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+    <template #title>
+      Références
+      <span
+        v-if="referenceStore.pagination.total"
+        class="ml-2 text-xs font-mono font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full"
+      >
+        {{ referenceStore.pagination.total }}
+      </span>
+    </template>
+
+    <!-- Toast -->
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 translate-y-1"
+        leave-active-class="transition duration-150 ease-in"
+        leave-to-class="opacity-0 translate-y-1"
+      >
+        <div
+          v-if="toast.message"
+          :class="toast.type === 'success' ? 'bg-teal-600' : 'bg-red-600'"
+          class="fixed top-4 right-4 px-4 py-3 rounded-xl text-white text-sm font-medium shadow-lg z-50"
+        >
+          {{ toast.message }}
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap items-center gap-3 mb-5">
+      <div class="relative flex-1 min-w-50">
+        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           v-model="searchQuery"
-          type="text"
+          @input="onSearchInput"
           placeholder="Rechercher une référence..."
-          class="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-gray-200 focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 outline-none"
+          class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
         />
       </div>
-      <button class="flex items-center gap-2 bg-[#0D9488] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#0a7a6f] transition-colors shrink-0">
+      <select
+        v-model="filterStatus"
+        @change="resetPage"
+        class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#0D9488]"
+      >
+        <option value="">Tous les statuts</option>
+        <option value="draft">Brouillon</option>
+        <option value="published">Publié</option>
+        <option value="archived">Archivé</option>
+      </select>
+      <select
+        v-model="filterDocumentType"
+        @change="resetPage"
+        class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#0D9488]"
+      >
+        <option value="">Tous les types</option>
+        <option value="livre">Livre</option>
+        <option value="memoire">Mémoire</option>
+        <option value="these">Thèse</option>
+        <option value="article">Article</option>
+        <option value="revue">Revue</option>
+        <option value="rapport">Rapport</option>
+        <option value="guide">Guide</option>
+        <option value="autre">Autre</option>
+      </select>
+      <select
+        v-model="filterLanguage"
+        @change="resetPage"
+        class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#0D9488]"
+      >
+        <option value="">Toutes les langues</option>
+        <option value="fr">Français</option>
+        <option value="en">Anglais</option>
+        <option value="autre">Autre</option>
+      </select>
+      <button
+        @click="openCreateModal"
+        class="flex items-center gap-2 bg-[#0D9488] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#0a7a6f] transition-colors shrink-0"
+      >
         <Plus class="w-4 h-4" />
-        Ajouter une référence
+        Nouvelle référence
       </button>
     </div>
 
-    <!-- Filtre -->
-    <div class="bg-white rounded-2xl border border-gray-100 mb-5 px-4 py-3 flex flex-wrap items-center gap-4">
-      <div class="flex items-center gap-2">
-        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Catégorie</label>
-        <select v-model="filterCategory" class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:border-[#0D9488] outline-none">
-          <option value="">Toutes</option>
-          <option value="droit">Droit</option>
-          <option value="informatique">Informatique</option>
-          <option value="sante">Santé</option>
-        </select>
-      </div>
-      <span class="ml-auto text-xs text-gray-400 font-mono">{{ filteredReferences.length }} référence(s)</span>
-    </div>
-
-    <!-- Empty -->
-    <div v-if="filteredReferences.length === 0" class="bg-white rounded-2xl border border-gray-100 py-16 text-center">
-      <BookOpen class="w-10 h-10 text-gray-300 mx-auto mb-3" />
-      <p class="font-medium text-[#1B2A4A]">Aucune référence trouvée</p>
+    <!-- Loading -->
+    <div v-if="referenceStore.isLoading" class="flex items-center justify-center py-12">
+      <div class="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin"></div>
     </div>
 
     <!-- Table -->
-    <div v-else class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="bg-[#F8F7F4] border-b border-gray-100">
-            <tr>
-              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Référence</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Auteurs</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Catégorie</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
-              <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="ref in filteredReferences" :key="ref.id" class="hover:bg-[#F8F7F4] transition-colors">
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-3">
-                  <div :class="['w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0', ref.coverColor]">
-                    <BookOpen class="w-4 h-4" />
-                  </div>
-                  <div class="min-w-0">
-                    <p class="font-semibold text-[#1B2A4A] truncate">{{ ref.title }}</p>
-                    <p class="text-xs text-gray-400">{{ ref.type }} · {{ ref.year }}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-4 py-3.5 text-sm text-gray-600 hidden md:table-cell">{{ ref.authors.join(', ') }}</td>
-              <td class="px-4 py-3.5">
-                <span class="bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ ref.category }}</span>
-              </td>
-              <td class="px-4 py-3.5">
-                <span :class="ref.status === 'Publié' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
-                      class="px-2 py-0.5 rounded-full text-xs font-semibold">
-                  {{ ref.status }}
-                </span>
-              </td>
-              <td class="px-4 py-3.5">
-                <div class="flex items-center justify-end gap-1">
-                  <button class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-[#1B2A4A] transition-colors" title="Voir">
-                    <Eye class="w-4 h-4" />
-                  </button>
-                  <button class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-[#1B2A4A] transition-colors" title="Modifier">
-                    <Pencil class="w-4 h-4" />
-                  </button>
-                  <button class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors" title="Supprimer">
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <div v-else-if="referenceStore.references && paginatedReferences.length > 0" class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-gray-100 pb-3">
+            <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Titre</th>
+            <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Type</th>
+            <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Catégorie</th>
+            <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Langue</th>
+            <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Statut</th>
+            <th class="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="reference in paginatedReferences" :key="reference.id" class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+            <td class="py-4">
+              <div class="font-semibold text-[#1B2A4A]">{{ reference.title }}</div>
+              <div v-if="reference.subtitle" class="text-sm text-gray-500">{{ reference.subtitle }}</div>
+            </td>
+            <td class="py-4">
+              <span class="text-sm text-gray-600">{{ referenceStore.getDocumentTypeLabel(reference.document_type) }}</span>
+            </td>
+            <td class="py-4">
+              <span v-if="reference.category" class="text-sm text-gray-600">{{ reference.category.name }}</span>
+              <span v-else class="text-sm text-gray-400">—</span>
+            </td>
+            <td class="py-4">
+              <span class="text-sm text-gray-600">{{ referenceStore.getLanguageLabel(reference.language) }}</span>
+            </td>
+            <td class="py-4">
+              <span :class="referenceStore.getStatusClass(reference.status)" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                {{ referenceStore.getStatusLabel(reference.status) }}
+              </span>
+            </td>
+            <td class="py-4 text-right">
+              <div class="flex items-center justify-end gap-1">
+                <button
+                  @click="openViewModal(reference)"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-[#1B2A4A] transition-colors"
+                  title="Voir les détails"
+                >
+                  <Eye class="w-4 h-4" />
+                </button>
+                <button
+                  @click="openEditModal(reference)"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                  title="Modifier"
+                >
+                  <Pencil class="w-4 h-4" />
+                </button>
+                <button
+                  @click="confirmDelete(reference)"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  title="Supprimer"
+                >
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty -->
+    <div v-else class="bg-white rounded-2xl border border-gray-100 py-16 text-center">
+      <BookOpen class="w-10 h-10 text-gray-300 mx-auto mb-3" />
+      <p class="font-medium text-[#1B2A4A]">Aucune référence trouvée</p>
+      <p class="text-sm text-gray-400 mt-1">Modifiez vos filtres ou créez une nouvelle référence.</p>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="referenceStore.pagination.last_page && referenceStore.pagination.last_page >= 1" class="flex items-center justify-between mt-5">
+      <div class="flex items-center gap-2">
+        <span class="text-sm text-gray-500">Afficher</span>
+        <select
+          v-model="perPage"
+          @change="resetPage"
+          class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+        >
+          <option v-for="opt in perPageOptions" :key="opt" :value="opt">{{ opt }}</option>
+        </select>
+        <span class="text-sm text-gray-500">par page</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button
+          @click="changePage(currentPage - 1)"
+          :disabled="!referenceStore.pagination.prev_page_url"
+          class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronLeft class="w-4 h-4" />
+        </button>
+        <button
+          v-for="page in visiblePages"
+          :key="page"
+          @click="typeof page === 'number' ? changePage(page) : null"
+          class="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
+          :class="page === currentPage
+            ? 'bg-[#0D9488] text-white border-[#0D9488]'
+            : typeof page === 'number'
+              ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+              : 'border-transparent text-gray-400 cursor-default'"
+          :disabled="typeof page !== 'number'"
+        >
+          {{ page }}
+        </button>
+        <button
+          @click="changePage(currentPage + 1)"
+          :disabled="!referenceStore.pagination.next_page_url"
+          class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronRight class="w-4 h-4" />
+        </button>
       </div>
     </div>
+
+    <!-- Modal de confirmation -->
+    <Teleport to="body">
+      <div
+        v-if="modal.visible"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        @click.self="modal.visible = false"
+      >
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+          <h3 class="text-lg font-semibold text-[#1B2A4A] mb-2">{{ modal.title }}</h3>
+          <p class="text-sm text-gray-600 mb-6">{{ modal.message }}</p>
+          <div class="flex gap-3 justify-end">
+            <button
+              @click="modal.visible = false"
+              class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              Annuler
+            </button>
+            <button
+              @click="executeModal"
+              :disabled="referenceStore.isActionLoading"
+              :class="modal.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#0D9488] hover:bg-[#0a7a6f]'"
+              class="px-4 py-2 rounded-xl text-sm text-white font-semibold disabled:opacity-50"
+            >
+              {{ referenceStore.isActionLoading ? 'En cours...' : modal.confirmLabel }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Modal création/modification -->
+    <Teleport to="body">
+      <div
+        v-if="referenceModal.visible"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto"
+        @click.self="closeReferenceModal"
+      >
+        <div class="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 my-8">
+          <h3 class="text-lg font-semibold text-[#1B2A4A] mb-4">
+            {{ referenceModal.isEdit ? 'Modifier la référence' : 'Nouvelle référence' }}
+          </h3>
+          <form @submit.prevent="submitReferenceForm">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
+                <input
+                  v-model="referenceModal.form.title"
+                  type="text"
+                  required
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Sous-titre</label>
+                <input
+                  v-model="referenceModal.form.subtitle"
+                  type="text"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Résumé</label>
+                <textarea
+                  v-model="referenceModal.form.abstract"
+                  rows="3"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                ></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">ISBN</label>
+                <input
+                  v-model="referenceModal.form.isbn"
+                  type="text"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Année de publication</label>
+                <input
+                  v-model="referenceModal.form.publication_year"
+                  type="number"
+                  min="1000"
+                  max="9999"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Type de document *</label>
+                <select
+                  v-model="referenceModal.form.document_type"
+                  required
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                >
+                  <option value="livre">Livre</option>
+                  <option value="memoire">Mémoire</option>
+                  <option value="these">Thèse</option>
+                  <option value="article">Article</option>
+                  <option value="revue">Revue</option>
+                  <option value="rapport">Rapport</option>
+                  <option value="guide">Guide</option>
+                  <option value="autre">Autre</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Langue *</label>
+                <select
+                  v-model="referenceModal.form.language"
+                  required
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                >
+                  <option value="fr">Français</option>
+                  <option value="en">Anglais</option>
+                  <option value="autre">Autre</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de pages</label>
+                <input
+                  v-model="referenceModal.form.pages"
+                  type="number"
+                  min="1"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+                <select
+                  v-model="referenceModal.form.category_id"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                >
+                  <option :value="null">-- Sélectionner une catégorie --</option>
+                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                    {{ cat.name }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Éditeur</label>
+                <select
+                  v-model="referenceModal.form.publisher_id"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                >
+                  <option :value="null">-- Sélectionner un éditeur --</option>
+                  <option v-for="pub in publishers" :key="pub.id" :value="pub.id">
+                    {{ pub.name }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Image de couverture</label>
+                <input
+                  v-model="referenceModal.form.cover_image"
+                  type="text"
+                  placeholder="URL ou chemin de l'image"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Chemin du fichier</label>
+                <input
+                  v-model="referenceModal.form.file_path"
+                  type="text"
+                  placeholder="URL ou chemin du fichier"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Auteurs</label>
+                <div class="border border-gray-200 rounded-xl p-3 max-h-48 overflow-y-auto">
+                  <div v-if="authors.length === 0" class="text-sm text-gray-400 text-center py-4">
+                    Aucun auteur disponible
+                  </div>
+                  <div v-else class="space-y-2">
+                    <label v-for="author in authors" :key="author.id" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        :value="author.id"
+                        v-model="referenceModal.form.authors"
+                        class="rounded border-gray-300"
+                      />
+                      <span class="text-sm text-gray-700">{{ author.first_name }} {{ author.last_name }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Mots-clés</label>
+                <div class="border border-gray-200 rounded-xl p-3">
+                  <div class="flex gap-2 mb-3">
+                    <input
+                      v-model="referenceModal.newKeyword"
+                      @keyup.enter="addKeyword"
+                      type="text"
+                      placeholder="Ajouter un mot-clé..."
+                      class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0D9488]"
+                    />
+                    <button
+                      @click="addKeyword"
+                      type="button"
+                      class="bg-[#0D9488] text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#0a7a6f]"
+                    >
+                      Ajouter
+                    </button>
+                  </div>
+                  <div v-if="referenceModal.form.keywords.length === 0" class="text-sm text-gray-400 text-center py-2">
+                    Aucun mot-clé ajouté
+                  </div>
+                  <div v-else class="flex flex-wrap gap-2">
+                    <div
+                      v-for="(keyword, index) in referenceModal.form.keywords"
+                      :key="index"
+                      class="bg-[#0D9488] text-white px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                    >
+                      {{ keyword }}
+                      <button
+                        @click="removeKeyword(index)"
+                        type="button"
+                        class="ml-1 hover:opacity-70"
+                      >
+                        <X class="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Statut *</label>
+                <select
+                  v-model="referenceModal.form.status"
+                  required
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                >
+                  <option value="draft">Brouillon</option>
+                  <option value="published">Publié</option>
+                  <option value="archived">Archivé</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex gap-3 justify-end pt-4">
+              <button
+                type="button"
+                @click="closeReferenceModal"
+                class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                :disabled="referenceStore.isActionLoading"
+                class="px-4 py-2 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] disabled:opacity-50"
+              >
+                {{ referenceStore.isActionLoading ? (referenceModal.isEdit ? 'Modification...' : 'Création...') : (referenceModal.isEdit ? 'Enregistrer' : 'Créer') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Modal détails -->
+    <Teleport to="body">
+      <div
+        v-if="detailsModal.visible"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto"
+        @click.self="detailsModal.visible = false"
+      >
+        <div class="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 my-8">
+          <h3 class="text-lg font-semibold text-[#1B2A4A] mb-4">Détails de la référence</h3>
+          <div v-if="detailsModal.reference" class="space-y-3">
+            <div>
+              <span class="text-sm font-medium text-gray-500">Titre :</span>
+              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.title }}</span>
+            </div>
+            <div v-if="detailsModal.reference.subtitle">
+              <span class="text-sm font-medium text-gray-500">Sous-titre :</span>
+              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.subtitle }}</span>
+            </div>
+            <div v-if="detailsModal.reference.abstract">
+              <span class="text-sm font-medium text-gray-500">Résumé :</span>
+              <p class="text-sm text-gray-900 ml-2 mt-1">{{ detailsModal.reference.abstract }}</p>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-gray-500">Type :</span>
+              <span class="text-sm text-gray-900 ml-2">{{ referenceStore.getDocumentTypeLabel(detailsModal.reference.document_type) }}</span>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-gray-500">Langue :</span>
+              <span class="text-sm text-gray-900 ml-2">{{ referenceStore.getLanguageLabel(detailsModal.reference.language) }}</span>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-gray-500">Statut :</span>
+              <span :class="referenceStore.getStatusClass(detailsModal.reference.status)" class="px-2 py-0.5 rounded-full text-xs font-medium ml-2">
+                {{ referenceStore.getStatusLabel(detailsModal.reference.status) }}
+              </span>
+            </div>
+            <div v-if="detailsModal.reference.isbn">
+              <span class="text-sm font-medium text-gray-500">ISBN :</span>
+              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.isbn }}</span>
+            </div>
+            <div v-if="detailsModal.reference.publication_year">
+              <span class="text-sm font-medium text-gray-500">Année :</span>
+              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.publication_year }}</span>
+            </div>
+            <div v-if="detailsModal.reference.pages">
+              <span class="text-sm font-medium text-gray-500">Pages :</span>
+              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.pages }}</span>
+            </div>
+            <div v-if="detailsModal.reference.category">
+              <span class="text-sm font-medium text-gray-500">Catégorie :</span>
+              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.category.name }}</span>
+            </div>
+            <div v-if="detailsModal.reference.publisher">
+              <span class="text-sm font-medium text-gray-500">Éditeur :</span>
+              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.publisher.name }}</span>
+            </div>
+            <div v-if="detailsModal.reference.cover_image">
+              <span class="text-sm font-medium text-gray-500">Image de couverture :</span>
+              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.cover_image }}</span>
+            </div>
+            <div v-if="detailsModal.reference.file_path">
+              <span class="text-sm font-medium text-gray-500">Chemin du fichier :</span>
+              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.file_path }}</span>
+            </div>
+            <div v-if="detailsModal.reference.authors && detailsModal.reference.authors.length">
+              <span class="text-sm font-medium text-gray-500">Auteurs :</span>
+              <div class="text-sm text-gray-900 ml-2 mt-1 flex flex-wrap gap-2">
+                <span v-for="author in detailsModal.reference.authors" :key="author.id" class="bg-gray-100 px-2 py-1 rounded">
+                  {{ author.first_name }} {{ author.last_name }}
+                </span>
+              </div>
+            </div>
+            <div v-if="detailsModal.reference.keywords && detailsModal.reference.keywords.length">
+              <span class="text-sm font-medium text-gray-500">Mots-clés :</span>
+              <div class="text-sm text-gray-900 ml-2 mt-1 flex flex-wrap gap-2">
+                <span v-for="kw in detailsModal.reference.keywords" :key="kw.id" class="bg-[#0D9488] text-white px-2 py-1 rounded text-xs">
+                  {{ kw.keyword }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-end mt-6">
+            <button
+              @click="detailsModal.visible = false"
+              class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </AdminLayout>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue'
-import { Search, Plus, BookOpen, Eye, Pencil, Trash2 } from '@lucide/vue'
-import AdminLayout from '../../layouts/AdminLayout.vue'
-
-const searchQuery   = ref('')
-const filterCategory = ref('')
-
-const references = ref([
-  { id: 1, title: 'Introduction au Droit Constitutionnel Béninois', type: 'Livre',   year: 2021, authors: ['Prof. Koffi Adanlété', 'Dr. Marie Zannou'], category: 'Droit',        coverColor: 'bg-[#1B2A4A]',    status: 'Publié' },
-  { id: 2, title: 'Algorithmique et Structures de Données',         type: 'Manuel',  year: 2022, authors: ['Dr. Akeh Boko'],                            category: 'Informatique', coverColor: 'bg-[#0D9488]',    status: 'Publié' },
-  { id: 3, title: "Santé Publique en Afrique de l'Ouest",           type: 'Mémoire', year: 2023, authors: ['Dr. Afi Agossou'],                          category: 'Santé',        coverColor: 'bg-green-700',    status: 'Publié' },
-])
-
-const filteredReferences = computed(() => {
-  let r = references.value
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase()
-    r = r.filter(x => x.title.toLowerCase().includes(q) || x.authors.some(a => a.toLowerCase().includes(q)))
-  }
-  if (filterCategory.value) r = r.filter(x => x.category.toLowerCase() === filterCategory.value)
-  return r
-})
-</script>

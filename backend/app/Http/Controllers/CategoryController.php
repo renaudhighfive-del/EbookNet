@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Http\Requests\Category\StoreCategoryRequest;
+use App\Http\Requests\Category\UpdateCategoryRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,10 +16,10 @@ class CategoryController extends Controller
         $query = Category::withCount('references');
 
         if ($request->filled('search')) {
-            $s = $request->search;
+            $search = $request->search;
             $query->where(fn($q) => $q
-                ->where('name', 'like', "%$s%")
-                ->orWhere('description', 'like', "%$s%")
+                ->where('name', 'like', '%' . $search . '%')
+                ->orWhere('description', 'like', '%' . $search . '%')
             );
         }
 
@@ -32,15 +34,9 @@ class CategoryController extends Controller
     }
 
     /** POST /admin/categories — Créer une catégorie */
-    public function store(Request $request): JsonResponse
+    public function store(StoreCategoryRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name',
-            'description' => 'nullable|string|max:1000',
-            'status' => 'sometimes|in:active,inactive',
-        ]);
-
-        // Générer le slug à partir du nom
+        $validated = $request->validated();
         $validated['slug'] = str($validated['name'])->slug()->toString();
         $validated['status'] = $validated['status'] ?? 'active';
 
@@ -57,17 +53,12 @@ class CategoryController extends Controller
     }
 
     /** PUT /admin/categories/:id — Modifier une catégorie */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateCategoryRequest $request, int $id): JsonResponse
     {
         $category = Category::withCount('references')->findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255|unique:categories,name,' . $id,
-            'description' => 'nullable|string|max:1000',
-            'status' => 'sometimes|in:active,inactive',
-        ]);
+        $validated = $request->validated();
 
-        // Régénérer le slug si le nom change
         if (isset($validated['name'])) {
             $validated['slug'] = str($validated['name'])->slug()->toString();
         }

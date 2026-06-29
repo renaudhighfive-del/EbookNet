@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\ActivityLog;
+use App\Http\Requests\User\StoreUserRequest;
+use App\Http\Requests\User\UpdateUserRequest;
+use App\Http\Requests\User\UpdateUserStatusRequest;
+use App\Http\Requests\User\UpdateUserRoleRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -40,15 +43,15 @@ class UserController extends Controller
         if ($request->filled('status')) $query->where('status', $request->status);
 
         if ($request->filled('search')) {
-            $s = $request->search;
+            $search = $request->search;
             $query->where(fn($q) => $q
-                ->where('first_name', 'like', "%$s%")
-                ->orWhere('last_name',  'like', "%$s%")
-                ->orWhere('email',      'like', "%$s%")
+                ->where('first_name', 'like', '%' . $search . '%')
+                ->orWhere('last_name',  'like', '%' . $search . '%')
+                ->orWhere('email',      'like', '%' . $search . '%')
             );
         }
 
-        $perPage = min((int) $request->get('per_page', 10), 100);
+        $perPage = min((int) $request->input('per_page', 10), 100);
         $paginator = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         // Optimisation : une seule requête pour tous les counts
@@ -95,19 +98,10 @@ class UserController extends Controller
      *  RH  : rôle max = responsable_demande (admin bloqué côté logique)
      *  Admin : tous les rôles autorisés
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreUserRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name'  => 'required|string|max:100',
-            'email'      => 'required|email|max:255|unique:users',
-            'phone'      => 'nullable|string|max:50',
-            'password'   => 'required|string|min:8',
-            'role'       => ['sometimes', Rule::in(['user', 'responsable_rh', 'responsable_demande', 'admin'])],
-            'status'     => ['sometimes', Rule::in(['active', 'inactive'])],
-        ]);
+        $validated = $request->validated();
 
-        // RH ne peut pas créer un admin
         if (isset($validated['role'])
             && $validated['role'] === 'admin'
             && $request->user()->role !== 'admin'
@@ -132,31 +126,19 @@ class UserController extends Controller
      *  RH  : ne peut pas changer le rôle
      *  Admin : peut changer le rôle via ce endpoint ou /admin/users/:id/role
      */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateUserRequest $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
 
-        $validated = $request->validate([
-            'first_name' => 'sometimes|string|max:100',
-            'last_name'  => 'sometimes|string|max:100',
-            'email'      => ['sometimes', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'phone'      => 'nullable|string|max:50',
-            'password'   => 'sometimes|string|min:8',
-            'role'       => ['sometimes', Rule::in(['user', 'responsable_rh', 'responsable_demande', 'admin'])],
-            'status'     => ['sometimes', Rule::in(['active', 'inactive'])],
-        ]);
+        $validated = $request->validated();
 
-        // RH peut modifier le rôle mais seulement pour user, responsable_rh, responsable_demande (pas admin)
         if (isset($validated['role'])) {
             if ($request->user()->role === 'admin') {
-                // Admin peut modifier tous les rôles
             } elseif ($request->user()->role === 'responsable_rh') {
-                // RH peut seulement modifier vers user, responsable_rh, responsable_demande
                 if (!in_array($validated['role'], ['user', 'responsable_rh', 'responsable_demande'])) {
                     unset($validated['role']);
                 }
             } else {
-                // Autres rôles ne peuvent pas modifier le rôle
                 unset($validated['role']);
             }
         }
@@ -175,12 +157,10 @@ class UserController extends Controller
      *  La suspension passe par /hr/users/:id/request-suspend (RH propose)
      *  ou /admin/users/:id/suspend (Admin directement)
      */
-    public function updateStatus(Request $request, int $id): JsonResponse
+    public function updateStatus(UpdateUserStatusRequest $request, int $id): JsonResponse
     {
         $user      = User::findOrFail($id);
-        $validated = $request->validate([
-            'status' => ['required', Rule::in(['active', 'inactive'])],
-        ]);
+        $validated = $request->validated();
         $user->update($validated);
         $this->logActivity($request, "Changement statut utilisateur: {$user->first_name} {$user->last_name} → {$validated['status']}", $user->id);
         return response()->json(['message' => 'Statut mis à jour.', 'user' => $user]);
@@ -220,12 +200,10 @@ class UserController extends Controller
     }
 
     /** PATCH /admin/users/:id/role — Changer le rôle */
-    public function updateRole(Request $request, int $id): JsonResponse
+    public function updateRole(UpdateUserRoleRequest $request, int $id): JsonResponse
     {
         $user      = User::findOrFail($id);
-        $validated = $request->validate([
-            'role' => ['required', Rule::in(['user', 'responsable_rh', 'responsable_demande', 'admin'])],
-        ]);
+        $validated = $request->validated();
         $user->update($validated);
         $this->logActivity($request, "Changement rôle utilisateur: {$user->first_name} {$user->last_name} → {$validated['role']}", $user->id);
         return response()->json(['message' => 'Rôle mis à jour.', 'user' => $user]);
@@ -311,17 +289,15 @@ class UserController extends Controller
         }
 
         if ($request->filled('search')) {
-            $s = $request->search;
+            $search = $request->search;
             $query->where(fn($q) => $q
-                ->where('first_name', 'like', "%$s%")
-                ->orWhere('last_name',  'like', "%$s%")
-                ->orWhere('email',      'like', "%$s%")
+                ->where('first_name', 'like', '%' . $search . '%')
+                ->orWhere('last_name',  'like', '%' . $search . '%')
+                ->orWhere('email',      'like', '%' . $search . '%')
             );
         }
 
-        $perPage = min((int) $request->get('per_page', 10), 100);
+        $perPage = min((int) $request->input('per_page', 10), 100);
         return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
     }
-
-   
 }

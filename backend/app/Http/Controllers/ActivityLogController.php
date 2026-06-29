@@ -25,7 +25,7 @@ class ActivityLogController extends Controller
             $query->where('user_id', $request->user_id);
         }
 
-        $perPage = min((int) $request->get('per_page', 50), 100);
+        $perPage = min((int) $request->input('per_page', 50), 100);
         return response()->json($query->paginate($perPage));
     }
 
@@ -48,7 +48,7 @@ class ActivityLogController extends Controller
             $query->where('user_id', $request->user_id);
         }
 
-        $perPage = min((int) $request->get('per_page', 50), 100);
+        $perPage = min((int) $request->input('per_page', 50), 100);
         return response()->json($query->paginate($perPage));
     }
 }
