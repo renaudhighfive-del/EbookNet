@@ -9,11 +9,23 @@
 
     <template v-else>
       <!-- ── Welcome Banner ──────────────────────────────────────────────────── -->
-      <div class="mb-8">
-        <h1 class="text-2xl font-bold text-[#1B2A4A] font-serif">
-          Bonjour, {{ authStore.user?.first_name || 'Utilisateur' }} !
-        </h1>
-        <p class="text-gray-500 mt-1">Bienvenue dans votre espace personnel</p>
+      <div class="mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <p class="text-sm text-gray-500 mb-2">Tableau de bord RH</p>
+          <h1 class="text-3xl lg:text-4xl font-bold text-[#1B2A4A] font-serif">
+            Bonjour {{ authStore.user?.first_name || 'Utilisateur' }}
+          </h1>
+          <p class="text-sm text-gray-500 mt-2">
+            Aperçu des comptes utilisateurs de la plateforme.
+          </p>
+        </div>
+        <button
+          @click="openCreateModal"
+          class="inline-flex items-center gap-2 bg-[#0D9488] hover:bg-[#0a7a6f] text-white px-5 py-3 rounded-full text-sm font-semibold shadow-sm transition-colors"
+        >
+          <UserPlus class="w-4 h-4" />
+          Créer un compte utilisateur
+        </button>
       </div>
 
       <!-- ── KPI Cards ──────────────────────────────────────────────────── -->
@@ -95,12 +107,15 @@
           <!-- Derniers comptes créés -->
           <div class="bg-white rounded-2xl border border-gray-100 shadow-soft overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-50">
-              <h3 class="text-sm font-semibold text-[#1B2A4A]">Derniers comptes créés</h3>
+              <div>
+                <h3 class="text-sm font-semibold text-[#1B2A4A]">Derniers comptes créés</h3>
+                <p class="text-xs text-gray-500">Liste des cinq derniers comptes enregistrés</p>
+              </div>
               <router-link
                 to="/rh/users"
                 class="text-xs font-medium text-[#0D9488] hover:underline flex items-center gap-1"
               >
-                Voir tous <ArrowRight class="w-3.5 h-3.5" />
+                Voir tous les utilisateurs <ArrowRight class="w-3.5 h-3.5" />
               </router-link>
             </div>
 
@@ -189,6 +204,53 @@
             </table>
           </div>
         </div>
+
+        <!-- Panneau actions récentes -->
+        <div class="space-y-6">
+          <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-sm font-semibold text-[#1B2A4A]">Mes actions récentes</h3>
+                <p class="text-xs text-gray-500">Résumé des dernières activités RH</p>
+              </div>
+              <RouterLink to="/rh/activity-logs" class="flex items-center gap-1 hover:underline">
+                <ArrowRight class="w-3.5 h-3.5 text-[#0D9488]" />
+                <span class="text-xs text-[#0D9488] font-semibold">Voir tout</span>
+              </RouterLink>
+            </div>
+            <div class="space-y-4">
+              <template v-if="recentActions.length > 0">
+                <div
+                  v-for="action in recentActions"
+                  :key="action.id"
+                  class="flex items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
+                >
+                  <div class="w-11 h-11 rounded-2xl bg-[#F1F5F9] flex items-center justify-center text-[#0D9488]">
+                    <Clock class="w-5 h-5" />
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-[#1B2A4A] truncate">{{ formatActionLabel(action.action) }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ formatDateTime(action.created_at) }}</p>
+                  </div>
+                </div>
+              </template>
+              <div v-else class="text-sm text-gray-500">Aucune action récente.</div>
+            </div>
+          </div>
+
+          <div class="bg-[#F5F5EB] rounded-3xl p-6 border border-[#E8E6D3] text-sm text-gray-700">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-9 h-9 rounded-2xl bg-[#EEF4F0] flex items-center justify-center text-[#0D9488]">
+                <FileText class="w-4 h-4" />
+              </div>
+              <p class="font-semibold text-[#1B2A4A]">Rappel</p>
+            </div>
+            <p>
+              En tant que Responsable RH, vous pouvez créer des comptes Utilisateur, Responsable RH et Responsable Demandes.
+              Le rôle Administrateur ne peut être attribué que par un administrateur.
+            </p>
+          </div>
+        </div>
       </div>
     </template>
 
@@ -200,7 +262,9 @@
       >
         <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-bold text-[#1B2A4A]">Modifier le compte utilisateur</h3>
+            <h3 class="text-lg font-bold text-[#1B2A4A]">
+              {{ userModal.isEdit ? 'Modifier le compte utilisateur' : 'Créer un compte utilisateur' }}
+            </h3>
             <button
               @click="closeUserModal"
               class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
@@ -328,10 +392,10 @@
               </button>
               <button
                 type="submit"
-                :disabled="isLoading"
+                :disabled="isActionLoading"
                 class="px-4 py-2 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] disabled:opacity-50"
               >
-                {{ isLoading ? 'Modification...' : 'Enregistrer' }}
+                {{ isActionLoading ? 'Modification...' : 'Enregistrer' }}
               </button>
             </div>
           </form>
@@ -343,24 +407,26 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
-import { Users, CircleCheck, CircleMinus, Ban, UserPlus, Pencil, ArrowRight, XCircle } from '@lucide/vue'
+import { Users, CircleCheck, CircleMinus, Ban, UserPlus, Pencil, ArrowRight, XCircle, Clock, FileText } from '@lucide/vue'
 import RHLayout from '@/layouts/RHLayout.vue'
+import api from '@/services/api'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
-const router = useRouter()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 
-// Modal de modification d'utilisateur
+const activityLogs = ref([])
+const isActivityLoading = ref(false)
+
+// Modal de création / modification d'utilisateur
 const userModal = ref({
   visible: false,
-  isEdit: true,
+  isEdit: false,
   userId: null,
   form: {
     first_name: '',
@@ -373,6 +439,22 @@ const userModal = ref({
   },
   serverErrors: {},
 })
+
+const openCreateModal = () => {
+  userModal.value.visible = true
+  userModal.value.isEdit = false
+  userModal.value.userId = null
+  userModal.value.form = {
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'user',
+    status: 'active',
+  }
+  userModal.value.serverErrors = {}
+}
 
 const openEditModal = async (user) => {
   try {
@@ -405,9 +487,13 @@ const handleUserSubmit = async () => {
   if (!payload.password) delete payload.password
 
   try {
-    await userStore.updateUser(userModal.value.userId, payload)
+    if (userModal.value.isEdit) {
+      await userStore.updateUser(userModal.value.userId, payload)
+    } else {
+      await userStore.createUser(payload)
+    }
     closeUserModal()
-    userStore.fetchUsers({ per_page: 100 })
+    await userStore.fetchUsers({ per_page: 100 })
   } catch (err) {
     if (err.response?.status === 422) {
       userModal.value.serverErrors = err.response.data.errors ?? {}
@@ -418,8 +504,10 @@ const handleUserSubmit = async () => {
 // Accès direct au store — pas de destructuration des computed/ref
 // pour préserver la réactivité
 const isLoading    = computed(() => userStore.isLoading)
+const isActionLoading = computed(() => userStore.isActionLoading)
 const stats        = computed(() => userStore.stats)
 const recentUsers  = computed(() => userStore.recentUsers)
+const recentActions = computed(() => activityLogs.value.slice(0, 5))
 
 const { getRoleLabel, getRoleClass, getStatusLabel, getStatusClass,
         getAvatarColor, getUserInitials, formatDate } = userStore
@@ -450,5 +538,41 @@ const chartOptions = {
   cutout: '68%',
 }
 
-onMounted(() => userStore.fetchUsers({ per_page: 100 }))
+const fetchActivityLogs = async () => {
+  isActivityLoading.value = true
+  try {
+    const res = await api.get('/hr/activity-logs', { params: { per_page: 5 } })
+    activityLogs.value = res.data.data ?? []
+  } catch (err) {
+    console.error('Impossible de charger les actions récentes.', err)
+  } finally {
+    isActivityLoading.value = false
+  }
+}
+
+const getActionClass = (action) => {
+  if (action.includes('Création')) return 'bg-green-50 text-green-700 border-green-200'
+  if (action.includes('Modification')) return 'bg-blue-50 text-blue-700 border-blue-200'
+  if (action.includes('Suspension')) return 'bg-orange-50 text-orange-700 border-orange-200'
+  if (action.includes('Approbation') || action.includes('Restauration')) return 'bg-teal-50 text-teal-700 border-teal-200'
+  return 'bg-gray-50 text-gray-700 border-gray-200'
+}
+
+const formatActionLabel = (action) => action.replace(/_/g, ' ')
+
+const formatDateTime = (datetime) => {
+  const date = new Date(datetime)
+  return date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+onMounted(async () => {
+  await userStore.fetchUsers({ per_page: 100 })
+  await fetchActivityLogs()
+})
 </script>

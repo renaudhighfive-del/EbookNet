@@ -13,6 +13,8 @@ class AuthorController extends Controller
     /** GET /admin/authors — Liste paginée des auteurs */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Author::class);
+
         $query = Author::withCount('references');
 
         if ($request->filled('search')) {
@@ -37,6 +39,8 @@ class AuthorController extends Controller
     /** GET /admin/authors/all — Liste toutes les auteurs (pour les select) */
     public function all(): JsonResponse
     {
+        $this->authorize('viewAny', Author::class);
+
         $authors = Author::orderBy('last_name', 'asc')
             ->orderBy('first_name', 'asc')
             ->get(['id', 'first_name', 'last_name']);
@@ -48,13 +52,15 @@ class AuthorController extends Controller
     public function show(int $id): JsonResponse
     {
         $author = Author::withCount('references')->findOrFail($id);
+        $this->authorize('view', $author);
         return response()->json(['author' => $author]);
     }
 
     /** POST /admin/authors — Créer un auteur */
     public function store(StoreAuthorRequest $request): JsonResponse
     {
-     
+        $this->authorize('create', Author::class);
+
         $author = Author::create($request->validated());
 
         return response()->json(['message' => 'Auteur créé avec succès.', 'author' => $author], 201);
@@ -64,6 +70,7 @@ class AuthorController extends Controller
     public function update(UpdateAuthorRequest $request, int $id): JsonResponse
     {
         $author = Author::withCount('references')->findOrFail($id);
+        $this->authorize('update', $author);
         $author->update($request->validated());
 
         return response()->json(['message' => 'Auteur mis à jour avec succès.', 'author' => $author]);
@@ -73,6 +80,7 @@ class AuthorController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $author = Author::findOrFail($id);
+        $this->authorize('delete', $author);
 
         // Vérifier si l'auteur a des références
         if ($author->references()->count() > 0) {

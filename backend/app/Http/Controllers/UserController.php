@@ -32,6 +32,8 @@ class UserController extends Controller
     /** GET /hr/users — Liste paginée (filtre : role, status, search) */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', User::class);
+
         $query = User::query();
 
         // Exclure les admins pour les RH (seul l'admin peut voir les admins)
@@ -90,6 +92,7 @@ class UserController extends Controller
     public function show(string|int $id): JsonResponse
     {
         $user = User::findOrFail((int)$id);
+        $this->authorize('view', $user);
         $user->load(['depositRequests', 'depositRequestReviews', 'activityLogs']);
         return response()->json(['user' => $user]);
     }
@@ -100,6 +103,8 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request): JsonResponse
     {
+        $this->authorize('create', User::class);
+
         $validated = $request->validated();
 
         if (isset($validated['role'])
@@ -129,6 +134,7 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
+        $this->authorize('update', $user);
 
         $validated = $request->validated();
 
@@ -160,6 +166,7 @@ class UserController extends Controller
     public function updateStatus(UpdateUserStatusRequest $request, int $id): JsonResponse
     {
         $user      = User::findOrFail($id);
+        $this->authorize('changeStatus', $user);
         $validated = $request->validated();
         $user->update($validated);
         $this->logActivity($request, "Changement statut utilisateur: {$user->first_name} {$user->last_name} → {$validated['status']}", $user->id);
@@ -172,6 +179,7 @@ class UserController extends Controller
     public function archive(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
+        $this->authorize('changeStatus', $user);
         $user->update(['status' => 'archived']);
         $this->logActivity($request, "Archivage utilisateur: {$user->first_name} {$user->last_name}", $user->id);
         return response()->json(['message' => 'Compte archivé avec succès.', 'user' => $user]);
@@ -183,6 +191,7 @@ class UserController extends Controller
     public function requestSuspend(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
+        $this->authorize('changeStatus', $user);
         $user->update(['status' => 'pending_suspension']);
         $this->logActivity($request, "Demande suspension utilisateur: {$user->first_name} {$user->last_name}", $user->id);
         return response()->json(['message' => 'Demande de suspension soumise à l\'admin.', 'user' => $user]);
@@ -194,6 +203,7 @@ class UserController extends Controller
     public function suspend(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
+        $this->authorize('changeStatus', $user);
         $user->update(['status' => 'suspended']);
         $this->logActivity($request, "Suspension utilisateur: {$user->first_name} {$user->last_name}", $user->id);
         return response()->json(['message' => 'Compte suspendu.', 'user' => $user]);
@@ -203,6 +213,7 @@ class UserController extends Controller
     public function updateRole(UpdateUserRoleRequest $request, int $id): JsonResponse
     {
         $user      = User::findOrFail($id);
+        $this->authorize('changeRole', $user);
         $validated = $request->validated();
         $user->update($validated);
         $this->logActivity($request, "Changement rôle utilisateur: {$user->first_name} {$user->last_name} → {$validated['role']}", $user->id);
@@ -213,6 +224,7 @@ class UserController extends Controller
     public function restore(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
+        $this->authorize('changeStatus', $user);
         $user->update(['status' => 'active']);
         $this->logActivity($request, "Restauration utilisateur: {$user->first_name} {$user->last_name}", $user->id);
         return response()->json(['message' => 'Compte restauré.', 'user' => $user]);
@@ -224,6 +236,7 @@ class UserController extends Controller
     public function approve(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
+        $this->authorize('changeStatus', $user);
         $user->update(['status' => 'active']);
         $this->logActivity($request, "Approbation utilisateur: {$user->first_name} {$user->last_name}", $user->id);
         return response()->json(['message' => 'Compte approuvé et activé.', 'user' => $user]);
@@ -233,6 +246,7 @@ class UserController extends Controller
     public function validateSuspend(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
+        $this->authorize('changeStatus', $user);
         $user->update(['status' => 'suspended']);
         $this->logActivity($request, "Validation suspension utilisateur: {$user->first_name} {$user->last_name}", $user->id);
         return response()->json(['message' => 'Suspension validée.', 'user' => $user]);
@@ -281,6 +295,8 @@ class UserController extends Controller
     /** GET /hr/users/archived — Liste des utilisateurs archivés (RH + Admin) */
     public function archivedUsers(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', User::class);
+
         $query = User::where('status', 'archived');
 
         // Exclure les admins pour les RH

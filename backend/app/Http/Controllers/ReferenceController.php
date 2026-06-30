@@ -26,6 +26,8 @@ class ReferenceController extends Controller
     /** GET /admin/references — Liste paginée des références (Admin uniquement) */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Reference::class);
+
         $query = Reference::with(['category', 'publisher', 'uploadedBy', 'authors']);
 
         if ($request->filled('search')) {
@@ -63,12 +65,16 @@ class ReferenceController extends Controller
         $reference = Reference::with(['category', 'publisher', 'uploadedBy', 'authors', 'keywords'])
             ->findOrFail($id);
 
+        $this->authorize('view', $reference);
+
         return response()->json(['reference' => $reference]);
     }
 
     /** POST /admin/references — Créer une référence (Admin uniquement) */
     public function store(StoreReferenceRequest $request): JsonResponse
     {
+        $this->authorize('create', Reference::class);
+
         $validated = $request->validated();
 
         $reference = Reference::create($validated);
@@ -99,6 +105,7 @@ class ReferenceController extends Controller
     public function update(UpdateReferenceRequest $request, $id): JsonResponse
     {
         $reference = Reference::findOrFail($id);
+        $this->authorize('update', $reference);
 
         $validated = $request->validated();
 
@@ -131,6 +138,7 @@ class ReferenceController extends Controller
     public function destroy(Request $request, $id): JsonResponse
     {
         $reference = Reference::findOrFail($id);
+        $this->authorize('delete', $reference);
 
         $reference->delete();
 
@@ -145,6 +153,7 @@ class ReferenceController extends Controller
     public function toggleStatus(Request $request, $id): JsonResponse
     {
         $reference = Reference::findOrFail($id);
+        $this->authorize('update', $reference);
 
         $validated = $request->validate([
             'status' => 'required|in:draft,published,archived',
@@ -163,6 +172,8 @@ class ReferenceController extends Controller
     /** GET /admin/references/archived — Liste des références archivées (Admin uniquement) */
     public function archivedReferences(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Reference::class);
+
         $query = Reference::where('status', 'archived')
             ->with(['category', 'publisher', 'uploadedBy']);
 
@@ -186,6 +197,7 @@ class ReferenceController extends Controller
     public function restore(Request $request, $id): JsonResponse
     {
         $reference = Reference::findOrFail($id);
+        $this->authorize('restore', $reference);
         
         if ($reference->status !== 'archived') {
             return response()->json([

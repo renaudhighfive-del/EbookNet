@@ -8,6 +8,7 @@ import {
   Search,
   UserPlus,
   Pencil,
+  Eye,
   UserX,
   UserCheck,
   Ban,
@@ -49,6 +50,7 @@ const userModal = ref({
   form: { first_name: '', last_name: '', email: '', phone: '', password: '', role: 'user', status: 'active' },
   serverErrors: {},
 })
+const detailModal = ref({ visible: false, user: null })
 
 // ── Tabs ───────────────────────────────────────────────────────────────────
 
@@ -147,6 +149,17 @@ const openEditModal = async (user) => {
 }
 
 const closeUserModal = () => { userModal.value.visible = false }
+const openUserDetails = async (user) => {
+  try {
+    const userData = await userStore.fetchUser(user.id)
+    detailModal.value = { visible: true, user: userData }
+  } catch {
+    showToast("Impossible de charger les détails de l'utilisateur.", 'error')
+  }
+}
+const closeUserDetails = () => {
+  detailModal.value = { visible: false, user: null }
+}
 
 const handleUserSubmit = async () => {
   userModal.value.serverErrors = {}
@@ -429,10 +442,21 @@ onMounted(() => fetchUsers())
               <td class="px-5 py-4">
                 <div class="flex items-center justify-end gap-0.5">
 
-                  <!-- Modifier (toujours visible) -->
+                  <!-- Voir plus -->
+                  <button
+                    @click="openUserDetails(user)"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Voir plus"
+                  >
+                    <Eye class="w-3.5 h-3.5" />
+                  </button>
+
+                  <!-- Modifier -->
                   <button
                     @click="openEditModal(user)"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-[#1B2A4A] transition-colors"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-[#1B2A4A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Modifier"
                   >
                     <Pencil class="w-3.5 h-3.5" />
@@ -445,7 +469,8 @@ onMounted(() => fetchUsers())
                   <button
                     v-if="user.status === 'inactive'"
                     @click="confirmAction({ type: 'approve', user })"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Approuver le compte"
                   >
                     <CheckCircle class="w-3.5 h-3.5" />
@@ -455,7 +480,8 @@ onMounted(() => fetchUsers())
                   <button
                     v-if="user.status === 'pending_suspension'"
                     @click="confirmAction({ type: 'validate-suspend', user })"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-orange-50 hover:text-orange-500 transition-colors"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-orange-50 hover:text-orange-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Valider la suspension"
                   >
                     <ShieldAlert class="w-3.5 h-3.5" />
@@ -465,7 +491,8 @@ onMounted(() => fetchUsers())
                   <button
                     v-if="user.status === 'active' && !isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'deactivate', user })"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-amber-50 hover:text-amber-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Désactiver"
                   >
                     <UserX class="w-3.5 h-3.5" />
@@ -475,7 +502,8 @@ onMounted(() => fetchUsers())
                   <button
                     v-if="['inactive','pending_suspension','suspended','archived'].includes(user.status)"
                     @click="confirmAction({ type: 'restore', user })"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-teal-50 hover:text-[#0D9488] transition-colors"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-teal-50 hover:text-[#0D9488] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Restaurer / Réactiver"
                   >
                     <UserCheck class="w-3.5 h-3.5" />
@@ -485,7 +513,8 @@ onMounted(() => fetchUsers())
                   <button
                     v-if="!['suspended','archived'].includes(user.status) && !isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'suspend', user })"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Suspendre"
                   >
                     <Ban class="w-3.5 h-3.5" />
@@ -495,7 +524,8 @@ onMounted(() => fetchUsers())
                   <button
                     v-if="!isCurrentUser(user.id)"
                     @click="openRoleModal(user)"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Changer le rôle"
                   >
                     <Shield class="w-3.5 h-3.5" />
@@ -505,11 +535,11 @@ onMounted(() => fetchUsers())
                   <button
                     v-if="!isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'archive', user })"
-                    :disabled="user.status === 'archived'"
+                    :disabled="user.status === 'archived' || userStore.isActionLoading"
                     :class="[
                       'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
-                      user.status === 'archived' 
-                        ? 'text-gray-300 cursor-not-allowed' 
+                      user.status === 'archived'
+                        ? 'text-gray-300 cursor-not-allowed'
                         : 'text-gray-400 hover:bg-red-50 hover:text-red-500'
                     ]"
                     title="Archiver"
@@ -581,6 +611,74 @@ onMounted(() => fetchUsers())
         </button>
       </div>
     </div>
+
+    <!-- ── Modal détails utilisateur ─────────────────────────────────── -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition duration-150 ease-out" enter-from-class="opacity-0 scale-95" leave-active-class="transition duration-100 ease-in" leave-to-class="opacity-0 scale-95">
+        <div v-if="detailModal.visible" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-xl w-full border border-gray-100">
+            <div class="flex items-start justify-between mb-6">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-teal-50 flex items-center justify-center text-[#0D9488]">
+                  <Users class="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold text-[#1B2A4A]">Détails utilisateur</h3>
+                  <p class="text-sm text-gray-500 mt-0.5">Informations complètes du compte</p>
+                </div>
+              </div>
+              <button @click="closeUserDetails" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <XCircle class="w-5 h-5" />
+              </button>
+            </div>
+
+            <div v-if="detailModal.user" class="space-y-4">
+              <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                    :class="userStore.getAvatarColor(detailModal.user.id)"
+                  >
+                    {{ userStore.getUserInitials(detailModal.user) }}
+                  </div>
+                  <div>
+                    <p class="text-base font-semibold text-[#1B2A4A]">
+                      {{ detailModal.user.first_name }} {{ detailModal.user.last_name }}
+                    </p>
+                    <p class="text-sm text-gray-500">{{ detailModal.user.email }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="rounded-xl border border-gray-100 p-4">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Téléphone</p>
+                  <p class="mt-1 text-sm text-gray-700">{{ detailModal.user.phone || '—' }}</p>
+                </div>
+                <div class="rounded-xl border border-gray-100 p-4">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Rôle</p>
+                  <p class="mt-1 text-sm text-gray-700">{{ userStore.getRoleLabel(detailModal.user.role) }}</p>
+                </div>
+                <div class="rounded-xl border border-gray-100 p-4">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Statut</p>
+                  <p class="mt-1 text-sm text-gray-700">{{ userStore.getStatusLabel(detailModal.user.status) }}</p>
+                </div>
+                <div class="rounded-xl border border-gray-100 p-4">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Dernière connexion</p>
+                  <p class="mt-1 text-sm text-gray-700">{{ detailModal.user.last_login_at ? userStore.formatDate(detailModal.user.last_login_at) : '—' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end mt-6">
+              <button @click="closeUserDetails" class="px-4 py-2 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] transition-colors">
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- ── Modal confirmation ──────────────────────────────────────────── -->
     <Teleport to="body">
@@ -776,10 +874,10 @@ onMounted(() => fetchUsers())
                 </button>
                 <button
                   type="submit"
-                  :disabled="isLoading"
+                  :disabled="userStore.isActionLoading"
                   class="px-5 py-2 rounded-xl bg-[#0D9488] hover:bg-[#0a7a6f] text-white text-sm font-semibold disabled:opacity-50 transition-colors"
                 >
-                  {{ isLoading
+                  {{ userStore.isActionLoading
                     ? (userModal.isEdit ? 'Modification...' : 'Création...')
                     : (userModal.isEdit ? 'Enregistrer' : 'Créer le compte') }}
                 </button>

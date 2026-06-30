@@ -13,6 +13,8 @@ class CategoryController extends Controller
     /** GET /admin/categories — Liste paginée des catégories */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Category::class);
+
         $query = Category::withCount('references');
 
         if ($request->filled('search')) {
@@ -36,6 +38,8 @@ class CategoryController extends Controller
     /** POST /admin/categories — Créer une catégorie */
     public function store(StoreCategoryRequest $request): JsonResponse
     {
+        $this->authorize('create', Category::class);
+
         $validated = $request->validated();
         $validated['slug'] = str($validated['name'])->slug()->toString();
         $validated['status'] = $validated['status'] ?? 'active';
@@ -49,6 +53,7 @@ class CategoryController extends Controller
     public function show(int $id): JsonResponse
     {
         $category = Category::withCount('references')->findOrFail($id);
+        $this->authorize('view', $category);
         return response()->json(['category' => $category]);
     }
 
@@ -56,6 +61,7 @@ class CategoryController extends Controller
     public function update(UpdateCategoryRequest $request, int $id): JsonResponse
     {
         $category = Category::withCount('references')->findOrFail($id);
+        $this->authorize('update', $category);
 
         $validated = $request->validated();
 
@@ -72,6 +78,7 @@ class CategoryController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $category = Category::findOrFail($id);
+        $this->authorize('delete', $category);
 
         // Vérifier si la catégorie a des références
         if ($category->references()->count() > 0) {
@@ -90,6 +97,7 @@ class CategoryController extends Controller
     public function toggleStatus(Request $request, int $id): JsonResponse
     {
         $category = Category::withCount('references')->findOrFail($id);
+        $this->authorize('update', $category);
         $category->update(['status' => $category->status === 'active' ? 'inactive' : 'active']);
 
         return response()->json(['message' => 'Statut de la catégorie mis à jour.', 'category' => $category]);
@@ -98,6 +106,8 @@ class CategoryController extends Controller
     /** GET /admin/categories/all — Liste toutes les catégories (pour les select) */
     public function all(): JsonResponse
     {
+        $this->authorize('viewAny', Category::class);
+
         $categories = Category::where('status', 'active')
             ->orderBy('name', 'asc')
             ->get(['id', 'name', 'slug']);

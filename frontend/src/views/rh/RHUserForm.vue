@@ -15,7 +15,6 @@ const isEdit = ref(false)
 const toast = ref({ message: '', type: 'success' })
 const serverErrors = ref({})
 
-const isLoading = computed(() => userStore.isLoading)
 const isActionLoading = computed(() => userStore.isActionLoading)
 
 const form = ref({
@@ -266,10 +265,10 @@ onMounted(() => {
           </button>
           <button
             type="submit"
-            :disabled="isLoading"
+            :disabled="isActionLoading"
             class="bg-teal-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
           >
-            {{ isLoading ? 'Enregistrement en cours...' : isEdit ? 'Enregistrer les modifications' : 'Créer le compte' }}
+            {{ isActionLoading ? 'Enregistrement en cours...' : isEdit ? 'Enregistrer les modifications' : 'Créer le compte' }}
           </button>
         </div>
       </form>

@@ -13,6 +13,8 @@ class DepositRequestController extends Controller
     /** GET /admin/deposits — Liste des demandes de dépôt pour l'admin */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', DepositRequest::class);
+
         $query = DepositRequest::with(['applicant', 'assignedManager', 'category']);
 
         // Filtrer par statut
@@ -44,6 +46,8 @@ class DepositRequestController extends Controller
         $deposit = DepositRequest::with(['applicant', 'assignedManager', 'category', 'reviews.reviewer'])
             ->findOrFail($id);
 
+        $this->authorize('view', $deposit);
+
         return response()->json(['deposit_request' => $deposit]);
     }
 
@@ -51,6 +55,7 @@ class DepositRequestController extends Controller
     public function assign(AssignDepositRequest $request, int $id): JsonResponse
     {
         $deposit = DepositRequest::findOrFail($id);
+        $this->authorize('assign', $deposit);
         $deposit->update([
             'assigned_manager_id' => $request->assigned_manager_id,
             'status' => 'assigned',
@@ -66,6 +71,7 @@ class DepositRequestController extends Controller
     public function approve(Request $request, int $id): JsonResponse
     {
         $deposit = DepositRequest::findOrFail($id);
+        $this->authorize('review', $deposit);
 
         if ($deposit->status !== 'assigned') {
             return response()->json(['message' => 'Cette demande doit être assignée avant d\'être approuvée.'], 400);
@@ -83,6 +89,7 @@ class DepositRequestController extends Controller
     public function reject(RejectDepositRequest $request, int $id): JsonResponse
     {
         $deposit = DepositRequest::findOrFail($id);
+        $this->authorize('review', $deposit);
 
         if ($deposit->status !== 'assigned') {
             return response()->json(['message' => 'Cette demande doit être assignée avant d\'être rejetée.'], 400);
@@ -103,6 +110,7 @@ class DepositRequestController extends Controller
     public function publish(Request $request, int $id): JsonResponse
     {
         $deposit = DepositRequest::with('category')->findOrFail($id);
+        $this->authorize('review', $deposit);
 
         if ($deposit->status !== 'approved_by_manager') {
             return response()->json(['message' => 'Cette demande doit être approuvée par le manager avant publication.'], 400);

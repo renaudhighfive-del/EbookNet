@@ -431,7 +431,8 @@ onMounted(() => fetchUsers())
                   <!-- Modifier -->
                   <button
                     @click="openEditModal(user)"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-[#1B2A4A] transition-colors"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-[#1B2A4A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Modifier"
                   >
                     <Pencil class="w-4 h-4" />
@@ -441,7 +442,8 @@ onMounted(() => fetchUsers())
                   <button
                     v-if="user.status === 'inactive' && ['admin','responsable_rh'].includes(authStore.userRole)"
                     @click="confirmAction({ type: 'approve', user })"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Approuver le compte"
                   >
                     <CheckCircle class="w-4 h-4" />
@@ -451,7 +453,8 @@ onMounted(() => fetchUsers())
                   <button
                     v-if="user.status === 'active' && !isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'deactivate', user })"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Désactiver"
                   >
                     <UserX class="w-4 h-4" />
@@ -462,7 +465,7 @@ onMounted(() => fetchUsers())
                     v-if="['inactive', 'pending_suspension'].includes(user.status)"
                     @click="quickAction('activate', user)"
                     :disabled="userStore.isActionLoading"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-teal-50 hover:text-[#0D9488] transition-colors disabled:opacity-40"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-teal-50 hover:text-[#0D9488] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Réactiver"
                   >
                     <UserCheck class="w-4 h-4" />
@@ -472,7 +475,8 @@ onMounted(() => fetchUsers())
                   <button
                     v-if="user.status === 'active' && !isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'request-suspend', user })"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                    :disabled="userStore.isActionLoading"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Proposer une suspension"
                   >
                     <Ban class="w-4 h-4" />
@@ -482,11 +486,11 @@ onMounted(() => fetchUsers())
                   <button
                     v-if="!isCurrentUser(user.id)"
                     @click="confirmAction({ type: 'archive', user })"
-                    :disabled="user.status === 'archived'"
+                    :disabled="user.status === 'archived' || userStore.isActionLoading"
                     :class="[
                       'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
-                      user.status === 'archived' 
-                        ? 'text-gray-300 cursor-not-allowed' 
+                      user.status === 'archived'
+                        ? 'text-gray-300 cursor-not-allowed'
                         : 'text-gray-400 hover:bg-red-50 hover:text-red-600'
                     ]"
                     title="Archiver le compte"
@@ -729,10 +733,10 @@ onMounted(() => fetchUsers())
               </button>
               <button
                 type="submit"
-                :disabled="userStore.isLoading"
+                :disabled="userStore.isActionLoading"
                 class="px-4 py-2 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] disabled:opacity-50"
               >
-                {{ userStore.isLoading ? (userModal.isEdit ? 'Modification...' : 'Création...') : (userModal.isEdit ? 'Enregistrer' : 'Créer le compte') }}
+                {{ userStore.isActionLoading ? (userModal.isEdit ? 'Modification...' : 'Création...') : (userModal.isEdit ? 'Enregistrer' : 'Créer le compte') }}
               </button>
             </div>
           </form>

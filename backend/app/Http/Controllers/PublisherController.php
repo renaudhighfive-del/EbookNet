@@ -13,6 +13,8 @@ class PublisherController extends Controller
     /** GET /admin/publishers — Liste paginée des éditeurs */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Publisher::class);
+
         $query = Publisher::withCount('references');
 
         if ($request->filled('search')) {
@@ -36,6 +38,8 @@ class PublisherController extends Controller
     /** GET /admin/publishers/all — Liste tous les éditeurs (pour les select) */
     public function all(): JsonResponse
     {
+        $this->authorize('viewAny', Publisher::class);
+
         $publishers = Publisher::orderBy('name', 'asc')
             ->get(['id', 'name', 'country']);
 
@@ -46,12 +50,15 @@ class PublisherController extends Controller
     public function show(int $id): JsonResponse
     {
         $publisher = Publisher::withCount('references')->findOrFail($id);
+        $this->authorize('view', $publisher);
         return response()->json(['publisher' => $publisher]);
     }
 
     /** POST /admin/publishers — Créer un éditeur */
     public function store(StorePublisherRequest $request): JsonResponse
     {
+        $this->authorize('create', Publisher::class);
+
         $publisher = Publisher::create($request->validated());
 
         return response()->json(['message' => 'Éditeur créé avec succès.', 'publisher' => $publisher], 201);
@@ -61,6 +68,7 @@ class PublisherController extends Controller
     public function update(UpdatePublisherRequest $request, int $id): JsonResponse
     {
         $publisher = Publisher::withCount('references')->findOrFail($id);
+        $this->authorize('update', $publisher);
         $publisher->update($request->validated());
 
         return response()->json(['message' => 'Éditeur mis à jour avec succès.', 'publisher' => $publisher]);
@@ -70,6 +78,7 @@ class PublisherController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $publisher = Publisher::findOrFail($id);
+        $this->authorize('delete', $publisher);
 
         if ($publisher->references()->count() > 0) {
             return response()->json([
