@@ -53,7 +53,7 @@ class UserController extends Controller
             );
         }
 
-        $perPage = min((int) $request->input('per_page', 10), 100);
+        $perPage = min((int) $request->input('per_page', 10), 9999);
         $paginator = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         // Optimisation : une seule requête pour tous les counts
@@ -252,18 +252,103 @@ class UserController extends Controller
         return response()->json(['message' => 'Suspension validée.', 'user' => $user]);
     }
 
-    /** GET /admin/stats — Statistiques globales pour le dashboard admin */
-    public function getStats(): JsonResponse
-    {
-        return response()->json([
-            'total_references' => \App\Models\Reference::count(),
-            'pending_deposits' => \App\Models\DepositRequest::where('status', 'pending')->count(),
-            'active_users' => User::where('status', 'active')->count(),
-            'total_downloads' => \App\Models\Download::count(),
-            'total_views' => \App\Models\View::count(),
-            'unread_notifications' => \App\Models\Notification::where('is_read', false)->count(),
-        ]);
+  /** GET /admin/stats — Statistiques globales pour le dashboard admin */
+  public function getStats(): JsonResponse
+  {
+    return response()->json([
+      'total_references' => \App\Models\Reference::count(),
+      'pending_deposits' => \App\Models\DepositRequest::where('status', 'pending')->count(),
+      'active_users' => User::where('status', 'active')->count(),
+      'total_downloads' => \App\Models\Download::count(),
+      'total_views' => \App\Models\View::count(),
+      'unread_notifications' => \App\Models\Notification::where('is_read', false)->count(),
+    ]);
+  }
+
+  /** GET /user/dashboard — Dashboard pour utilisateur connecté */
+  public function getUserDashboard(Request $request): JsonResponse
+  {
+    $user = $request->user();
+    
+    // Récupérer l'ensemble des dépôts de l'utilisateur
+    $deposits = $user->depositRequests()->with(['reference', 'reviews'])->get();
+    
+    // Compter les statistiques
+    $totalDeposits = $deposits->count();
+    $pendingDeposits = $deposits->where('status', 'pending')->count();
+    $approvedDeposits = $deposits->where('status', 'approved')->count();
+    
+    $recentActivity = $this->formatUserActivity($deposits, $user);
+    
+    return response()->json([
+      'user' => $user,
+      'stats' => [
+        'totalDocuments' => $totalDeposits,
+        'totalDownloads' => $user->downloadLogs()->count(),
+        'pendingDeposits' => $pendingDeposits,
+        'approvedDeposits' => $approvedDeposits,
+      ],
+      'recentActivity' => $recentActivity,
+    ]);
+  }
+
+  private function formatUserActivity($deposits, $user): array
+  {
+    $activities = [];
+    
+    // Ajouter les activités de dépôt
+    foreach ($deposits as $deposit) {
+      $activities[] = [
+        'id' => $deposit->id,
+        'type' => match ($deposit->status) {
+          'pending' => 'deposit_submitted',
+          'approved' => 'deposit_accepted',
+          'rejected' => 'deposit_rejected',
+          'assigned' => 'deposit_assigned',
+          'published' => 'deposit_published',
+          default => 'deposit_updated',
+        },
+        'description' => "Votre demande de dépôt '{$deposit->title}' a été {$this->getStatusDescription($deposit->status)})",
+        'reference_title' => $deposit->reference->title ?? null,
+        'created_at' => $deposit->created_at,
+      ];
     }
+    
+    // Ajouter les activités de téléchargement
+    $downloadLogs = $user->downloadLogs()->with('reference')->latest()->take(3)->get();
+    
+    foreach ($downloadLogs as $download) {
+      $activities[] = [
+        'id' => 'dl' . $download->id,
+        'type' => 'download',
+        'description' => "Vous avez téléchargé '{$download->reference->title}'",
+        'reference_title' => $download->reference->title ?? null,
+        'created_at' => $download->created_at,
+      ];
+    }
+    
+    // Trier par date de création et limiter à 10 dernières activités
+    usort($activities, function ($a, $b) {
+      return strtotime($b['created_at']) - strtotime($a['created_at']);
+    });
+    
+    return array_slice($activities, 0, 10);
+  }
+
+  private function getStatusDescription(string $status): string
+  {
+    $descriptions = [
+      'pending' => 'soumise pour validation',
+      'approved' => 'acceptée',
+      'rejected' => 'rejetée',
+      'assigned' => 'assignée à un responsable',
+      'published' => 'publiée',
+      'cancelled' => 'annulée',
+      'returned' => 'retournée pour modification',
+    ];
+    
+    return $descriptions[$status] ?? $status;
+  }
 
     /** GET /admin/stats/deposits-by-month — Dépôts par mois pour le graphique */
     public function getDepositsByMonth(): JsonResponse
@@ -313,7 +398,7 @@ class UserController extends Controller
             );
         }
 
-        $perPage = min((int) $request->input('per_page', 10), 100);
+        $perPage = min((int) $request->input('per_page', 10), 9999);
         return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
     }
 }

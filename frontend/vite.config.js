@@ -17,4 +17,21 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 800, // Augmente proprement le seuil d'avertissement à 800 kB
+    rolldownOptions: {
+      output: {
+        // Active le découpage automatique et extrait node_modules dans un fichier à part
+        codeSplitting: {
+          minSize: 20000,
+          groups: [
+            {
+              name: 'vendor',
+              test: /node_modules/,
+            },
+          ],
+        },
+      },
+    },
+  },
 })

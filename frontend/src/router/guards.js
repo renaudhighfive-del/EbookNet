@@ -16,9 +16,18 @@ export function setupAuthGuards(router) {
       return { name: 'dashboard' }
     }
 
+    const getRoleBasedRedirect = () => {
+      const userRole = authStore.userRole
+      if (userRole === 'admin') return { name: 'admin-dashboard' }
+      if (userRole === 'responsable_rh') return { name: 'rh-dashboard' }
+      if (userRole === 'responsable_demande') return { name: 'manager-dashboard' }
+      if (userRole === 'user') return { name: 'dashboard' }
+      return { name: 'auth' }
+    }
+
     if (to.meta?.public) {
       if (to.name === 'auth' && authStore.isAuthenticated) {
-        return getRoleDashboard()
+        return getRoleBasedRedirect()
       }
       return
     }
@@ -28,7 +37,7 @@ export function setupAuthGuards(router) {
     }
 
     if (to.meta?.roles && !to.meta.roles.includes(authStore.userRole)) {
-      return getRoleDashboard()
+      return getRoleBasedRedirect()
     }
   })
 }

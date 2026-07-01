@@ -1,16 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ActivityLogController;
 
 // ════════════════════════════════════════════════════════════════════════════
-//  JOURNAL D'ACTIVITÉ — RH & ADMIN
+//  TESTS — Routes de test
 // ════════════════════════════════════════════════════════════════════════════
 
-Route::middleware(['auth:sanctum', 'role:responsable_rh'])
-    ->get('/hr/activity-logs', [ActivityLogController::class, 'indexForRH']);
-
-
-Route::middleware(['auth:sanctum', 'role:admin'])
-    ->get('/admin/activity-logs', [ActivityLogController::class, 'indexForAdmin']);
-
+Route::get('/test', fn() => response()->json(['status' => true, 'message' => 'API OK']));

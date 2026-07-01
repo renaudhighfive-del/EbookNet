@@ -66,7 +66,7 @@ const documents = ref([
           class="bg-white rounded-2xl p-5 shadow-soft flex gap-4 items-start"
         >
           <div
-            class="w-24 h-32 bg-gradient-to-br flex items-center justify-center rounded-xl shrink-0"
+            class="w-24 h-32 bg-linear-to-br flex items-center justify-center rounded-xl shrink-0"
             :class="doc.coverColor"
           >
             <BookMarked class="w-12 h-12 text-white/30" />

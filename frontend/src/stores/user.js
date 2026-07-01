@@ -63,6 +63,12 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  async function refreshDashboardData() {
+    if (currentUser.value?.id) {
+      await fetchUser(currentUser.value.id)
+    }
+  }
+
   /** POST /api/hr/users */
   async function createUser(data) {
     isActionLoading.value = true
@@ -302,6 +308,19 @@ export const useUserStore = defineStore('user', () => {
     ['bg-amber-600', 'bg-teal-700', 'bg-[#1B2A4A]', 'bg-purple-700', 'bg-rose-700'][id % 5]
 
   const getUserInitials = (u) => `${u.first_name?.[0] ?? ''}${u.last_name?.[0] ?? ''}`.toUpperCase()
+
+  async function fetchUserProfile() {
+    if (!user.value?.id) return
+    
+    try {
+      const response = await api.get(`/hr/users/${user.value.id}`)
+      currentUser.value = response.data.user
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error)
+      clearCurrentUser()
+      throw error
+    }
+  }
 
   const formatDate = (d) =>
     new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })

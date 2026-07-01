@@ -45,9 +45,4 @@ class ReferencePolicy
     {
         return $user->role === 'admin';
     }
-
-    public function forceDelete(User $user, Reference $reference): bool
-    {
-        return $user->role === 'admin';
-    }
 }

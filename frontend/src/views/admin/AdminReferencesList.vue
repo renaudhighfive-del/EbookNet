@@ -5,7 +5,7 @@ import { useCategoryStore } from '@/stores/category'
 import { usePublisherStore } from '@/stores/publisher'
 import { useAuthorStore } from '@/stores/author'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import { Search, Plus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, BookOpen, X } from '@lucide/vue'
+import { Search, Plus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, BookOpen, X, Upload, FileText } from '@lucide/vue'
 
 const referenceStore = useReferenceStore()
 const categoryStore = useCategoryStore()
@@ -63,6 +63,36 @@ const referenceModal = ref({
   },
   newKeyword: '',
 })
+
+// Fichiers upload
+const coverImageFile = ref(null)
+const filePathFile = ref(null)
+const coverImagePreview = ref('')
+
+const handleCoverImageChange = (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    coverImageFile.value = file
+    const reader = new FileReader()
+    reader.onload = (ev) => { coverImagePreview.value = ev.target.result }
+    reader.readAsDataURL(file)
+  }
+}
+
+const handleFilePathChange = (e) => {
+  filePathFile.value = e.target.files[0] || null
+}
+
+const removeCoverImage = () => {
+  coverImageFile.value = null
+  coverImagePreview.value = ''
+  referenceModal.value.form.cover_image = ''
+}
+
+const removeFilePath = () => {
+  filePathFile.value = null
+  referenceModal.value.form.file_path = ''
+}
 
 const detailsModal = ref({
   visible: false,
@@ -127,35 +157,23 @@ const visiblePages = computed(() => {
 
 // ─── Actions ─────────────────────────────────────────────────────────────
 
-const fetchReferencesWithParams = () => {
-  const params = {
-    page: currentPage.value,
-    per_page: perPage.value,
-    search: searchQuery.value || undefined,
-    status: filterStatus.value || undefined,
-    document_type: filterDocumentType.value || undefined,
-    language: filterLanguage.value || undefined,
-  }
-  Object.keys(params).forEach((key) => params[key] === undefined && (delete params[key]))
-  referenceStore.fetchReferences(params).catch(() => showToast('Erreur lors du chargement.', 'error'))
+const fetchAllReferences = () => {
+  referenceStore.fetchReferences({ per_page: 9999 }).catch(() => showToast('Erreur lors du chargement.', 'error'))
 }
 
 const onSearchInput = () => {
   clearTimeout(searchTimeout.value)
   searchTimeout.value = setTimeout(() => {
     currentPage.value = 1
-    fetchReferencesWithParams()
   }, 300)
 }
 
 const resetPage = () => {
   currentPage.value = 1
-  fetchReferencesWithParams()
 }
 
 const changePage = (page) => {
   currentPage.value = page
-  fetchReferencesWithParams()
 }
 
 const showToast = (message, type = 'success') => {
@@ -189,6 +207,9 @@ const openCreateModal = () => {
     },
     newKeyword: '',
   }
+  coverImageFile.value = null
+  filePathFile.value = null
+  coverImagePreview.value = ''
 }
 
 const openEditModal = async (reference) => {
@@ -217,6 +238,9 @@ const openEditModal = async (reference) => {
       },
       newKeyword: '',
     }
+    coverImageFile.value = null
+    filePathFile.value = null
+    coverImagePreview.value = data.cover_image || ''
   } catch (err) {
     showToast('Erreur lors du chargement des détails.', 'error', err)
   }
@@ -269,7 +293,7 @@ const executeModal = async () => {
       showToast('Référence supprimée avec succès.')
     }
     modal.value.visible = false
-    fetchReferencesWithParams()
+    fetchAllReferences()
   } catch (err) {
     showToast('Erreur lors de l\'action.', 'error', err)
   }
@@ -277,15 +301,56 @@ const executeModal = async () => {
 
 const submitReferenceForm = async () => {
   try {
+    const form = referenceModal.value.form
+    const hasFiles = coverImageFile.value || filePathFile.value
+
+    let data
+    if (hasFiles) {
+      const fd = new FormData()
+
+      const scalarFields = ['title', 'subtitle', 'abstract', 'isbn', 'publication_year',
+                            'document_type', 'language', 'pages', 'category_id',
+                            'publisher_id', 'status']
+
+      for (const key of scalarFields) {
+        const val = form[key]
+        if (val !== null && val !== '' && val !== undefined) {
+          fd.append(key, val)
+        }
+      }
+
+      for (const authorId of form.authors) {
+        fd.append('authors[]', authorId)
+      }
+
+      for (const keyword of form.keywords) {
+        fd.append('keywords[]', keyword)
+      }
+
+      if (coverImageFile.value) {
+        fd.append('cover_image', coverImageFile.value)
+      }
+
+      if (filePathFile.value) {
+        fd.append('file_path', filePathFile.value)
+      }
+
+      data = fd
+    } else {
+      data = { ...form }
+      if (!data.cover_image) delete data.cover_image
+      if (!data.file_path) delete data.file_path
+    }
+
     if (referenceModal.value.isEdit) {
-      await referenceStore.updateReference(referenceModal.value.referenceId, referenceModal.value.form)
+      await referenceStore.updateReference(referenceModal.value.referenceId, data)
       showToast('Référence mise à jour avec succès.')
     } else {
-      await referenceStore.createReference(referenceModal.value.form)
+      await referenceStore.createReference(data)
       showToast('Référence créée avec succès.')
     }
     closeReferenceModal()
-    fetchReferencesWithParams()
+    fetchAllReferences()
   } catch (err) {
     showToast('Erreur lors de l\'enregistrement.', 'error', err)
   }
@@ -297,7 +362,7 @@ onMounted(async () => {
   try {
     // Charger les références, catégories, éditeurs et auteurs en parallèle
     await Promise.all([
-      fetchReferencesWithParams(),
+      fetchAllReferences(),
       (async () => {
         const cats = await categoryStore.fetchAllCategories()
         categories.value = cats || []
@@ -317,16 +382,15 @@ onMounted(async () => {
 })
 </script>
 
-
 <template>
   <AdminLayout>
     <template #title>
       Références
       <span
-        v-if="referenceStore.pagination.total"
+        v-if="referenceStore.references.length"
         class="ml-2 text-xs font-mono font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full"
       >
-        {{ referenceStore.pagination.total }}
+        {{ referenceStore.references.length }}
       </span>
     </template>
 
@@ -480,7 +544,7 @@ onMounted(async () => {
     </div>
 
     <!-- Pagination -->
-    <div v-if="referenceStore.pagination.last_page && referenceStore.pagination.last_page >= 1" class="flex items-center justify-between mt-5">
+    <div v-if="totalPages >= 1" class="flex items-center justify-between mt-5">
       <div class="flex items-center gap-2">
         <span class="text-sm text-gray-500">Afficher</span>
         <select
@@ -495,7 +559,7 @@ onMounted(async () => {
       <div class="flex items-center gap-1">
         <button
           @click="changePage(currentPage - 1)"
-          :disabled="!referenceStore.pagination.prev_page_url"
+          :disabled="currentPage <= 1"
           class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft class="w-4 h-4" />
@@ -516,7 +580,7 @@ onMounted(async () => {
         </button>
         <button
           @click="changePage(currentPage + 1)"
-          :disabled="!referenceStore.pagination.next_page_url"
+          :disabled="currentPage >= totalPages"
           class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronRight class="w-4 h-4" />
@@ -558,64 +622,65 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="referenceModal.visible"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto p-4"
         @click.self="closeReferenceModal"
       >
-        <div class="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 my-8">
-          <h3 class="text-lg font-semibold text-[#1B2A4A] mb-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-4xl mx-auto my-4 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg font-semibold text-[#1B2A4A] mb-6 flex items-center gap-2">
+            <BookOpen class="w-5 h-5 text-[#0D9488]" />
             {{ referenceModal.isEdit ? 'Modifier la référence' : 'Nouvelle référence' }}
           </h3>
           <form @submit.prevent="submitReferenceForm">
-            <div class="grid grid-cols-2 gap-4 mb-4">
-              <div class="col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Titre *</label>
                 <input
                   v-model="referenceModal.form.title"
                   type="text"
                   required
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all"
                 />
               </div>
-              <div class="col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Sous-titre</label>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sous-titre</label>
                 <input
                   v-model="referenceModal.form.subtitle"
                   type="text"
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all"
                 />
               </div>
-              <div class="col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Résumé</label>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Résumé</label>
                 <textarea
                   v-model="referenceModal.form.abstract"
-                  rows="3"
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                  rows="4"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all resize-none"
                 ></textarea>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ISBN</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">ISBN</label>
                 <input
                   v-model="referenceModal.form.isbn"
                   type="text"
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all"
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Année de publication</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Année de publication</label>
                 <input
                   v-model="referenceModal.form.publication_year"
                   type="number"
                   min="1000"
                   max="9999"
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all"
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Type de document *</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Type de document *</label>
                 <select
                   v-model="referenceModal.form.document_type"
                   required
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all"
                 >
                   <option value="livre">Livre</option>
                   <option value="memoire">Mémoire</option>
@@ -628,11 +693,11 @@ onMounted(async () => {
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Langue *</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Langue *</label>
                 <select
                   v-model="referenceModal.form.language"
                   required
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all"
                 >
                   <option value="fr">Français</option>
                   <option value="en">Anglais</option>
@@ -640,19 +705,19 @@ onMounted(async () => {
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de pages</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre de pages</label>
                 <input
                   v-model="referenceModal.form.pages"
                   type="number"
                   min="1"
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all"
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Catégorie</label>
                 <select
                   v-model="referenceModal.form.category_id"
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all"
                 >
                   <option :value="null">-- Sélectionner une catégorie --</option>
                   <option v-for="cat in categories" :key="cat.id" :value="cat.id">
@@ -661,10 +726,10 @@ onMounted(async () => {
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Éditeur</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Éditeur</label>
                 <select
                   v-model="referenceModal.form.publisher_id"
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all"
                 >
                   <option :value="null">-- Sélectionner un éditeur --</option>
                   <option v-for="pub in publishers" :key="pub.id" :value="pub.id">
@@ -673,108 +738,142 @@ onMounted(async () => {
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Image de couverture</label>
-                <input
-                  v-model="referenceModal.form.cover_image"
-                  type="text"
-                  placeholder="URL ou chemin de l'image"
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Chemin du fichier</label>
-                <input
-                  v-model="referenceModal.form.file_path"
-                  type="text"
-                  placeholder="URL ou chemin du fichier"
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
-                />
-              </div>
-              <div class="col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Auteurs</label>
-                <div class="border border-gray-200 rounded-xl p-3 max-h-48 overflow-y-auto">
-                  <div v-if="authors.length === 0" class="text-sm text-gray-400 text-center py-4">
-                    Aucun auteur disponible
-                  </div>
-                  <div v-else class="space-y-2">
-                    <label v-for="author in authors" :key="author.id" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                      <input
-                        type="checkbox"
-                        :value="author.id"
-                        v-model="referenceModal.form.authors"
-                        class="rounded border-gray-300"
-                      />
-                      <span class="text-sm text-gray-700">{{ author.first_name }} {{ author.last_name }}</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div class="col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Mots-clés</label>
-                <div class="border border-gray-200 rounded-xl p-3">
-                  <div class="flex gap-2 mb-3">
-                    <input
-                      v-model="referenceModal.newKeyword"
-                      @keyup.enter="addKeyword"
-                      type="text"
-                      placeholder="Ajouter un mot-clé..."
-                      class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0D9488]"
-                    />
-                    <button
-                      @click="addKeyword"
-                      type="button"
-                      class="bg-[#0D9488] text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#0a7a6f]"
-                    >
-                      Ajouter
-                    </button>
-                  </div>
-                  <div v-if="referenceModal.form.keywords.length === 0" class="text-sm text-gray-400 text-center py-2">
-                    Aucun mot-clé ajouté
-                  </div>
-                  <div v-else class="flex flex-wrap gap-2">
-                    <div
-                      v-for="(keyword, index) in referenceModal.form.keywords"
-                      :key="index"
-                      class="bg-[#0D9488] text-white px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                    >
-                      {{ keyword }}
-                      <button
-                        @click="removeKeyword(index)"
-                        type="button"
-                        class="ml-1 hover:opacity-70"
-                      >
-                        <X class="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Statut *</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Statut *</label>
                 <select
                   v-model="referenceModal.form.status"
                   required
-                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D9488]"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all"
                 >
                   <option value="draft">Brouillon</option>
                   <option value="published">Publié</option>
                   <option value="archived">Archivé</option>
                 </select>
               </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Image de couverture</label>
+                <div class="border border-gray-200 rounded-xl p-4">
+                  <!-- Preview -->
+                  <div v-if="coverImagePreview || referenceModal.form.cover_image" class="relative mb-4">
+                    <img
+                      :src="coverImagePreview || referenceModal.form.cover_image"
+                      class="w-full h-48 object-cover rounded-xl"
+                      alt="Aperçu couverture"
+                    />
+                    <button
+                      @click="removeCoverImage"
+                      type="button"
+                      class="absolute top-3 right-3 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-600 transition-colors"
+                    >
+                      <X class="w-4 h-4" />
+                    </button>
+                  </div>
+                  <!-- Upload -->
+                  <label class="flex items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-gray-300 rounded-xl p-5 hover:border-[#0D9488] transition-colors">
+                    <Upload class="w-6 h-6 text-gray-400" />
+                    <span class="text-sm text-gray-500">
+                      {{ coverImageFile ? coverImageFile.name : 'Cliquez pour sélectionner une image' }}
+                    </span>
+                    <input type="file" @change="handleCoverImageChange" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp" class="hidden" />
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Fichier</label>
+                <div class="border border-gray-200 rounded-xl p-4">
+                  <!-- Fichier existant -->
+                  <div v-if="referenceModal.form.file_path && !filePathFile" class="flex items-center justify-between mb-4 bg-gray-50 rounded-xl px-4 py-3">
+                    <span class="text-sm text-gray-700 truncate flex-1 flex items-center gap-2">
+                      <FileText class="w-4 h-4 shrink-0" />
+                      {{ referenceModal.form.file_path }}
+                    </span>
+                    <button @click="removeFilePath" type="button" class="text-red-500 hover:text-red-700 transition-colors">
+                      <X class="w-5 h-5" />
+                    </button>
+                  </div>
+                  <!-- Upload -->
+                  <label class="flex items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-gray-300 rounded-xl p-5 hover:border-[#0D9488] transition-colors">
+                    <Upload class="w-6 h-6 text-gray-400" />
+                    <span class="text-sm text-gray-500">
+                      {{ filePathFile ? filePathFile.name : 'Cliquez pour sélectionner un fichier (PDF, EPUB, DOCX)' }}
+                    </span>
+                    <input type="file" @change="handleFilePathChange" accept=".pdf,.epub,.docx" class="hidden" />
+                  </label>
+                </div>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Auteurs</label>
+                <div class="border border-gray-200 rounded-xl p-4 max-h-52 overflow-y-auto">
+                  <div v-if="authors.length === 0" class="text-sm text-gray-400 text-center py-6">
+                    Aucun auteur disponible
+                  </div>
+                  <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label v-for="author in authors" :key="author.id" class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-xl transition-colors">
+                      <input
+                        type="checkbox"
+                        :value="author.id"
+                        v-model="referenceModal.form.authors"
+                        class="w-4 h-4 rounded border-gray-300 text-[#0D9488] focus:ring-[#0D9488]"
+                      />
+                      <span class="text-sm text-gray-700">{{ author.first_name }} {{ author.last_name }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Mots-clés</label>
+                <div class="border border-gray-200 rounded-xl p-4">
+                  <div class="flex gap-3 mb-4">
+                    <input
+                      v-model="referenceModal.newKeyword"
+                      @keyup.enter="addKeyword"
+                      type="text"
+                      placeholder="Ajouter un mot-clé..."
+                      class="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50 transition-all"
+                    />
+                    <button
+                      @click="addKeyword"
+                      type="button"
+                      class="bg-[#0D9488] text-white px-5 py-3 rounded-xl text-sm font-medium hover:bg-[#0a7a6f] transition-colors"
+                    >
+                      Ajouter
+                    </button>
+                  </div>
+                  <div v-if="referenceModal.form.keywords.length === 0" class="text-sm text-gray-400 text-center py-3">
+                    Aucun mot-clé ajouté
+                  </div>
+                  <div v-else class="flex flex-wrap gap-2">
+                    <div
+                      v-for="(keyword, index) in referenceModal.form.keywords"
+                      :key="index"
+                      class="bg-[#0D9488] text-white px-4 py-2 rounded-full text-sm flex items-center gap-2"
+                    >
+                      {{ keyword }}
+                      <button
+                        @click="removeKeyword(index)"
+                        type="button"
+                        class="ml-1 hover:opacity-70 transition-opacity"
+                      >
+                        <X class="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="flex gap-3 justify-end pt-4">
+            <div class="flex gap-3 justify-end pt-4 border-t border-gray-100">
               <button
                 type="button"
                 @click="closeReferenceModal"
-                class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
+                class="px-5 py-3 rounded-xl border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Annuler
               </button>
               <button
                 type="submit"
                 :disabled="referenceStore.isActionLoading"
-                class="px-4 py-2 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] disabled:opacity-50"
+                class="px-6 py-3 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] transition-colors disabled:opacity-50 flex items-center gap-2"
               >
+                <span v-if="referenceStore.isActionLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 {{ referenceStore.isActionLoading ? (referenceModal.isEdit ? 'Modification...' : 'Création...') : (referenceModal.isEdit ? 'Enregistrer' : 'Créer') }}
               </button>
             </div>
@@ -841,11 +940,22 @@ onMounted(async () => {
             </div>
             <div v-if="detailsModal.reference.cover_image">
               <span class="text-sm font-medium text-gray-500">Image de couverture :</span>
-              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.cover_image }}</span>
+              <img
+                :src="detailsModal.reference.cover_image.startsWith('http') ? detailsModal.reference.cover_image : '/storage/' + detailsModal.reference.cover_image"
+                class="w-full max-w-xs mt-2 rounded-lg border border-gray-200"
+                alt="Couverture"
+              />
             </div>
             <div v-if="detailsModal.reference.file_path">
-              <span class="text-sm font-medium text-gray-500">Chemin du fichier :</span>
-              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.file_path }}</span>
+              <span class="text-sm font-medium text-gray-500">Fichier :</span>
+              <a
+                :href="detailsModal.reference.file_path.startsWith('http') ? detailsModal.reference.file_path : '/storage/' + detailsModal.reference.file_path"
+                target="_blank"
+                class="text-sm text-[#0D9488] hover:underline ml-2 inline-flex items-center gap-1"
+              >
+                <FileText class="w-4 h-4" />
+                Télécharger le fichier
+              </a>
             </div>
             <div v-if="detailsModal.reference.authors && detailsModal.reference.authors.length">
               <span class="text-sm font-medium text-gray-500">Auteurs :</span>
@@ -877,4 +987,3 @@ onMounted(async () => {
     </Teleport>
   </AdminLayout>
 </template>
-

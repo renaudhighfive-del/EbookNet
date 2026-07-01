@@ -38,6 +38,7 @@ const filterRole    = ref('')
 const filterStatus  = ref('')
 const activeTab     = ref('') // '' = Tous
 const perPage       = ref(10)
+const currentPage   = ref(1)
 
 const toast     = ref({ message: '', type: 'success' })
 const roleModal = ref({ user: null, newRole: '' })
@@ -55,66 +56,87 @@ const detailModal = ref({ visible: false, user: null })
 // ── Tabs ───────────────────────────────────────────────────────────────────
 
 const tabs = computed(() => [
-  { key: '',                    label: 'Tous',           count: userStore.pagination?.total ?? 0 },
-  { key: 'admin',               label: 'Admins',         count: userStore.pagination?.counts?.admin ?? 0 },
-  { key: 'responsable_rh',      label: 'Resp. RH',       count: userStore.pagination?.counts?.responsable_rh ?? 0 },
-  { key: 'responsable_demande', label: 'Resp. Demandes', count: userStore.pagination?.counts?.responsable_demande ?? 0 },
-  { key: 'user',                label: 'Utilisateurs',   count: userStore.pagination?.counts?.user ?? 0 },
+  { key: '',                    label: 'Tous',           count: userStore.users?.length ?? 0 },
+  { key: 'admin',               label: 'Admins',         count: (userStore.users ?? []).filter((u) => u.role === 'admin').length },
+  { key: 'responsable_rh',      label: 'Resp. RH',       count: (userStore.users ?? []).filter((u) => u.role === 'responsable_rh').length },
+  { key: 'responsable_demande', label: 'Resp. Demandes', count: (userStore.users ?? []).filter((u) => u.role === 'responsable_demande').length },
+  { key: 'user',                label: 'Utilisateurs',   count: (userStore.users ?? []).filter((u) => u.role === 'user').length },
 ])
 
 const selectTab = (key) => {
   activeTab.value  = key
   filterRole.value = key
-  fetchUsers(1)
+  currentPage.value = 1
 }
 
 // ── Pagination ─────────────────────────────────────────────────────────────
 
 const perPageOptions = [10, 25, 50, 100]
 
-const visiblePages = computed(() => {
-  if (!userStore.pagination?.last_page) return []
-  const c = userStore.pagination.current_page
-  const l = userStore.pagination.last_page
-  const pages = []
-  
-  // Toujours afficher la première page
-  if (c > 3) pages.push(1)
-  
-  // Ellipsis après la première page si nécessaire
-  if (c > 4) pages.push('...')
-  
-  // Pages autour de la page courante
-  for (let i = Math.max(2, c - 1); i <= Math.min(l - 1, c + 1); i++) pages.push(i)
-  
-  // Ellipsis avant la dernière page si nécessaire
-  if (c < l - 3) pages.push('...')
-  
-  // Toujours afficher la dernière page
-  if (l > 1 && c < l - 1) pages.push(l)
-  
-  // Si peu de pages, afficher toutes
-  if (l <= 7) {
-    pages.length = 0
-    for (let i = 1; i <= l; i++) pages.push(i)
+// ── Client-side filtering ─────────────────────────────────────────────────
+
+const filteredUsers = computed(() => {
+  if (!userStore.users) return []
+  let filtered = [...userStore.users]
+
+  if (filterRole.value) {
+    filtered = filtered.filter((u) => u.role === filterRole.value)
   }
-  
+
+  if (filterStatus.value) {
+    filtered = filtered.filter((u) => u.status === filterStatus.value)
+  }
+
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(
+      (u) =>
+        u.first_name.toLowerCase().includes(q) ||
+        u.last_name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q),
+    )
+  }
+
+  return filtered
+})
+
+const paginatedUsers = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  return filteredUsers.value.slice(start, start + perPage.value)
+})
+
+const totalPages = computed(() => Math.ceil(filteredUsers.value.length / perPage.value))
+
+const visiblePages = computed(() => {
+  const l = totalPages.value
+  if (!l) return []
+  const c = currentPage.value
+  const pages = []
+
+  if (l <= 7) {
+    for (let i = 1; i <= l; i++) pages.push(i)
+  } else {
+    if (c > 3) pages.push(1)
+    if (c > 4) pages.push('...')
+    for (let i = Math.max(2, c - 1); i <= Math.min(l - 1, c + 1); i++) pages.push(i)
+    if (c < l - 3) pages.push('...')
+    if (l > 1 && c < l - 1) pages.push(l)
+  }
+
   return pages
 })
 
 // ── Fetch ──────────────────────────────────────────────────────────────────
 
-const fetchUsers = (page = 1) => {
-  const params = { page, per_page: perPage.value }
-  if (filterRole.value)   params.role   = filterRole.value
-  if (filterStatus.value) params.status = filterStatus.value
-  if (searchQuery.value)  params.search = searchQuery.value
-  userStore.fetchUsers(params).catch(() => showToast('Erreur lors du chargement.', 'error'))
+const fetchUsers = () => {
+  userStore.fetchUsers({ per_page: 9999 }).catch(() => showToast('Erreur lors du chargement.', 'error'))
 }
 
 const onSearchInput = () => {
   clearTimeout(searchTimeout.value)
-  searchTimeout.value = setTimeout(() => fetchUsers(1), 400)
+  searchTimeout.value = setTimeout(() => {
+    currentPage.value = 1
+  }, 400)
 }
 
 // ── Modals ─────────────────────────────────────────────────────────────────
@@ -174,7 +196,7 @@ const handleUserSubmit = async () => {
       showToast('Compte créé avec succès.')
     }
     closeUserModal()
-    fetchUsers(1)
+    fetchUsers()
   } catch (err) {
     if (err.response?.status === 422) {
       userModal.value.serverErrors = err.response.data.errors ?? {}
@@ -260,7 +282,7 @@ onMounted(() => fetchUsers())
       <div>
         <h1 class="text-2xl font-serif font-bold text-[#1B2A4A]">Utilisateurs</h1>
         <p class="text-sm text-gray-400 mt-0.5 font-mono">
-          {{ userStore.pagination?.total ?? 0 }} comptes enregistrés
+          {{ userStore.users?.length ?? 0 }} comptes enregistrés
         </p>
       </div>
       <button
@@ -329,7 +351,7 @@ onMounted(() => fetchUsers())
       <div class="relative">
         <select
           v-model="filterStatus"
-          @change="fetchUsers(1)"
+          @change="currentPage = 1"
           class="appearance-none bg-white border border-gray-200 rounded-xl pl-3.5 pr-8 py-2.5 text-sm text-gray-600 focus:outline-none focus:border-[#0D9488] cursor-pointer"
         >
           <option value="">Tous les statuts</option>
@@ -349,15 +371,12 @@ onMounted(() => fetchUsers())
     </div>
 
     <!-- ── Table ──────────────────────────────────────────────────────── -->
-    <div v-else-if="userStore.users && userStore.users.length > 0" class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+    <div v-else-if="paginatedUsers.length > 0" class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <!-- Head -->
           <thead>
             <tr class="border-b border-gray-100">
-              <!-- <th class="w-10 px-5 py-3.5 text-left">
-                <input type="checkbox" class="w-4 h-4 rounded border-gray-300 accent-[#0D9488]" />
-              </th> -->
               <th class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Utilisateur</th>
               <th class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Rôle</th>
               <th class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Statut</th>
@@ -370,7 +389,7 @@ onMounted(() => fetchUsers())
           <!-- Body -->
           <tbody class="divide-y divide-gray-50">
             <tr
-              v-for="user in userStore.users || []"
+              v-for="user in paginatedUsers"
               :key="user.id"
               class="group hover:bg-[#F8F7F4] transition-colors"
               :class="{ 'bg-red-50/30': user.status === 'suspended', 'opacity-60': user.status === 'archived' }"
@@ -568,12 +587,12 @@ onMounted(() => fetchUsers())
     </div>
 
     <!-- ── Pagination ──────────────────────────────────────────────────── -->
-    <div v-if="userStore.pagination?.last_page && userStore.pagination.last_page >= 1" class="flex items-center justify-between mt-5">
+    <div v-if="totalPages >= 1" class="flex items-center justify-between mt-5">
       <div class="flex items-center gap-2">
         <span class="text-sm text-gray-500">Afficher</span>
         <select
           v-model="perPage"
-          @change="fetchUsers(1)"
+          @change="currentPage = 1"
           class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
         >
           <option v-for="opt in perPageOptions" :key="opt" :value="opt">{{ opt }}</option>
@@ -582,8 +601,8 @@ onMounted(() => fetchUsers())
       </div>
       <div class="flex items-center gap-1">
         <button
-          @click="fetchUsers(userStore.pagination.current_page - 1)"
-          :disabled="!userStore.pagination.prev_page_url"
+          @click="currentPage--"
+          :disabled="currentPage <= 1"
           class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft class="w-4 h-4" />
@@ -591,9 +610,9 @@ onMounted(() => fetchUsers())
         <button
           v-for="page in visiblePages"
           :key="page"
-          @click="typeof page === 'number' ? fetchUsers(page) : null"
+          @click="typeof page === 'number' ? (currentPage = page) : null"
           class="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
-          :class="page === userStore.pagination.current_page
+          :class="page === currentPage
             ? 'bg-[#0D9488] text-white border-[#0D9488]'
             : typeof page === 'number'
               ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
@@ -603,8 +622,8 @@ onMounted(() => fetchUsers())
           {{ page }}
         </button>
         <button
-          @click="fetchUsers(userStore.pagination.current_page + 1)"
-          :disabled="!userStore.pagination.next_page_url"
+          @click="currentPage++"
+          :disabled="currentPage >= totalPages"
           class="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronRight class="w-4 h-4" />

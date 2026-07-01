@@ -25,6 +25,9 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await api.post('/auth/login', credentials)
       user.value         = response.data.user
       sessionEnded.value = false
+      if (user.value) {
+        await fetchUserProfile()
+      }
       return response.data
     } finally {
       isLoading.value = false
@@ -46,9 +49,9 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     isLoading.value = true
     try {
-      await api.post('/auth/logout')
+      await api.post('/auth/logout', {}, { timeout: 8000 })
     } catch (err) {
-      console.log('Logout API error:', err)
+      // Silently ignore logout API errors — we clear local state anyway
     } finally {
       user.value         = null
       sessionEnded.value = true

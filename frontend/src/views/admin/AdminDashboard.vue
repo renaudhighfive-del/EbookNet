@@ -5,6 +5,20 @@
       <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
     </div>
 
+    <template v-else-if="hasError">
+      <div class="flex flex-col items-center justify-center py-20 text-gray-400">
+        <AlertTriangle class="w-12 h-12 mb-4 text-amber-400" />
+        <p class="text-lg font-medium text-gray-600 mb-1">Impossible de charger le tableau de bord</p>
+        <p class="text-sm mb-6">Vérifiez que le serveur backend est en cours d'exécution.</p>
+        <button
+          @click="loadDashboard"
+          class="px-6 py-2.5 bg-[#1B2A4A] text-white rounded-xl font-medium hover:bg-[#0F1322] transition-colors text-sm"
+        >
+          Réessayer
+        </button>
+      </div>
+    </template>
+
     <template v-else>
 
       <!-- Alert Banner -->
@@ -282,6 +296,7 @@ Chart.register(
 // ─── REFS ─────────────────────────────────────────────────────────────────────
 
 const isLoading     = ref(true)
+const hasError      = ref(false)
 const barChartRef   = ref(null)   // <canvas> bar chart
 const donutChartRef = ref(null)   // <canvas> donut chart
 let   barChart      = null        // instance Chart.js bar
@@ -514,7 +529,9 @@ const formatRelativeDate = (d) => {
 
 // ─── API ─────────────────────────────────────────────────────────────────────
 
-onMounted(async () => {
+async function loadDashboard() {
+  hasError.value = false
+  isLoading.value = true
   try {
     await Promise.all([
       api.get('/admin/stats').then(r => { stats.value = r.data }),
@@ -526,12 +543,13 @@ onMounted(async () => {
          .then(r => { activityLogs.value = r.data.data ?? r.data }),
     ])
   } catch (e) {
-    console.error('Dashboard error:', e)
+    hasError.value = true
   } finally {
     isLoading.value = false
-    // Les watch vont déclencher la construction des charts
   }
-})
+}
+
+onMounted(loadDashboard)
 
 // Nettoyage propre des instances Chart.js quand le composant est détruit
 onBeforeUnmount(() => {

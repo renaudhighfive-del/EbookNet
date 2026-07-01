@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Traits\LogsActivity;
 use App\Models\Reference;
 use App\Models\Author;
 use App\Http\Requests\Reference\StoreReferenceRequest;
@@ -11,17 +12,7 @@ use Illuminate\Http\Request;
 
 class ReferenceController extends Controller
 {
-    private function logActivity(Request $request, string $action, ?int $targetId = null): void
-    {
-        \App\Models\ActivityLog::create([
-            'user_id' => $request->user()->id,
-            'action' => $action,
-            'target_table' => 'references',
-            'target_id' => $targetId,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
-    }
+    use LogsActivity;
 
     /** GET /admin/references — Liste paginée des références (Admin uniquement) */
     public function index(Request $request): JsonResponse
@@ -55,7 +46,7 @@ class ReferenceController extends Controller
             $query->where('language', $request->language);
         }
 
-        $perPage = min((int) $request->input('per_page', 25), 100);
+        $perPage = min((int) $request->input('per_page', 25), 9999);
         return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
     }
 
@@ -77,6 +68,16 @@ class ReferenceController extends Controller
 
         $validated = $request->validated();
 
+        $validated['uploaded_by'] = $request->user()->id;
+
+        if ($request->hasFile('cover_image')) {
+            $validated['cover_image'] = $request->file('cover_image')->store('references/covers', 'public');
+        }
+
+        if ($request->hasFile('file_path')) {
+            $validated['file_path'] = $request->file('file_path')->store('references/files', 'public');
+        }
+
         $reference = Reference::create($validated);
 
         // Attach authors if provided
@@ -93,7 +94,7 @@ class ReferenceController extends Controller
 
         $reference->load(['category', 'publisher', 'uploadedBy', 'authors', 'keywords']);
 
-        $this->logActivity($request, 'create_reference', $reference->id);
+        $this->logActivity($request, 'create_reference', $reference->id, 'references');
 
         return response()->json([
             'message' => 'Référence créée avec succès.',
@@ -108,6 +109,21 @@ class ReferenceController extends Controller
         $this->authorize('update', $reference);
 
         $validated = $request->validated();
+
+        // Empêcher la modification du propriétaire
+        unset($validated['uploaded_by']);
+
+        if ($request->hasFile('cover_image')) {
+            $validated['cover_image'] = $request->file('cover_image')->store('references/covers', 'public');
+        } else {
+            unset($validated['cover_image']);
+        }
+
+        if ($request->hasFile('file_path')) {
+            $validated['file_path'] = $request->file('file_path')->store('references/files', 'public');
+        } else {
+            unset($validated['file_path']);
+        }
 
         $reference->update($validated);
 
@@ -126,7 +142,7 @@ class ReferenceController extends Controller
 
         $reference->load(['category', 'publisher', 'uploadedBy', 'authors', 'keywords']);
 
-        $this->logActivity($request, 'update_reference', $reference->id);
+        $this->logActivity($request, 'update_reference', $reference->id, 'references');
 
         return response()->json([
             'message' => 'Référence mise à jour avec succès.',
@@ -142,7 +158,7 @@ class ReferenceController extends Controller
 
         $reference->delete();
 
-        $this->logActivity($request, 'delete_reference', $id);
+        $this->logActivity($request, 'delete_reference', $id, 'references');
 
         return response()->json([
             'message' => 'Référence supprimée avec succès.',
@@ -161,7 +177,7 @@ class ReferenceController extends Controller
 
         $reference->update(['status' => $validated['status']]);
 
-        $this->logActivity($request, 'toggle_reference_status', $reference->id);
+        $this->logActivity($request, 'toggle_reference_status', $reference->id, 'references');
 
         return response()->json([
             'message' => 'Statut mis à jour avec succès.',
@@ -207,7 +223,7 @@ class ReferenceController extends Controller
 
         $reference->update(['status' => 'published']);
 
-        $this->logActivity($request, 'restore_reference', $reference->id);
+        $this->logActivity($request, 'restore_reference', $reference->id, 'references');
 
         return response()->json([
             'message' => 'Référence restaurée avec succès.',

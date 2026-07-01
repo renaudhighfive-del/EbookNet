@@ -68,7 +68,13 @@ export const useReferenceStore = defineStore('reference', () => {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.put(`/admin/references/${id}`, data)
+      let res
+      if (data instanceof FormData) {
+        data.append('_method', 'PUT')
+        res = await api.post(`/admin/references/${id}`, data)
+      } else {
+        res = await api.put(`/admin/references/${id}`, data)
+      }
       _updateInList(id, res.data.reference)
       return res.data
     } catch (err) {

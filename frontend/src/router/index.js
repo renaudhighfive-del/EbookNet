@@ -65,7 +65,7 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: Dashboard,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, roles: ['user'] },
   },
   {
     path: '/my-documents',
@@ -83,7 +83,7 @@ const routes = [
     path: '/profile',
     name: 'profile',
     component: Profile,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, roles: ['user', 'responsable_rh', 'responsable_demande', 'admin'] },
   },
   {
     path: '/manager/dashboard',
@@ -209,6 +209,12 @@ const routes = [
     path: '/admin/archive',
     name: 'admin-archive',
     component: AdminArchive,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/profile',
+    name: 'admin-profile',
+    component: Profile,
     meta: { requiresAuth: true, roles: ['admin'] },
   },
 ]

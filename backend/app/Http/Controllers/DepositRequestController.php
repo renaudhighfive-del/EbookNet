@@ -10,7 +10,38 @@ use Illuminate\Http\Request;
 
 class DepositRequestController extends Controller
 {
-    /** GET /admin/deposits — Liste des demandes de dépôt pour l'admin */
+    /** POST /deposits — Créer une demande de dépôt (utilisateur) */
+    public function store(Request $request): JsonResponse
+    {
+        $this->authorize('create', DepositRequest::class);
+
+        $validated = $request->validate([
+            'title'            => 'required|string|max:500',
+            'description'      => 'nullable|string|max:5000',
+            'author'           => 'nullable|string|max:500',
+            'publication_year' => 'nullable|integer|min:1000|max:9999',
+            'category_id'      => 'nullable|exists:categories,id',
+            'proposed_file'    => 'nullable|string|max:500',
+        ]);
+
+        $deposit = DepositRequest::create([
+            'applicant_id'    => $request->user()->id,
+            'title'           => $validated['title'],
+            'description'     => $validated['description'] ?? null,
+            'author'          => $validated['author'] ?? null,
+            'publication_year'=> $validated['publication_year'] ?? null,
+            'category_id'     => $validated['category_id'] ?? null,
+            'proposed_file'   => $validated['proposed_file'] ?? null,
+            'status'          => 'pending',
+        ]);
+
+        return response()->json([
+            'message'         => 'Demande de dépôt créée avec succès.',
+            'deposit_request' => $deposit->load(['applicant', 'category']),
+        ], 201);
+    }
+
+    /** GET /admin/deposits — Liste des demandes de dépôt pour l'admin/responsable */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', DepositRequest::class);

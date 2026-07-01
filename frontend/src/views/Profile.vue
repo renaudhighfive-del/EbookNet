@@ -1,28 +1,75 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import { useAuthStore } from '@/stores/auth'
+import api from '@/services/api'
 
+defineOptions({ name: 'UserProfile' })
+
+const isLoading = ref(true)
 const isSaving = ref(false)
-
-const profile = ref({
-  first_name: 'Jean',
-  last_name: 'Dupont',
-  email: 'jean.dupont@example.com',
-  phone: '+229 90 00 00 00',
+const error = ref(null)
+const profileForm = ref({
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone: '',
 })
 
 const initials = computed(() => {
-  return (profile.value.first_name[0] + profile.value.last_name[0]).toUpperCase()
+  if (!profileForm.value.first_name || !profileForm.value.last_name) return '??'
+  return (profileForm.value.first_name[0] + profileForm.value.last_name[0]).toUpperCase()
 })
 
-function handleSave() {
-  isSaving.value = true
-  console.log('Saving profile', profile.value)
-  setTimeout(() => {
-    isSaving.value = false
-    alert('Modifications enregistrées avec succès !')
-  }, 1500)
+const authStore = useAuthStore()
+
+async function fetchUserProfile() {
+  isLoading.value = true
+  error.value = null
+  
+  try {
+    const response = await api.get(`/hr/users/${authStore.user.id}`)
+    profileForm.value = {
+      first_name: response.data.user.first_name || '',
+      last_name: response.data.user.last_name || '',
+      email: response.data.user.email || '',
+      phone: response.data.user.phone || '',
+    }
+    authStore.user = response.data.user
+  } catch (err) {
+    error.value = 'Impossible de charger le profil utilisateur'
+    console.error('Erreur chargement profil:', err)
+  } finally {
+    isLoading.value = false
+  }
 }
+
+async function handleSave() {
+  isSaving.value = true
+  error.value = null
+  
+  try {
+    const response = await api.put(`/hr/users/${authStore.user.id}`, profileForm.value)
+    authStore.user = response.data.user
+    profileForm.value = {
+      first_name: response.data.user.first_name || '',
+      last_name: response.data.user.last_name || '',
+      email: response.data.user.email || '',
+      phone: response.data.user.phone || '',
+    }
+  } catch (err) {
+    error.value = err.response?.data?.message || 'Impossible d\'enregistrer les modifications'
+    console.error('Erreur sauvegarde profil:', err)
+  } finally {
+    isSaving.value = false
+  }
+}
+
+onMounted(() => {
+  if (authStore.isAuthenticated && authStore.user?.id) {
+    fetchUserProfile()
+  }
+})
 </script>
 
 <template>
@@ -44,9 +91,9 @@ function handleSave() {
             </div>
             <div>
               <p class="text-xl font-semibold text-navy-800">
-                {{ profile.first_name }} {{ profile.last_name }}
+                {{ profileForm.first_name }} {{ profileForm.last_name }}
               </p>
-              <p class="text-gray-500 text-sm">{{ profile.email }}</p>
+              <p class="text-gray-500 text-sm">{{ profileForm.email }}</p>
               <button type="button" class="text-teal-700 font-medium text-sm mt-1 hover:underline">
                 Modifier l'avatar
               </button>
@@ -62,7 +109,7 @@ function handleSave() {
               <input
                 type="text"
                 id="firstName"
-                v-model="profile.first_name"
+                v-model="profileForm.first_name"
                 required
                 class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-navy-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
               />
@@ -74,7 +121,7 @@ function handleSave() {
               <input
                 type="text"
                 id="lastName"
-                v-model="profile.last_name"
+                v-model="profileForm.last_name"
                 required
                 class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-navy-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
               />
@@ -90,7 +137,7 @@ function handleSave() {
               <input
                 type="email"
                 id="email"
-                v-model="profile.email"
+                v-model="profileForm.email"
                 required
                 class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-navy-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
               />
@@ -102,7 +149,7 @@ function handleSave() {
               <input
                 type="tel"
                 id="phone"
-                v-model="profile.phone"
+                v-model="profileForm.phone"
                 class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-navy-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
               />
             </div>
@@ -150,6 +197,11 @@ function handleSave() {
             </div>
           </div>
 
+          <!-- Error Message -->
+          <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+            {{ error }}
+          </div>
+
           <!-- Buttons -->
           <div class="flex justify-end gap-4 pt-4">
             <button type="button" class="px-6 py-3 text-gray-600 font-medium hover:text-navy-800">
@@ -157,10 +209,10 @@ function handleSave() {
             </button>
             <button
               type="submit"
-              :disabled="isSaving"
+              :disabled="isSaving || isLoading"
               class="px-8 py-3 bg-teal-600 text-white font-medium rounded-xl hover:bg-teal-700 transition-colors disabled:opacity-50"
             >
-              {{ isSaving ? 'Enregistrement...' : 'Enregistrer les modifications' }}
+              {{ isSaving ? 'Enregistrement...' : (isLoading ? 'Chargement...' : 'Enregistrer les modifications') }}
             </button>
           </div>
         </form>

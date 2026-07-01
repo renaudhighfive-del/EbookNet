@@ -9,7 +9,7 @@
       :class="document.coverColor"
     >
       <div class="absolute inset-0 flex items-center justify-center">
-        <span class="text-6xl text-white/20">📖</span>
+        <BookOpen class="w-20 h-20 text-white/20" />
       </div>
       <!-- Access Badge -->
       <div class="absolute top-3 right-3">
@@ -17,13 +17,15 @@
           v-if="document.access === 'restricted'"
           class="bg-[#E79F1F] text-white text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1"
         >
-          🔒 Réservé
+          <Lock class="w-3 h-3" />
+          Réservé
         </span>
         <span
           v-else
           class="bg-white text-[#0D9488] text-[10px] px-2.5 py-1 rounded-full flex items-center gap-1"
         >
-          ✅ Public
+          <CheckCircle class="w-3 h-3" />
+          Public
         </span>
       </div>
       <!-- Hover Overlay -->
@@ -58,6 +60,8 @@
 </template>
 
 <script setup>
+import { BookOpen, Lock, CheckCircle } from '@lucide/vue'
+
 defineProps({
   document: {
     type: Object,
