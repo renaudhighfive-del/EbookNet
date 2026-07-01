@@ -14,9 +14,6 @@ const api = axios.create({
 
 const MAX_RETRIES = 2
 
-const USER_ENDPOINT = import.meta.env.VITE_API_ENDPOINTS?.USER || '/hr/users'
-const PROFILE_ENDPOINT = import.meta.env.VITE_API_ENDPOINTS?.PROFILE || '/api/profile'
-
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -26,7 +23,6 @@ api.interceptors.response.use(
       const authStore = useAuthStore()
       if (authStore.isAuthenticated) {
         authStore.user = null
-        authStore.sessionEnded = true
         await router.push('/connexion')
       }
       return Promise.reject(error)

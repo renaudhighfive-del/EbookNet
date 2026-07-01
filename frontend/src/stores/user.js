@@ -310,10 +310,11 @@ export const useUserStore = defineStore('user', () => {
   const getUserInitials = (u) => `${u.first_name?.[0] ?? ''}${u.last_name?.[0] ?? ''}`.toUpperCase()
 
   async function fetchUserProfile() {
-    if (!user.value?.id) return
+    const authStore = useAuthStore()
+    if (!authStore.user?.id) return
     
     try {
-      const response = await api.get(`/hr/users/${user.value.id}`)
+      const response = await api.get(`/hr/users/${authStore.user.id}`)
       currentUser.value = response.data.user
     } catch (error) {
       console.error('Failed to fetch user profile:', error)
@@ -371,6 +372,7 @@ export const useUserStore = defineStore('user', () => {
     restoreUser,
     // utilitaires
     clearCurrentUser,
+    fetchUserProfile,
     // helpers
     getRoleLabel,
     getRoleClass,
