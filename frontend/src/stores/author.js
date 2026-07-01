@@ -1,29 +1,23 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import api from '@/services/api'
+import { ref } from 'vue'
+import { adminService } from '@/services/api/admin.service'
 
 export const useAuthorStore = defineStore('author', () => {
-  // ─── State ──────────────────────────────────────────────────────────────
-
   const authors = ref([])
   const pagination = ref({})
   const isLoading = ref(false)
   const isActionLoading = ref(false)
   const error = ref(null)
 
-  // ─── Actions ─────────────────────────────────────────────────────────────
-
-  /** GET /api/admin/authors — Liste paginée des auteurs */
   async function fetchAuthors(params = {}) {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get('/admin/authors', { params })
-      // Gérer différents formats de réponse
-      const data = res.data.data ?? res.data
-      authors.value = Array.isArray(data) ? data : []
-      pagination.value = res.data
-      return res.data
+      const data = await adminService.getAuthors(params)
+      const resultData = data.data ?? data
+      authors.value = Array.isArray(resultData) ? resultData : []
+      pagination.value = data
+      return data
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur chargement auteurs.'
       throw err
@@ -32,13 +26,12 @@ export const useAuthorStore = defineStore('author', () => {
     }
   }
 
-  /** GET /api/admin/authors/all — Liste toutes les auteurs (pour select) */
   async function fetchAllAuthors() {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get('/admin/authors/all')
-      return res.data.authors
+      const data = await adminService.getAllAuthors()
+      return data.authors
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur chargement auteurs.'
       throw err
@@ -47,13 +40,12 @@ export const useAuthorStore = defineStore('author', () => {
     }
   }
 
-  /** GET /api/admin/authors/:id — Détail d'un auteur */
   async function fetchAuthor(id) {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get(`/admin/authors/${id}`)
-      return res.data.author
+      const data = await adminService.getAuthor(id)
+      return data.author
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Auteur introuvable.'
       throw err
@@ -62,14 +54,13 @@ export const useAuthorStore = defineStore('author', () => {
     }
   }
 
-  /** POST /api/admin/authors — Créer un auteur */
   async function createAuthor(data) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.post('/admin/authors', data)
-      authors.value.unshift(res.data.author)
-      return res.data
+      const result = await adminService.createAuthor(data)
+      authors.value.unshift(result.author)
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur création auteur.'
       throw err
@@ -78,14 +69,13 @@ export const useAuthorStore = defineStore('author', () => {
     }
   }
 
-  /** PUT /api/admin/authors/:id — Modifier un auteur */
   async function updateAuthor(id, data) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.put(`/admin/authors/${id}`, data)
-      _updateInList(id, res.data.author)
-      return res.data
+      const result = await adminService.updateAuthor(id, data)
+      _updateInList(id, result.author)
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur mise à jour auteur.'
       throw err
@@ -94,14 +84,13 @@ export const useAuthorStore = defineStore('author', () => {
     }
   }
 
-  /** DELETE /api/admin/authors/:id — Supprimer un auteur */
   async function deleteAuthor(id) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.delete(`/admin/authors/${id}`)
+      const result = await adminService.deleteAuthor(id)
       _removeFromList(id)
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur suppression auteur.'
       throw err
@@ -109,8 +98,6 @@ export const useAuthorStore = defineStore('author', () => {
       isActionLoading.value = false
     }
   }
-
-  // ─── Helpers ─────────────────────────────────────────────────────────────
 
   function _updateInList(id, updatedAuthor) {
     const index = authors.value.findIndex(a => a.id === id)
@@ -124,16 +111,12 @@ export const useAuthorStore = defineStore('author', () => {
     authors.value = authors.value.filter(a => a.id !== id)
   }
 
-  // ─── Getters ─────────────────────────────────────────────────────────────
-
   return {
-    // State
     authors,
     pagination,
     isLoading,
     isActionLoading,
     error,
-    // Actions
     fetchAuthors,
     fetchAllAuthors,
     fetchAuthor,

@@ -1,34 +1,27 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
-import api from '@/services/api'
+import { authService } from '@/services/api/auth.service'
 
 const SANCTUM_ORIGIN = import.meta.env.VITE_SANCTUM_URL ?? (() => {
-  const u = new URL(api.defaults.baseURL)
+  const u = new URL(import.meta.env.VITE_API_URL)
   return u.origin
 })()
 
 export const useAuthStore = defineStore('auth', () => {
-  const user        = ref(null)
-  const isLoading   = ref(false)
-  let isFetching    = false
-
-  const sessionEnded = ref(false)
+  const user = ref(null)
+  const isLoading = ref(false)
 
   const isAuthenticated = computed(() => !!user.value)
-  const userRole        = computed(() => user.value?.role)
+  const userRole = computed(() => user.value?.role)
 
   async function login(credentials) {
     isLoading.value = true
     try {
       await axios.get(`${SANCTUM_ORIGIN}/sanctum/csrf-cookie`)
-      const response = await api.post('/auth/login', credentials)
-      user.value         = response.data.user
-      sessionEnded.value = false
-      if (user.value) {
-        await fetchUserProfile()
-      }
-      return response.data
+      const data = await authService.login(credentials)
+      user.value = data.user
+      return data
     } finally {
       isLoading.value = false
     }
@@ -38,9 +31,9 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     try {
       await axios.get(`${SANCTUM_ORIGIN}/sanctum/csrf-cookie`)
-      const response = await api.post('/auth/register', data)
-      user.value = null
-      return response.data
+      const result = await authService.register(data)
+      user.value = result.user
+      return result
     } finally {
       isLoading.value = false
     }
@@ -49,28 +42,25 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     isLoading.value = true
     try {
-      await api.post('/auth/logout', {}, { timeout: 8000 })
+      await authService.logout()
     } catch (err) {
-      // Silently ignore logout API errors — we clear local state anyway
+      // Ignore logout errors
     } finally {
-      user.value         = null
-      sessionEnded.value = true
-      isLoading.value    = false
+      user.value = null
+      isLoading.value = false
     }
   }
 
   async function fetchUser() {
-    if (user.value || sessionEnded.value || isFetching) return
-    isFetching = true
+    if (user.value) return
     isLoading.value = true
     try {
-      const response = await api.get('/auth/me')
-      user.value = response.data.user
+      const data = await authService.me()
+      user.value = data.user
     } catch {
       user.value = null
     } finally {
       isLoading.value = false
-      isFetching = false
     }
   }
 

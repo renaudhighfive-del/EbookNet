@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import api from '@/services/api'
+import { adminService } from '@/services/api/admin.service'
 
 export const usePublisherStore = defineStore('publisher', () => {
   const publishers = ref([])
@@ -13,11 +13,11 @@ export const usePublisherStore = defineStore('publisher', () => {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get('/admin/publishers', { params })
-      const data = res.data.data ?? res.data
-      publishers.value = Array.isArray(data) ? data : []
-      pagination.value = res.data
-      return res.data
+      const data = await adminService.getPublishers(params)
+      const resultData = data.data ?? data
+      publishers.value = Array.isArray(resultData) ? resultData : []
+      pagination.value = data
+      return data
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur chargement éditeurs.'
       throw err
@@ -30,8 +30,8 @@ export const usePublisherStore = defineStore('publisher', () => {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get('/admin/publishers/all')
-      return res.data.publishers
+      const data = await adminService.getAllPublishers()
+      return data.publishers
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur chargement éditeurs.'
       throw err
@@ -44,8 +44,8 @@ export const usePublisherStore = defineStore('publisher', () => {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get(`/admin/publishers/${id}`)
-      return res.data.publisher
+      const data = await adminService.getPublisher(id)
+      return data.publisher
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Éditeur introuvable.'
       throw err
@@ -58,9 +58,9 @@ export const usePublisherStore = defineStore('publisher', () => {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.post('/admin/publishers', data)
-      publishers.value.unshift(res.data.publisher)
-      return res.data
+      const result = await adminService.createPublisher(data)
+      publishers.value.unshift(result.publisher)
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur création éditeur.'
       throw err
@@ -73,9 +73,9 @@ export const usePublisherStore = defineStore('publisher', () => {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.put(`/admin/publishers/${id}`, data)
-      _updateInList(id, res.data.publisher)
-      return res.data
+      const result = await adminService.updatePublisher(id, data)
+      _updateInList(id, result.publisher)
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur mise à jour éditeur.'
       throw err
@@ -88,9 +88,9 @@ export const usePublisherStore = defineStore('publisher', () => {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.delete(`/admin/publishers/${id}`)
+      const result = await adminService.deletePublisher(id)
       _removeFromList(id)
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur suppression éditeur.'
       throw err

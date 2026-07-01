@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 //  ESPACE RH — Rôle : responsable_rh
 // ════════════════════════════════════════════════════════════════════════════
 
-Route::middleware(['auth:sanctum', 'role:responsable_rh'])->prefix('hr')->group(function () { // le rôle admin ??? à revoir
+Route::middleware(['auth:sanctum', 'role:responsable_rh,admin'])->prefix('hr')->group(function () { // le role admin ??
     // Gestion des utilisateurs
     Route::prefix('users')->group(function () {
         Route::get('/',                       [UserController::class, 'index']);

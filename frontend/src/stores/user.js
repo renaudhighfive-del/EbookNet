@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import api from '@/services/api'
+import { hrService } from '@/services/api/hr.service'
+import { adminService } from '@/services/api/admin.service'
 import { useAuthStore } from './auth'
 
 export const useUserStore = defineStore('user', () => {
-  // ─── State ──────────────────────────────────────────────────────────────
   const users = ref([])
   const pagination = ref({})
   const archivedUsers = ref([])
@@ -14,7 +14,6 @@ export const useUserStore = defineStore('user', () => {
   const isActionLoading = ref(false)
   const error = ref(null)
 
-  // ─── Getters ────────────────────────────────────────────────────────────
   const stats = computed(() => ({
     total: users.value.length,
     active: users.value.filter((u) => u.status === 'active').length,
@@ -28,17 +27,14 @@ export const useUserStore = defineStore('user', () => {
     [...users.value].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5),
   )
 
-  // ─── Actions RH + Admin ─────────────────────────────────────────────────
-
-  /** GET /api/hr/users */
   async function fetchUsers(params = {}) {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get('/hr/users', { params })
-      users.value = res.data.data ?? []
-      pagination.value = res.data
-      return res.data
+      const data = await hrService.getUsers(params)
+      users.value = data.data ?? []
+      pagination.value = data
+      return data
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur chargement.'
       throw err
@@ -47,14 +43,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** GET /api/hr/users/:id */
   async function fetchUser(id) {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get(`/hr/users/${id}`)
-      currentUser.value = res.data.user
-      return res.data.user
+      const data = await hrService.getUser(id)
+      currentUser.value = data.user
+      return data.user
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Utilisateur introuvable.'
       throw err
@@ -69,14 +64,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** POST /api/hr/users */
   async function createUser(data) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.post('/hr/users', data)
-      users.value.unshift(res.data.user)
-      return res.data
+      const result = await hrService.createUser(data)
+      users.value.unshift(result.user)
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur création.'
       throw err
@@ -85,14 +79,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** PUT /api/hr/users/:id */
   async function updateUser(id, data) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.put(`/hr/users/${id}`, data)
-      _patchInList(id, res.data.user)
-      return res.data
+      const result = await hrService.updateUser(id, data)
+      _patchInList(id, result.user)
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur mise à jour.'
       throw err
@@ -101,14 +94,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** PATCH /api/hr/users/:id/status — active ↔ inactive (RH + Admin) */
   async function updateStatus(id, status) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.patch(`/hr/users/${id}/status`, { status })
+      const result = await hrService.updateUserStatus(id, status)
       _patchField(id, 'status', status)
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur statut.'
       throw err
@@ -117,14 +109,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** DELETE /api/hr/users/:id — archivage soft (RH + Admin) */
   async function archiveUser(id) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.delete(`/hr/users/${id}`)
+      const result = await hrService.archiveUser(id)
       _patchField(id, 'status', 'archived')
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur archivage.'
       throw err
@@ -133,14 +124,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** PATCH /api/hr/users/:id/request-suspend — RH propose une suspension (admin doit valider) */
   async function requestSuspend(id) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.patch(`/hr/users/${id}/request-suspend`)
+      const result = await hrService.requestSuspendUser(id)
       _patchField(id, 'status', 'pending_suspension')
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur demande suspension.'
       throw err
@@ -149,19 +139,19 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  // ─── Actions Admin uniquement ────────────────────────────────────────────
-
-  /** PATCH /api/hr/users/:id/approve ou /api/admin/users/:id/approve — Approuver une inscription inactive */
   async function approveUser(id) {
     isActionLoading.value = true
     error.value = null
     try {
-      // Utiliser l'endpoint HR si l'utilisateur est RH, sinon admin
       const authStore = useAuthStore()
-      const endpoint = authStore.userRole === 'responsable_rh' ? `/hr/users/${id}/approve` : `/admin/users/${id}/approve`
-      const res = await api.patch(endpoint)
+      let result
+      if (authStore.userRole === 'responsable_rh') {
+        result = await hrService.approveUser(id)
+      } else {
+        result = await adminService.approveUser(id)
+      }
       _patchField(id, 'status', 'active')
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur approbation.'
       throw err
@@ -170,14 +160,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** PATCH /api/admin/users/:id/suspend — Suspension directe admin */
   async function suspendUser(id) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.patch(`/admin/users/${id}/suspend`)
+      const result = await adminService.suspendUser(id)
       _patchField(id, 'status', 'suspended')
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur suspension.'
       throw err
@@ -186,14 +175,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** PATCH /api/admin/users/:id/validate-suspend — Valider la suspension proposée par le RH */
   async function validateSuspend(id) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.patch(`/admin/users/${id}/validate-suspend`)
+      const result = await adminService.validateSuspendUser(id)
       _patchField(id, 'status', 'suspended')
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur validation suspension.'
       throw err
@@ -202,14 +190,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** PATCH /api/admin/users/:id/role */
   async function updateRole(id, role) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.patch(`/admin/users/${id}/role`, { role })
+      const result = await adminService.updateUserRole(id, role)
       _patchField(id, 'role', role)
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur rôle.'
       throw err
@@ -218,14 +205,13 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** PATCH /api/admin/users/:id/restore — Restaurer un compte suspendu/archivé */
   async function restoreUser(id) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.patch(`/admin/users/${id}/restore`)
+      const result = await adminService.restoreUser(id)
       _patchField(id, 'status', 'active')
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur restauration.'
       throw err
@@ -234,15 +220,14 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** GET /api/hr/users/archived — Liste des utilisateurs archivés (RH + Admin) */
   async function fetchArchivedUsers(params = {}) {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get('/hr/users/archived', { params })
-      archivedUsers.value = res.data.data ?? []
-      archivedPagination.value = res.data
-      return res.data
+      const data = await hrService.getArchivedUsers(params)
+      archivedUsers.value = data.data ?? []
+      archivedPagination.value = data
+      return data
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur chargement utilisateurs archivés.'
       throw err
@@ -251,25 +236,37 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  async function fetchUserProfile() {
+    const authStore = useAuthStore()
+    if (!authStore.user?.id) return
+    
+    try {
+      const data = await hrService.getUser(authStore.user.id)
+      currentUser.value = data.user
+    } catch (err) {
+      console.error('Failed to fetch user profile:', err)
+      clearCurrentUser()
+      throw err
+    }
+  }
 
-
-  // ─── Utilitaires internes ────────────────────────────────────────────────
   function _patchInList(id, updated) {
     const i = users.value.findIndex((u) => u.id === Number(id))
     if (i !== -1) users.value[i] = updated
     if (currentUser.value?.id === Number(id)) currentUser.value = updated
   }
+
   function _patchField(id, field, value) {
     const i = users.value.findIndex((u) => u.id === Number(id))
     if (i !== -1) users.value[i][field] = value
     if (currentUser.value?.id === Number(id)) currentUser.value[field] = value
   }
+
   function clearCurrentUser() {
     currentUser.value = null
     error.value = null
   }
 
-  // ─── Helpers présentation ────────────────────────────────────────────────
   const getRoleLabel = (r) =>
     ({
       admin: 'Administrateur',
@@ -309,20 +306,6 @@ export const useUserStore = defineStore('user', () => {
 
   const getUserInitials = (u) => `${u.first_name?.[0] ?? ''}${u.last_name?.[0] ?? ''}`.toUpperCase()
 
-  async function fetchUserProfile() {
-    const authStore = useAuthStore()
-    if (!authStore.user?.id) return
-    
-    try {
-      const response = await api.get(`/hr/users/${authStore.user.id}`)
-      currentUser.value = response.data.user
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error)
-      clearCurrentUser()
-      throw error
-    }
-  }
-
   const formatDate = (d) =>
     new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 
@@ -355,25 +338,22 @@ export const useUserStore = defineStore('user', () => {
     error,
     stats,
     recentUsers,
-    // RH + Admin
     fetchUsers,
     fetchUser,
-    fetchArchivedUsers,
+    refreshDashboardData,
     createUser,
     updateUser,
     updateStatus,
     archiveUser,
     requestSuspend,
-    // Admin only
     approveUser,
     suspendUser,
     validateSuspend,
     updateRole,
     restoreUser,
-    // utilitaires
+    fetchArchivedUsers,
     clearCurrentUser,
     fetchUserProfile,
-    // helpers
     getRoleLabel,
     getRoleClass,
     getStatusLabel,

@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import api from '@/services/api'
+import { adminService } from '@/services/api/admin.service'
 
 export const useReferenceStore = defineStore('reference', () => {
-  // ─── State ──────────────────────────────────────────────────────────────
   const references = ref([])
   const pagination = ref({})
   const archivedReferences = ref([])
@@ -12,18 +11,14 @@ export const useReferenceStore = defineStore('reference', () => {
   const isActionLoading = ref(false)
   const error = ref(null)
 
-  // ─── Actions ────────────────────────────────────────────────────────────
-
-  /** GET /api/admin/references — Liste paginée des références (Admin uniquement) */
   async function fetchReferences(params = {}) {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get('/admin/references', { params })
-      const data = res.data.data ?? res.data
-      references.value = Array.isArray(data) ? data : []
-      pagination.value = res.data
-      return res.data
+      const data = await adminService.getReferences(params)
+      references.value = data.data ?? data
+      pagination.value = data
+      return data
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur chargement références.'
       throw err
@@ -32,13 +27,12 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
-  /** GET /api/admin/references/{id} — Détail d'une référence (Admin uniquement) */
   async function fetchReference(id) {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get(`/admin/references/${id}`)
-      return res.data.reference
+      const data = await adminService.getReference(id)
+      return data.reference
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Référence introuvable.'
       throw err
@@ -47,14 +41,13 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
-  /** POST /api/admin/references — Créer une référence (Admin uniquement) */
   async function createReference(data) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.post('/admin/references', data)
-      references.value.unshift(res.data.reference)
-      return res.data
+      const result = await adminService.createReference(data)
+      references.value.unshift(result.reference)
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur création référence.'
       throw err
@@ -63,20 +56,13 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
-  /** PUT /api/admin/references/{id} — Modifier une référence (Admin uniquement) */
   async function updateReference(id, data) {
     isActionLoading.value = true
     error.value = null
     try {
-      let res
-      if (data instanceof FormData) {
-        data.append('_method', 'PUT')
-        res = await api.post(`/admin/references/${id}`, data)
-      } else {
-        res = await api.put(`/admin/references/${id}`, data)
-      }
-      _updateInList(id, res.data.reference)
-      return res.data
+      const result = await adminService.updateReference(id, data)
+      _updateInList(id, result.reference)
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur mise à jour référence.'
       throw err
@@ -85,14 +71,13 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
-  /** DELETE /api/admin/references/{id} — Supprimer une référence (Admin uniquement) */
   async function deleteReference(id) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.delete(`/admin/references/${id}`)
+      const result = await adminService.deleteReference(id)
       _removeFromList(id)
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur suppression référence.'
       throw err
@@ -101,14 +86,13 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
-  /** PATCH /api/admin/references/{id}/status — Changer le statut (Admin uniquement) */
   async function toggleReferenceStatus(id, status) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.patch(`/admin/references/${id}/status`, { status })
-      _updateInList(id, res.data.reference)
-      return res.data
+      const result = await adminService.toggleReferenceStatus(id, status)
+      _updateInList(id, result.reference)
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur changement statut.'
       throw err
@@ -117,15 +101,14 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
-  /** GET /api/admin/references/archived — Liste des références archivées (Admin uniquement) */
   async function fetchArchivedReferences(params = {}) {
     isLoading.value = true
     error.value = null
     try {
-      const res = await api.get('/admin/references/archived', { params })
-      archivedReferences.value = res.data.data ?? []
-      archivedPagination.value = res.data
-      return res.data
+      const data = await adminService.getArchivedReferences(params)
+      archivedReferences.value = data.data ?? []
+      archivedPagination.value = data
+      return data
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur chargement références archivées.'
       throw err
@@ -134,18 +117,16 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
-  /** PATCH /api/admin/references/{id}/restore — Restaurer une référence archivée (Admin uniquement) */
   async function restoreReference(id) {
     isActionLoading.value = true
     error.value = null
     try {
-      const res = await api.patch(`/admin/references/${id}/restore`)
-      // Retirer de la liste des archivés
+      const result = await adminService.restoreReference(id)
       const index = archivedReferences.value.findIndex((r) => r.id === Number(id))
       if (index !== -1) {
         archivedReferences.value.splice(index, 1)
       }
-      return res.data
+      return result
     } catch (err) {
       error.value = err.response?.data?.message ?? 'Erreur restauration référence.'
       throw err
@@ -153,8 +134,6 @@ export const useReferenceStore = defineStore('reference', () => {
       isActionLoading.value = false
     }
   }
-
-  // ─── Helpers ─────────────────────────────────────────────────────────────
 
   function _updateInList(id, updatedReference) {
     const index = references.value.findIndex((r) => r.id === id)
@@ -168,7 +147,6 @@ export const useReferenceStore = defineStore('reference', () => {
     references.value = references.value.filter((r) => r.id !== id)
   }
 
-  // ─── Helpers présentation ────────────────────────────────────────────────
   const formatDate = (d) =>
     new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 
@@ -214,7 +192,6 @@ export const useReferenceStore = defineStore('reference', () => {
   }
 
   return {
-    // State
     references,
     pagination,
     archivedReferences,
@@ -222,7 +199,6 @@ export const useReferenceStore = defineStore('reference', () => {
     isLoading,
     isActionLoading,
     error,
-    // Actions
     fetchReferences,
     fetchReference,
     createReference,
@@ -231,7 +207,6 @@ export const useReferenceStore = defineStore('reference', () => {
     toggleReferenceStatus,
     fetchArchivedReferences,
     restoreReference,
-    // Helpers
     formatDate,
     getDocumentTypeLabel,
     getStatusLabel,
