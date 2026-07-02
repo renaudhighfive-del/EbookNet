@@ -120,6 +120,15 @@
                 </div>
                 <ArrowRight class="w-4 h-4 text-gray-400 group-hover:text-[#0D9488]" />
               </router-link>
+              <router-link to="/planning-calendrier"
+                class="flex items-center justify-between p-3.5 bg-[#F8F7F4] rounded-xl hover:bg-teal-50 hover:text-[#0D9488] transition-colors group"
+              >
+                <div class="flex items-center gap-3 text-sm text-[#1B2A4A] group-hover:text-[#0D9488]">
+                  <Calendar class="w-4 h-4" />
+                  Prendre un rendez-vous
+                </div>
+                <ArrowRight class="w-4 h-4 text-gray-400 group-hover:text-[#0D9488]" />
+              </router-link>
             </div>
           </div>
         </div>
@@ -133,7 +142,7 @@ import { ref, computed, onMounted } from 'vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
-import { BookOpen, Download, FileUp, Search, Upload, UserCircle, ArrowRight } from '@lucide/vue'
+import { BookOpen, Download, FileUp, Search, Upload, UserCircle, ArrowRight, Calendar } from '@lucide/vue'
 
 const authStore = useAuthStore()
 const dashboardData = ref(null)

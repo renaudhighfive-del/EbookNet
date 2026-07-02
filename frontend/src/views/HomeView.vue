@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import {
   Search, BookOpen, Library, UserPlus, Users, Tag, Download,
   ArrowRight, Eye, Star, Scale, Cpu, HeartPulse, Feather, Globe, TrendingUp,
+  Calendar,
 } from '@lucide/vue'
 import PublicLayout from '../layouts/PublicLayout.vue'
 import DocumentCard from '../components/DocumentCard.vue'
@@ -165,6 +166,13 @@ onMounted(async () => {
                   <BookOpen class="w-4 h-4" />
                   Parcourir le catalogue
                 </router-link>
+                <!-- <router-link
+                  to="/rendez-vous"
+                  class="inline-flex items-center gap-2 bg-[#E79F1F] text-white px-7 py-3 rounded-lg font-semibold hover:bg-[#C87D0F] transition-all duration-300 text-sm"
+                >
+                  <Calendar class="w-4 h-4" />
+                  Prendre rendez-vous
+                </router-link> -->
                 <router-link
                   to="/connexion"
                   class="inline-flex items-center gap-2 border-2 border-white text-white px-7 py-3 rounded-lg font-semibold hover:bg-white hover:text-[#1B2A4A] active:scale-95 transition-all duration-200 text-sm"

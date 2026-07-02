@@ -28,6 +28,8 @@ import AdminAuthors from '../views/admin/AdminAuthors.vue'
 import AdminPublishers from '../views/admin/AdminPublishers.vue'
 import AdminActivityLogs from '../views/admin/AdminActivityLogs.vue'
 import AdminArchive from '../views/admin/AdminArchive.vue'
+import AdminPlanning from '../views/admin/AdminPlanning.vue'
+import UserPlanningCalendar from '../views/UserPlanningCalendar.vue'
 import { setupAuthGuards } from './guards'
 
 const routes = [
@@ -54,6 +56,12 @@ const routes = [
     name: 'search',
     component: SearchView,
     meta: { public: true },
+  },
+  {
+    path: '/planning-calendrier',
+    name: 'planning-calendar',
+    component: UserPlanningCalendar,
+    meta: { requiresAuth: true, roles: ['user'] },
   },
   {
     path: '/connexion',
@@ -209,6 +217,12 @@ const routes = [
     path: '/admin/archive',
     name: 'admin-archive',
     component: AdminArchive,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/planning',
+    name: 'admin-planning',
+    component: AdminPlanning,
     meta: { requiresAuth: true, roles: ['admin'] },
   },
   {

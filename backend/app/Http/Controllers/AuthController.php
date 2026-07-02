@@ -10,6 +10,7 @@ use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 
@@ -85,13 +86,13 @@ class AuthController extends Controller
             $this->logActivity($request, 'logout', $user->id, 'users');
         }
 
-        auth()->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        auth()->guard('web')->logout();
 
         return response()->json([
             'message' => 'Déconnexion réussie.'
-        ]);
+        ])
+            ->withCookie(Cookie::forget('laravel_session'))
+            ->withCookie(Cookie::forget('XSRF-TOKEN'));
     }
 
     public function me(Request $request): JsonResponse

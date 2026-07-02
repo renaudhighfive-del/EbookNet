@@ -22,6 +22,7 @@ import {
   FileUp,
   ClipboardList,
   Archive,
+  Calendar,
 } from '@lucide/vue'
 
 const props = defineProps({
@@ -144,6 +145,7 @@ const navItems = computed(() => {
       { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
       { separator: 'Workflow' },
       { to: '/admin/demandes', icon: FileClock, label: 'Demandes de dépôt' },
+      { to: '/admin/planning', icon: Calendar, label: 'Planning' },
       { to: '/admin/references', icon: Book, label: 'Références' },
       { separator: 'Référentiels' },
       { to: '/admin/categories', icon: Folder, label: 'Catégories' },
@@ -181,6 +183,8 @@ const navItems = computed(() => {
     { separator: 'Mes dépôts' },
     { to: '/my-documents', icon: BookMarked, label: 'Mes demandes' },
     { to: '/deposit-request', icon: FileUp, label: 'Déposer un document' },
+    { separator: 'Planning' },
+    { to: '/planning-calendrier', icon: Calendar, label: 'Prendre rendez-vous' },
     { separator: 'Compte' },
     { to: '/profile', icon: User, label: 'Mon profil' },
   ]
@@ -192,6 +196,7 @@ const pageTitle = computed(() => {
   const map = {
     '/admin/dashboard': 'Tableau de bord',
     '/admin/demandes': 'Demandes de dépôt',
+    '/admin/planning': 'Planning',
     '/admin/references': 'Références',
     '/admin/categories': 'Catégories',
     '/admin/auteurs': 'Auteurs',
@@ -210,6 +215,7 @@ const pageTitle = computed(() => {
     '/catalogue': 'Catalogue',
     '/my-documents': 'Mes demandes',
     '/deposit-request': 'Déposer un document',
+    '/planning-calendrier': 'Prendre rendez-vous',
     '/profile': 'Mon profil',
   }
   return Object.entries(map).find(([k]) => p === k || p.startsWith(k + '/'))?.[1] ?? ''

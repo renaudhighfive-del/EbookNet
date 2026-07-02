@@ -41,9 +41,10 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     isLoading.value = true
     try {
+      await axios.get(`${SANCTUM_ORIGIN}/sanctum/csrf-cookie`)
       await authService.logout()
     } catch (err) {
-      // Ignore logout errors
+      // Ignore logout errors — on nettoie le state utilisateur quoi qu'il arrive
     } finally {
       user.value = null
       isLoading.value = false

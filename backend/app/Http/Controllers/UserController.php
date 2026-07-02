@@ -284,7 +284,7 @@ class UserController extends Controller
       'user' => $user,
       'stats' => [
         'totalDocuments' => $totalDeposits,
-        'totalDownloads' => $user->downloadLogs()->count(),
+        'totalDownloads' => $user->downloads()->count(),
         'pendingDeposits' => $pendingDeposits,
         'approvedDeposits' => $approvedDeposits,
       ],
@@ -315,7 +315,7 @@ class UserController extends Controller
     }
     
     // Ajouter les activités de téléchargement
-    $downloadLogs = $user->downloadLogs()->with('reference')->latest()->take(3)->get();
+    $downloadLogs = $user->downloads()->with('reference')->latest()->take(3)->get();
     
     foreach ($downloadLogs as $download) {
       $activities[] = [

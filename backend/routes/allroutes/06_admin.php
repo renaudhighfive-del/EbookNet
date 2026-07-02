@@ -7,6 +7,7 @@ use App\Http\Controllers\PublisherController;
 use App\Http\Controllers\ReferenceController;
 use App\Http\Controllers\DepositRequestController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AdminPlanningController;
 use Illuminate\Support\Facades\Route;
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -83,4 +84,19 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
     // Journal d'activité (Admin)
     Route::get('/activity-logs', [ActivityLogController::class, 'indexForAdmin']);
+
+    // Planning admin
+    Route::prefix('planning')->group(function () {
+        Route::get('/availability-rules', [AdminPlanningController::class, 'getAvailabilityRules']);
+        Route::post('/availability-rules', [AdminPlanningController::class, 'createAvailabilityRule']);
+        Route::put('/availability-rules/{id}', [AdminPlanningController::class, 'updateAvailabilityRule']);
+        Route::delete('/availability-rules/{id}', [AdminPlanningController::class, 'deleteAvailabilityRule']);
+        Route::post('/availability-exceptions', [AdminPlanningController::class, 'createAvailabilityException']);
+        Route::get('/appointments', [AdminPlanningController::class, 'getAppointments']);
+        Route::get('/appointments/{id}', [AdminPlanningController::class, 'getAppointment']);
+        Route::put('/appointments/{id}', [AdminPlanningController::class, 'updateAppointment']);
+        Route::post('/appointments/{id}/cancel', [AdminPlanningController::class, 'cancelAppointment']);
+        Route::get('/settings', [AdminPlanningController::class, 'getSettings']);
+        Route::put('/settings', [AdminPlanningController::class, 'updateSettings']);
+    });
 });
