@@ -155,7 +155,7 @@ async function fetchDashboardData() {
     const response = await api.get('/user/dashboard')
     dashboardData.value = response.data
   } catch (err) {
-    error.value = 'Failed to load dashboard data'
+    error.value = 'Impossible de charger les données du tableau de bord.'
     console.error('Failed to fetch dashboard data:', err)
   } finally {
     isLoading.value = false

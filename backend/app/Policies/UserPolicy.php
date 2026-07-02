@@ -47,6 +47,10 @@ class UserPolicy
 
     public function changeStatus(User $user, User $model): bool
     {
+        if ($user->id === $model->id) {
+            return false;
+        }
+
         return $user->role === 'admin' || $user->role === 'responsable_rh';
     }
 }

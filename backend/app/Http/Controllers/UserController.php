@@ -309,7 +309,7 @@ class UserController extends Controller
           default => 'deposit_updated',
         },
         'description' => "Votre demande de dépôt '{$deposit->title}' a été {$this->getStatusDescription($deposit->status)})",
-        'reference_title' => $deposit->reference->title ?? null,
+        'reference_title' => $deposit->reference?->title,
         'created_at' => $deposit->created_at,
       ];
     }
@@ -321,8 +321,8 @@ class UserController extends Controller
       $activities[] = [
         'id' => 'dl' . $download->id,
         'type' => 'download',
-        'description' => "Vous avez téléchargé '{$download->reference->title}'",
-        'reference_title' => $download->reference->title ?? null,
+        'description' => "Vous avez téléchargé '" . ($download->reference?->title ?? 'Document') . "'",
+        'reference_title' => $download->reference?->title,
         'created_at' => $download->created_at,
       ];
     }

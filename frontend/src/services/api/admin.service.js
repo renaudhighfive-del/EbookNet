@@ -188,7 +188,7 @@ export const adminService = {
 
   // Deposits
   async assignDeposit(id, managerId) {
-    const response = await api.patch(`/admin/deposits/${id}/assign`, { manager_id: managerId })
+    const response = await api.patch(`/admin/deposits/${id}/assign`, { assigned_manager_id: managerId })
     return response.data
   },
 

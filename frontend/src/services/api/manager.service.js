@@ -17,8 +17,8 @@ export const managerService = {
     return response.data
   },
 
-  async rejectDeposit(id) {
-    const response = await api.patch(`/manager/deposits/${id}/reject`)
+  async rejectDeposit(id, justification) {
+    const response = await api.patch(`/manager/deposits/${id}/reject`, { justification })
     return response.data
   }
 }

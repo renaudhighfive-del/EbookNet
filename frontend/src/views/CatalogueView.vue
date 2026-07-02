@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import PublicLayout from '../layouts/PublicLayout.vue'
 import DocumentCard from '../components/DocumentCard.vue'
-import { X, SlidersHorizontal, Search, ChevronLeft, ChevronRight } from '@lucide/vue'
+import { X, SlidersHorizontal, Search, ChevronLeft, ChevronRight, BookOpen } from '@lucide/vue'
 import api from '@/services/api'
 
 const isLoading = ref(true)
@@ -166,192 +166,194 @@ onMounted(loadData)
 
 <template>
   <PublicLayout>
-    <div v-if="isLoading" class="flex justify-center py-32">
-      <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
-    </div>
-
-    <template v-else-if="hasError">
-      <div class="flex flex-col items-center justify-center py-32 text-gray-400">
-        <BookOpen class="w-16 h-16 mb-4 text-gray-300" />
-        <p class="text-lg text-gray-500">Impossible de charger le catalogue</p>
-        <p class="text-sm text-gray-400">Vérifiez que le serveur backend est en cours d'exécution.</p>
+    <div class="flex-1 flex flex-col">
+      <div v-if="isLoading" class="flex-1 flex justify-center items-center py-20">
+        <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
       </div>
-    </template>
 
-    <template v-else>
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <!-- Page Title -->
-        <div class="flex items-center justify-between mb-8">
-          <div>
-            <h1 class="text-3xl font-bold text-[#1B2A4A] font-serif">Catalogue documentaire</h1>
-            <p class="text-gray-500 text-sm mt-1">Explorez l'intégralité de notre fonds numérique.</p>
-          </div>
-          <span class="inline-block bg-[#0D9488]/10 text-[#0D9488] px-4 py-2 rounded-full text-sm font-semibold">
-            {{ totalReferences.toLocaleString('fr-FR') }} référence{{ totalReferences > 1 ? 's' : '' }}
-          </span>
+      <template v-else-if="hasError" class="flex-1 flex flex-col">
+        <div class="flex-1 flex flex-col items-center justify-center py-20 text-gray-400">
+          <BookOpen class="w-16 h-16 mb-4 text-gray-300" />
+          <p class="text-lg text-gray-500">Impossible de charger le catalogue</p>
+          <p class="text-sm text-gray-400">Vérifiez que le serveur backend est en cours d'exécution.</p>
         </div>
+      </template>
 
-        <div class="flex flex-col lg:flex-row gap-8">
-          <!-- Filters Sidebar -->
-          <aside class="w-full lg:w-72 flex-shrink-0">
-            <div class="bg-white rounded-2xl p-6 shadow-sm sticky top-24">
-              <h3 class="font-semibold text-[#1B2A4A] mb-5 flex items-center gap-2">
-                <SlidersHorizontal class="w-4 h-4 text-[#0D9488]" />
-                Filtres
-              </h3>
+      <template v-else>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <!-- Page Title -->
+          <div class="flex items-center justify-between mb-8">
+            <div>
+              <h1 class="text-3xl font-bold text-[#1B2A4A] font-serif">Catalogue documentaire</h1>
+              <p class="text-gray-500 text-sm mt-1">Explorez l'intégralité de notre fonds numérique.</p>
+            </div>
+            <span class="inline-block bg-[#0D9488]/10 text-[#0D9488] px-4 py-2 rounded-full text-sm font-semibold">
+              {{ totalReferences.toLocaleString('fr-FR') }} référence{{ totalReferences > 1 ? 's' : '' }}
+            </span>
+          </div>
 
-              <!-- Search in filters -->
-              <div class="mb-6">
-                <div class="relative">
-                  <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    v-model="searchQuery"
-                    type="text"
-                    placeholder="Rechercher..."
-                    class="w-full bg-[#F8F7F4] border border-transparent rounded-lg pl-10 pr-4 py-2 text-sm text-gray-700 focus:outline-none focus:border-[#0D9488]"
-                    @input="currentPage = 1"
-                  />
+          <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Filters Sidebar -->
+            <aside class="w-full lg:w-72 flex-shrink-0">
+              <div class="bg-white rounded-2xl p-6 shadow-sm sticky top-24">
+                <h3 class="font-semibold text-[#1B2A4A] mb-5 flex items-center gap-2">
+                  <SlidersHorizontal class="w-4 h-4 text-[#0D9488]" />
+                  Filtres
+                </h3>
+
+                <!-- Search in filters -->
+                <div class="mb-6">
+                  <div class="relative">
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      v-model="searchQuery"
+                      type="text"
+                      placeholder="Rechercher..."
+                      class="w-full bg-[#F8F7F4] border border-transparent rounded-lg pl-10 pr-4 py-2 text-sm text-gray-700 focus:outline-none focus:border-[#0D9488]"
+                      @input="currentPage = 1"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <!-- Category Filter -->
-              <div class="mb-6 pb-6 border-b border-gray-100">
-                <h4 class="font-semibold text-[#1B2A4A] mb-3 text-sm">Catégorie</h4>
-                <div class="space-y-2 max-h-64 overflow-y-auto pr-2">
-                  <template v-for="cat in categories" :key="cat.id">
-                    <label class="flex items-center gap-3 cursor-pointer hover:bg-[#F8F7F4] p-2 rounded-lg transition-colors">
+                <!-- Category Filter -->
+                <div class="mb-6 pb-6 border-b border-gray-100">
+                  <h4 class="font-semibold text-[#1B2A4A] mb-3 text-sm">Catégorie</h4>
+                  <div class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                    <template v-for="cat in categories" :key="cat.id">
+                      <label class="flex items-center gap-3 cursor-pointer hover:bg-[#F8F7F4] p-2 rounded-lg transition-colors">
+                        <input
+                          type="checkbox"
+                          :checked="selectedCategory === cat.id"
+                          class="rounded border-gray-300 text-[#0D9488] focus:ring-[#0D9488]"
+                          @change="setFilter('category', cat.id)"
+                        />
+                        <span class="text-gray-700 text-sm flex-1">{{ cat.name }}</span>
+                        <span class="text-gray-400 text-xs font-mono">({{ cat.references_count }})</span>
+                      </label>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Type Filter -->
+                <div class="mb-6 pb-6 border-b border-gray-100">
+                  <h4 class="font-semibold text-[#1B2A4A] mb-3 text-sm">Type de document</h4>
+                  <div class="space-y-2">
+                    <label v-for="type in ['livre', 'memoire', 'these', 'article', 'revue', 'rapport', 'guide', 'autre']" :key="type" class="flex items-center gap-3 cursor-pointer hover:bg-[#F8F7F4] p-2 rounded-lg transition-colors">
                       <input
                         type="checkbox"
-                        :checked="selectedCategory === cat.id"
+                        :checked="selectedType === type"
                         class="rounded border-gray-300 text-[#0D9488] focus:ring-[#0D9488]"
-                        @change="setFilter('category', cat.id)"
+                        @change="setFilter('type', type)"
                       />
-                      <span class="text-gray-700 text-sm flex-1">{{ cat.name }}</span>
-                      <span class="text-gray-400 text-xs font-mono">({{ cat.references_count }})</span>
+                      <span class="text-gray-700 text-sm flex-1 capitalize">{{ type }}</span>
                     </label>
+                  </div>
+                </div>
+
+                <!-- Language Filter -->
+                <div class="mb-6 pb-6 border-b border-gray-100">
+                  <h4 class="font-semibold text-[#1B2A4A] mb-3 text-sm">Langue</h4>
+                  <div class="space-y-2">
+                    <label v-for="lang in [{ value: 'fr', label: 'Français' }, { value: 'en', label: 'Anglais' }, { value: 'autre', label: 'Autre' }]" :key="lang.value" class="flex items-center gap-3 cursor-pointer hover:bg-[#F8F7F4] p-2 rounded-lg transition-colors">
+                      <input
+                        type="checkbox"
+                        :checked="selectedLanguage === lang.value"
+                        class="rounded border-gray-300 text-[#0D9488] focus:ring-[#0D9488]"
+                        @change="setFilter('language', lang.value)"
+                      />
+                      <span class="text-gray-700 text-sm flex-1">{{ lang.label }}</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Reset Button -->
+                <button @click="resetFilters" class="w-full text-center text-[#0D9488] font-medium text-sm hover:underline">
+                  Réinitialiser tous les filtres
+                </button>
+              </div>
+            </aside>
+
+            <!-- Main content -->
+            <main class="flex-1">
+              <!-- Top Bar -->
+              <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <!-- Active Filter Chips -->
+                <div class="flex flex-wrap gap-2">
+                  <span v-if="selectedCategory" class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-xs flex items-center gap-2">
+                    {{ categories.find(c => c.id === selectedCategory)?.name ?? 'Catégorie' }}
+                    <X class="w-3 h-3 cursor-pointer hover:text-[#0D9488]" @click="clearFilter('category')" />
+                  </span>
+                  <span v-if="selectedType" class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-xs flex items-center gap-2">
+                    {{ selectedType }}
+                    <X class="w-3 h-3 cursor-pointer hover:text-[#0D9488]" @click="clearFilter('type')" />
+                  </span>
+                  <span v-if="selectedLanguage" class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-xs flex items-center gap-2">
+                    {{ { fr: 'Français', en: 'Anglais', autre: 'Autre' }[selectedLanguage] ?? selectedLanguage }}
+                    <X class="w-3 h-3 cursor-pointer hover:text-[#0D9488]" @click="clearFilter('language')" />
+                  </span>
+                  <span v-if="searchQuery" class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-xs flex items-center gap-2">
+                    "{{ searchQuery }}"
+                    <X class="w-3 h-3 cursor-pointer hover:text-[#0D9488]" @click="searchQuery = ''; currentPage = 1" />
+                  </span>
+                </div>
+
+                <!-- Sort Dropdown -->
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-600 text-sm">Trier par:</span>
+                  <select v-model="sortOrder" class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0D9488] shadow-sm">
+                    <option value="year">Plus récent</option>
+                    <option value="title">Titre A-Z</option>
+                    <option value="views">Plus consulté</option>
+                    <option value="downloads">Plus téléchargé</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Documents Grid -->
+              <div v-if="paginatedDocuments.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <DocumentCard v-for="doc in paginatedDocuments" :key="doc.id" :document="doc" />
+              </div>
+              <div v-else class="text-center py-16 text-gray-400">
+                <BookOpen class="w-12 h-12 mx-auto mb-3" />
+                <p class="text-lg font-medium">Aucun document trouvé</p>
+                <p class="text-sm mt-1">Essayez de modifier vos filtres de recherche.</p>
+              </div>
+
+              <!-- Pagination -->
+              <div v-if="lastPage > 1" class="flex items-center justify-between mt-12">
+                <div class="text-sm text-gray-500">
+                  Page {{ currentPage }} sur {{ lastPage }}
+                </div>
+                <div class="flex items-center gap-1">
+                  <button
+                    :disabled="currentPage <= 1"
+                    class="p-2 rounded-lg hover:bg-white text-gray-500 hover:text-[#1B2A4A] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    @click="goToPage(currentPage - 1)"
+                  >
+                    <ChevronLeft class="w-5 h-5" />
+                  </button>
+                  <template v-for="p in pages" :key="p">
+                    <button v-if="p === currentPage" class="px-3 py-1.5 rounded-lg bg-[#1B2A4A] text-white text-sm font-medium">
+                      {{ p }}
+                    </button>
+                    <button v-else class="px-3 py-1.5 rounded-lg hover:bg-white text-gray-500 hover:text-[#1B2A4A] transition-colors text-sm" @click="goToPage(p)">
+                      {{ p }}
+                    </button>
+                    <span v-if="p < lastPage && pages.indexOf(p) < pages.length - 1 && pages[pages.indexOf(p) + 1] !== p + 1" class="px-1 text-gray-400 text-sm">...</span>
                   </template>
-                </div>
-              </div>
-
-              <!-- Type Filter -->
-              <div class="mb-6 pb-6 border-b border-gray-100">
-                <h4 class="font-semibold text-[#1B2A4A] mb-3 text-sm">Type de document</h4>
-                <div class="space-y-2">
-                  <label v-for="type in ['livre', 'memoire', 'these', 'article', 'revue', 'rapport', 'guide', 'autre']" :key="type" class="flex items-center gap-3 cursor-pointer hover:bg-[#F8F7F4] p-2 rounded-lg transition-colors">
-                    <input
-                      type="checkbox"
-                      :checked="selectedType === type"
-                      class="rounded border-gray-300 text-[#0D9488] focus:ring-[#0D9488]"
-                      @change="setFilter('type', type)"
-                    />
-                    <span class="text-gray-700 text-sm flex-1 capitalize">{{ type }}</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- Language Filter -->
-              <div class="mb-6 pb-6 border-b border-gray-100">
-                <h4 class="font-semibold text-[#1B2A4A] mb-3 text-sm">Langue</h4>
-                <div class="space-y-2">
-                  <label v-for="lang in [{ value: 'fr', label: 'Français' }, { value: 'en', label: 'Anglais' }, { value: 'autre', label: 'Autre' }]" :key="lang.value" class="flex items-center gap-3 cursor-pointer hover:bg-[#F8F7F4] p-2 rounded-lg transition-colors">
-                    <input
-                      type="checkbox"
-                      :checked="selectedLanguage === lang.value"
-                      class="rounded border-gray-300 text-[#0D9488] focus:ring-[#0D9488]"
-                      @change="setFilter('language', lang.value)"
-                    />
-                    <span class="text-gray-700 text-sm flex-1">{{ lang.label }}</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- Reset Button -->
-              <button @click="resetFilters" class="w-full text-center text-[#0D9488] font-medium text-sm hover:underline">
-                Réinitialiser tous les filtres
-              </button>
-            </div>
-          </aside>
-
-          <!-- Main content -->
-          <main class="flex-1">
-            <!-- Top Bar -->
-            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <!-- Active Filter Chips -->
-              <div class="flex flex-wrap gap-2">
-                <span v-if="selectedCategory" class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-xs flex items-center gap-2">
-                  {{ categories.find(c => c.id === selectedCategory)?.name ?? 'Catégorie' }}
-                  <X class="w-3 h-3 cursor-pointer hover:text-[#0D9488]" @click="clearFilter('category')" />
-                </span>
-                <span v-if="selectedType" class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-xs flex items-center gap-2">
-                  {{ selectedType }}
-                  <X class="w-3 h-3 cursor-pointer hover:text-[#0D9488]" @click="clearFilter('type')" />
-                </span>
-                <span v-if="selectedLanguage" class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-xs flex items-center gap-2">
-                  {{ { fr: 'Français', en: 'Anglais', autre: 'Autre' }[selectedLanguage] ?? selectedLanguage }}
-                  <X class="w-3 h-3 cursor-pointer hover:text-[#0D9488]" @click="clearFilter('language')" />
-                </span>
-                <span v-if="searchQuery" class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-xs flex items-center gap-2">
-                  "{{ searchQuery }}"
-                  <X class="w-3 h-3 cursor-pointer hover:text-[#0D9488]" @click="searchQuery = ''; currentPage = 1" />
-                </span>
-              </div>
-
-              <!-- Sort Dropdown -->
-              <div class="flex items-center gap-2">
-                <span class="text-gray-600 text-sm">Trier par:</span>
-                <select v-model="sortOrder" class="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0D9488] shadow-sm">
-                  <option value="year">Plus récent</option>
-                  <option value="title">Titre A-Z</option>
-                  <option value="views">Plus consulté</option>
-                  <option value="downloads">Plus téléchargé</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Documents Grid -->
-            <div v-if="paginatedDocuments.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <DocumentCard v-for="doc in paginatedDocuments" :key="doc.id" :document="doc" />
-            </div>
-            <div v-else class="text-center py-16 text-gray-400">
-              <BookOpen class="w-12 h-12 mx-auto mb-3" />
-              <p class="text-lg font-medium">Aucun document trouvé</p>
-              <p class="text-sm mt-1">Essayez de modifier vos filtres de recherche.</p>
-            </div>
-
-            <!-- Pagination -->
-            <div v-if="lastPage > 1" class="flex items-center justify-between mt-12">
-              <div class="text-sm text-gray-500">
-                Page {{ currentPage }} sur {{ lastPage }}
-              </div>
-              <div class="flex items-center gap-1">
-                <button
-                  :disabled="currentPage <= 1"
-                  class="p-2 rounded-lg hover:bg-white text-gray-500 hover:text-[#1B2A4A] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  @click="goToPage(currentPage - 1)"
-                >
-                  <ChevronLeft class="w-5 h-5" />
-                </button>
-                <template v-for="p in pages" :key="p">
-                  <button v-if="p === currentPage" class="px-3 py-1.5 rounded-lg bg-[#1B2A4A] text-white text-sm font-medium">
-                    {{ p }}
+                  <button
+                    :disabled="currentPage >= lastPage"
+                    class="p-2 rounded-lg hover:bg-white text-gray-500 hover:text-[#1B2A4A] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    @click="goToPage(currentPage + 1)"
+                  >
+                    <ChevronRight class="w-5 h-5" />
                   </button>
-                  <button v-else class="px-3 py-1.5 rounded-lg hover:bg-white text-gray-500 hover:text-[#1B2A4A] transition-colors text-sm" @click="goToPage(p)">
-                    {{ p }}
-                  </button>
-                  <span v-if="p < lastPage && pages.indexOf(p) < pages.length - 1 && pages[pages.indexOf(p) + 1] !== p + 1" class="px-1 text-gray-400 text-sm">...</span>
-                </template>
-                <button
-                  :disabled="currentPage >= lastPage"
-                  class="p-2 rounded-lg hover:bg-white text-gray-500 hover:text-[#1B2A4A] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  @click="goToPage(currentPage + 1)"
-                >
-                  <ChevronRight class="w-5 h-5" />
-                </button>
+                </div>
               </div>
-            </div>
-          </main>
+            </main>
+          </div>
         </div>
-      </div>
-    </template>
+      </template>
+    </div>
   </PublicLayout>
 </template>

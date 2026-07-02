@@ -25,7 +25,7 @@ import AdminReferencesList from '../views/admin/AdminReferencesList.vue'
 import AdminUsersList from '../views/admin/AdminUsersList.vue'
 import AdminCategories from '../views/admin/AdminCategories.vue'
 import AdminAuthors from '../views/admin/AdminAuthors.vue'
-import AdminEditeurs from '../views/admin/AdminEditeurs.vue'
+import AdminPublishers from '../views/admin/AdminPublishers.vue'
 import AdminActivityLogs from '../views/admin/AdminActivityLogs.vue'
 import AdminArchive from '../views/admin/AdminArchive.vue'
 import { setupAuthGuards } from './guards'
@@ -196,7 +196,7 @@ const routes = [
   {
     path: '/admin/editeurs',
     name: 'admin-editeurs',
-    component: AdminEditeurs,
+    component: AdminPublishers,
     meta: { requiresAuth: true, roles: ['admin'] },
   },
   {

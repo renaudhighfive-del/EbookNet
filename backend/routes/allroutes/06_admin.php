@@ -75,6 +75,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
     // Gestion des Demandes de Dépôt (Admin)
     Route::prefix('deposits')->group(function () {
+        Route::get('/', [DepositRequestController::class, 'index']);
+        Route::get('/{id}', [DepositRequestController::class, 'show']);
         Route::patch('/{id}/assign', [DepositRequestController::class, 'assign']);
         Route::patch('/{id}/publish', [DepositRequestController::class, 'publish']);
     });

@@ -35,6 +35,7 @@ const authStore = useAuthStore()
 const sidebarOpen = ref(true)
 const profileOpen = ref(false)
 const profileRef = ref(null)
+const logoutModalOpen = ref(false)
 
 // ── Fermer dropdown si clic extérieur ────────────────────────────────────────
 function onClickOutside(e) {
@@ -218,8 +219,13 @@ function isActive(item) {
   return route.path === item.to || route.path.startsWith(item.to + '/')
 }
 
-async function handleLogout() {
+function handleLogout() {
   profileOpen.value = false
+  logoutModalOpen.value = true
+}
+
+async function confirmLogout() {
+  logoutModalOpen.value = false
   await authStore.logout()
   router.push('/')
 }
@@ -449,6 +455,36 @@ async function handleLogout() {
         <slot />
       </main>
     </div>
+
+    <!-- Modal de confirmation de déconnexion -->
+    <Teleport to="body">
+      <Transition enter-active-class="transition ease-in-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in-out duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+        <div
+          v-if="logoutModalOpen"
+          class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          @click.self="logoutModalOpen = false"
+        >
+          <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <h3 class="text-lg font-semibold text-[#1B2A4A] mb-2">Se déconnecter ?</h3>
+            <p class="text-sm text-gray-600 mb-6">Êtes-vous sûr de vouloir vous déconnecter ?</p>
+            <div class="flex gap-3 justify-end">
+              <button
+                @click="logoutModalOpen = false"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                @click="confirmLogout"
+                class="px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
+              >
+                Se déconnecter
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 

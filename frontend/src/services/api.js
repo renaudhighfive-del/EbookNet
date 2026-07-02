@@ -1,5 +1,4 @@
 import axios from 'axios'
-import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 
 const api = axios.create({
@@ -23,6 +22,7 @@ api.interceptors.response.use(
       const authStore = useAuthStore()
       if (authStore.isAuthenticated) {
         authStore.user = null
+        const router = (await import('@/router')).default
         await router.push('/connexion')
       }
       return Promise.reject(error)

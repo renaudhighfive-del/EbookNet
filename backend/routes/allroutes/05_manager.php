@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 // ════════════════════════════════════════════════════════════════════════════
 
 Route::middleware(['auth:sanctum', 'role:responsable_demande,admin'])->prefix('manager')->group(function () {  // le role admin ??
-    // Gestion des demandes de dépôt
+    // Gestion des demandes de dépôt 
     Route::prefix('deposits')->group(function () {
         Route::get('/', [DepositRequestController::class, 'index']);
         Route::get('/{id}', [DepositRequestController::class, 'show']);

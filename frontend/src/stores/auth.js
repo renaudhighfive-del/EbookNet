@@ -32,7 +32,6 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await axios.get(`${SANCTUM_ORIGIN}/sanctum/csrf-cookie`)
       const result = await authService.register(data)
-      user.value = result.user
       return result
     } finally {
       isLoading.value = false

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Reference extends Model
 {
@@ -24,6 +25,20 @@ class Reference extends Model
         'view_count',
         'status',
     ];
+
+    protected function coverImage(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value ? url('storage/' . $value) : null,
+        );
+    }
+
+    protected function filePath(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value ? url('storage/' . $value) : null,
+        );
+    }
 
     public function category()
     {

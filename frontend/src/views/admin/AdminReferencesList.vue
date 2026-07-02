@@ -882,108 +882,123 @@ onMounted(async () => {
       </div>
     </Teleport>
 
-    <!-- Modal détails -->
+    <!-- Modal détails (Side Drawer) -->
     <Teleport to="body">
-      <div
-        v-if="detailsModal.visible"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto"
-        @click.self="detailsModal.visible = false"
-      >
-        <div class="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 my-8">
-          <h3 class="text-lg font-semibold text-[#1B2A4A] mb-4">Détails de la référence</h3>
-          <div v-if="detailsModal.reference" class="space-y-3">
-            <div>
-              <span class="text-sm font-medium text-gray-500">Titre :</span>
-              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.title }}</span>
+      <Transition enter-active-class="transition ease-in-out duration-300" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in-out duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
+        <div
+          v-if="detailsModal.visible"
+          class="fixed inset-0 bg-black/50 z-50"
+          @click.self="detailsModal.visible = false"
+        >
+        </div>
+      </Transition>
+      <Transition enter-active-class="transition ease-in-out duration-300" enter-from-class="translate-x-full" enter-to-class="translate-x-0" leave-active-class="transition ease-in-out duration-200" leave-from-class="translate-x-0" leave-to-class="translate-x-full">
+        <div
+          v-if="detailsModal.visible"
+          class="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-white shadow-2xl z-[60] overflow-y-auto"
+        >
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-xl font-semibold text-[#1B2A4A] flex items-center gap-2">
+                <BookOpen class="w-6 h-6 text-[#0D9488]" />
+                Détails de la référence
+              </h3>
+              <button @click="detailsModal.visible = false" class="text-gray-400 hover:text-[#1B2A4A] transition-colors">
+                <X class="w-6 h-6" />
+              </button>
             </div>
-            <div v-if="detailsModal.reference.subtitle">
-              <span class="text-sm font-medium text-gray-500">Sous-titre :</span>
-              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.subtitle }}</span>
-            </div>
-            <div v-if="detailsModal.reference.abstract">
-              <span class="text-sm font-medium text-gray-500">Résumé :</span>
-              <p class="text-sm text-gray-900 ml-2 mt-1">{{ detailsModal.reference.abstract }}</p>
-            </div>
-            <div>
-              <span class="text-sm font-medium text-gray-500">Type :</span>
-              <span class="text-sm text-gray-900 ml-2">{{ referenceStore.getDocumentTypeLabel(detailsModal.reference.document_type) }}</span>
-            </div>
-            <div>
-              <span class="text-sm font-medium text-gray-500">Langue :</span>
-              <span class="text-sm text-gray-900 ml-2">{{ referenceStore.getLanguageLabel(detailsModal.reference.language) }}</span>
-            </div>
-            <div>
-              <span class="text-sm font-medium text-gray-500">Statut :</span>
-              <span :class="referenceStore.getStatusClass(detailsModal.reference.status)" class="px-2 py-0.5 rounded-full text-xs font-medium ml-2">
-                {{ referenceStore.getStatusLabel(detailsModal.reference.status) }}
-              </span>
-            </div>
-            <div v-if="detailsModal.reference.isbn">
-              <span class="text-sm font-medium text-gray-500">ISBN :</span>
-              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.isbn }}</span>
-            </div>
-            <div v-if="detailsModal.reference.publication_year">
-              <span class="text-sm font-medium text-gray-500">Année :</span>
-              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.publication_year }}</span>
-            </div>
-            <div v-if="detailsModal.reference.pages">
-              <span class="text-sm font-medium text-gray-500">Pages :</span>
-              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.pages }}</span>
-            </div>
-            <div v-if="detailsModal.reference.category">
-              <span class="text-sm font-medium text-gray-500">Catégorie :</span>
-              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.category.name }}</span>
-            </div>
-            <div v-if="detailsModal.reference.publisher">
-              <span class="text-sm font-medium text-gray-500">Éditeur :</span>
-              <span class="text-sm text-gray-900 ml-2">{{ detailsModal.reference.publisher.name }}</span>
-            </div>
-            <div v-if="detailsModal.reference.cover_image">
-              <span class="text-sm font-medium text-gray-500">Image de couverture :</span>
-              <img
-                :src="detailsModal.reference.cover_image.startsWith('http') ? detailsModal.reference.cover_image : '/storage/' + detailsModal.reference.cover_image"
-                class="w-full max-w-xs mt-2 rounded-lg border border-gray-200"
-                alt="Couverture"
-              />
-            </div>
-            <div v-if="detailsModal.reference.file_path">
-              <span class="text-sm font-medium text-gray-500">Fichier :</span>
-              <a
-                :href="detailsModal.reference.file_path.startsWith('http') ? detailsModal.reference.file_path : '/storage/' + detailsModal.reference.file_path"
-                target="_blank"
-                class="text-sm text-[#0D9488] hover:underline ml-2 inline-flex items-center gap-1"
-              >
-                <FileText class="w-4 h-4" />
-                Télécharger le fichier
-              </a>
-            </div>
-            <div v-if="detailsModal.reference.authors && detailsModal.reference.authors.length">
-              <span class="text-sm font-medium text-gray-500">Auteurs :</span>
-              <div class="text-sm text-gray-900 ml-2 mt-1 flex flex-wrap gap-2">
-                <span v-for="author in detailsModal.reference.authors" :key="author.id" class="bg-gray-100 px-2 py-1 rounded">
-                  {{ author.first_name }} {{ author.last_name }}
-                </span>
+
+            <div v-if="detailsModal.reference" class="space-y-6">
+              <!-- Cover + Title Section -->
+              <div class="flex gap-6">
+                <div v-if="detailsModal.reference.cover_image" class="shrink-0">
+                  <img :src="detailsModal.reference.cover_image" class="w-40 h-56 object-cover rounded-xl shadow-md border border-gray-100" alt="Couverture">
+                </div>
+                <div v-else class="shrink-0 w-40 h-56 bg-gray-100 rounded-xl flex items-center justify-center border border-dashed border-gray-300">
+                  <BookOpen class="w-10 h-10 text-gray-300" />
+                </div>
+                <div class="flex-1 space-y-3">
+                  <h4 class="text-lg font-bold text-[#1B2A4A]">{{ detailsModal.reference.title }}</h4>
+                  <p v-if="detailsModal.reference.subtitle" class="text-gray-600">{{ detailsModal.reference.subtitle }}</p>
+                  <span :class="referenceStore.getStatusClass(detailsModal.reference.status)" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium">
+                    {{ referenceStore.getStatusLabel(detailsModal.reference.status) }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Info Grid -->
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <span class="text-sm font-medium text-gray-500">Type de document</span>
+                  <p class="text-sm text-gray-900 mt-1">{{ referenceStore.getDocumentTypeLabel(detailsModal.reference.document_type) }}</p>
+                </div>
+                <div>
+                  <span class="text-sm font-medium text-gray-500">Langue</span>
+                  <p class="text-sm text-gray-900 mt-1">{{ referenceStore.getLanguageLabel(detailsModal.reference.language) }}</p>
+                </div>
+                <div v-if="detailsModal.reference.publication_year">
+                  <span class="text-sm font-medium text-gray-500">Année de publication</span>
+                  <p class="text-sm text-gray-900 mt-1">{{ detailsModal.reference.publication_year }}</p>
+                </div>
+                <div v-if="detailsModal.reference.pages">
+                  <span class="text-sm font-medium text-gray-500">Nombre de pages</span>
+                  <p class="text-sm text-gray-900 mt-1">{{ detailsModal.reference.pages }} pages</p>
+                </div>
+                <div v-if="detailsModal.reference.isbn">
+                  <span class="text-sm font-medium text-gray-500">ISBN</span>
+                  <p class="text-sm text-gray-900 mt-1 font-mono">{{ detailsModal.reference.isbn }}</p>
+                </div>
+                <div v-if="detailsModal.reference.category">
+                  <span class="text-sm font-medium text-gray-500">Catégorie</span>
+                  <p class="text-sm text-gray-900 mt-1">{{ detailsModal.reference.category.name }}</p>
+                </div>
+                <div v-if="detailsModal.reference.publisher">
+                  <span class="text-sm font-medium text-gray-500">Éditeur</span>
+                  <p class="text-sm text-gray-900 mt-1">{{ detailsModal.reference.publisher.name }}</p>
+                </div>
+              </div>
+
+              <!-- Résumé -->
+              <div v-if="detailsModal.reference.abstract" class="bg-gray-50 p-4 rounded-xl">
+                <span class="text-sm font-medium text-gray-500">Résumé</span>
+                <p class="text-sm text-gray-900 mt-2 leading-relaxed">{{ detailsModal.reference.abstract }}</p>
+              </div>
+
+              <!-- Auteurs -->
+              <div v-if="detailsModal.reference.authors && detailsModal.reference.authors.length">
+                <span class="text-sm font-medium text-gray-500">Auteurs</span>
+                <div class="flex flex-wrap gap-2 mt-2">
+                  <span v-for="author in detailsModal.reference.authors" :key="author.id" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                    {{ author.first_name }} {{ author.last_name }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Mots-clés -->
+              <div v-if="detailsModal.reference.keywords && detailsModal.reference.keywords.length">
+                <span class="text-sm font-medium text-gray-500">Mots-clés</span>
+                <div class="flex flex-wrap gap-2 mt-2">
+                  <span v-for="kw in detailsModal.reference.keywords" :key="kw.id" class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-xs font-medium">
+                    {{ kw.keyword }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Téléchargement fichier -->
+              <div v-if="detailsModal.reference.file_path" class="pt-4 border-t border-gray-100">
+                <a
+                  :href="detailsModal.reference.file_path"
+                  download
+                  class="flex items-center gap-3 px-4 py-3 bg-[#0D9488] text-white rounded-xl hover:bg-[#0E5F56] transition-colors font-medium"
+                >
+                  <FileText class="w-5 h-5" />
+                  Télécharger le fichier
+                </a>
               </div>
             </div>
-            <div v-if="detailsModal.reference.keywords && detailsModal.reference.keywords.length">
-              <span class="text-sm font-medium text-gray-500">Mots-clés :</span>
-              <div class="text-sm text-gray-900 ml-2 mt-1 flex flex-wrap gap-2">
-                <span v-for="kw in detailsModal.reference.keywords" :key="kw.id" class="bg-[#0D9488] text-white px-2 py-1 rounded text-xs">
-                  {{ kw.keyword }}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="flex justify-end mt-6">
-            <button
-              @click="detailsModal.visible = false"
-              class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"
-            >
-              Fermer
-            </button>
           </div>
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </AdminLayout>
 </template>

@@ -8,7 +8,7 @@ class UpdateReferenceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->role === 'admin';
+        return true;
     }
 
     public function rules(): array

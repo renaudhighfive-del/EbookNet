@@ -10,6 +10,17 @@ use Illuminate\Http\Request;
 
 class DepositRequestController extends Controller
 {
+    /** GET /user/deposits — Liste des dépôts de l'utilisateur connecté */
+    public function userDeposits(Request $request): JsonResponse
+    {
+        $deposits = DepositRequest::with(['applicant', 'assignedManager', 'category', 'reviews.reviewer', 'reference'])
+            ->where('applicant_id', $request->user()->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($deposits);
+    }
+
     /** POST /deposits — Créer une demande de dépôt (utilisateur) */
     public function store(Request $request): JsonResponse
     {
@@ -157,6 +168,25 @@ class DepositRequestController extends Controller
             'status' => 'published',
             'uploaded_by' => $deposit->applicant_id,
         ]);
+
+        // Transférer les auteurs : parser le champ string author et créer/lier les entités Author
+        if (!empty($deposit->author)) {
+            $authorNames = array_map('trim', explode(',', $deposit->author));
+            $authorIds = [];
+            foreach ($authorNames as $name) {
+                if (empty($name)) continue;
+                $parts = explode(' ', $name, 2);
+                $firstName = $parts[0] ?? '';
+                $lastName = $parts[1] ?? '';
+                $author = \App\Models\Author::firstOrCreate(
+                    ['first_name' => $firstName, 'last_name' => $lastName]
+                );
+                $authorIds[] = $author->id;
+            }
+            if (!empty($authorIds)) {
+                $reference->authors()->attach($authorIds);
+            }
+        }
 
         // Associer le dépôt à la référence créée
         $deposit->update([
