@@ -64,7 +64,7 @@
       <p class="text-sm font-semibold text-gray-700 mb-3">LÉGENDE</p>
       <div class="space-y-2">
         <div class="flex items-center gap-3">
-          <div class="w-4 h-4 rounded-full bg-[#5B8DEF]"></div>
+          <div class="w-4 h-4 rounded-full bg-[#47eb31]"></div>
           <span class="text-sm text-gray-700">Confirmé</span>
         </div>
         <div class="flex items-center gap-3">

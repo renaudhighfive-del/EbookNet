@@ -120,6 +120,27 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  async function createManualAppointment(data) {
+    isActionLoading.value = true
+    error.value = null
+    try {
+      const result = await adminPlanningService.createManualAppointment(data)
+      // Ajouter le rendez-vous aux listes
+      if (!appointments.value.find(a => a.id === result.appointment.id)) {
+        appointments.value.unshift(result.appointment)
+      }
+      if (!calendarAppointments.value.find(a => a.id === result.appointment.id)) {
+        calendarAppointments.value.push(result.appointment)
+      }
+      return result
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Erreur création rendez-vous manuel.'
+      throw err
+    } finally {
+      isActionLoading.value = false
+    }
+  }
+
   function _syncAppointmentInList(list, appointment) {
     const index = list.findIndex(a => a.id === appointment.id)
     if (index !== -1) {
@@ -212,6 +233,7 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     createAvailabilityException,
     fetchAppointments,
     fetchCalendarAppointments,
+    createManualAppointment,
     updateAppointment,
     cancelAppointment,
     fetchSettings,

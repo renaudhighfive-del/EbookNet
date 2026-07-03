@@ -40,13 +40,13 @@
     <div v-else class="rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
       <!-- Day headers -->
       <div class="grid grid-cols-7 border-b border-gray-100">
-        <div v-for="day in weekDays" :key="day.date" class="py-4 text-center border-r border-gray-100 last:border-r-0">
+        <div v-for="day in weekDays" :key="day.date" class="py-4 text-center border-r border-gray-100 last:border-r-0" :class="{ 'opacity-50': isDateBeforeToday(day.date) }">
           <p class="text-xs text-gray-500 uppercase font-medium">{{ day.shortName }}</p>
           <div class="mt-1">
             <span
               :class="[
                 'w-10 h-10 inline-flex items-center justify-center rounded-full text-lg font-semibold',
-                day.isToday ? 'bg-[#5B8DEF] text-white' : 'text-gray-900'
+                day.isToday ? 'bg-[#5B8DEF] text-white' : (isDateBeforeToday(day.date) ? 'text-gray-400' : 'text-gray-900')
               ]"
             >
               {{ day.dayNumber }}
@@ -56,26 +56,51 @@
       </div>
 
       <!-- Time grid -->
-      <div class="relative" style="height: 800px;">
+      <div class="relative" style="height: 1536px;">
         <div class="absolute inset-0 grid grid-cols-7">
           <div v-for="(day, dayIndex) in weekDays" :key="day.date" class="border-r border-gray-100 last:border-r-0 relative">
-            <!-- Hour lines -->
-            <div class="absolute inset-0" style="background-size: 100% 80px;">
-              <div v-for="i in 12" :key="i" class="h-20 border-t border-gray-100"></div>
+            <!-- Half-hour lines -->
+            <div class="absolute inset-0 pointer-events-none" style="background-size: 100% 64px;">
+              <div v-for="slot in timeSlots" :key="slot" class="h-16 border-t border-gray-100"></div>
+            </div>
+
+            <!-- Empty slots -->
+            <div class="absolute inset-0 z-10">
+              <template v-for="daySlot in getDaySlots(day.date)" :key="`${day.date}-${daySlot.start}`">
+                <div
+                  v-if="!daySlot.occupied"
+                  @click.stop="!isDateBeforeToday(day.date) && onEmptySlotClick(daySlot, day.date)"
+                  :class="[
+                    'absolute left-1.5 right-1.5 h-16 rounded-xl border border-dashed transition-all flex items-center justify-center',
+                    isDateBeforeToday(day.date)
+                      ? 'border-gray-300 bg-gray-100 cursor-not-allowed opacity-50 pointer-events-none'
+                      : 'border-gray-200 bg-white/80 hover:bg-blue-50 cursor-pointer pointer-events-auto'
+                  ]"
+                  :style="{ top: `${daySlot.index * 64}px` }"
+                >
+                  <span 
+                    v-if="!isDateBeforeToday(day.date)"
+                    class="text-blue-400 text-xs font-semibold"
+                  >
+                    +
+                  </span>
+                </div>
+              </template>
             </div>
 
             <!-- Events -->
-            <div class="relative">
+            <div class="relative z-20">
               <div
                 v-for="event in getEventsForDay(day.date)"
                 :key="event.id"
-                @click="openDetails(event)"
+                @click="!isDateBeforeToday(day.date) && openDetails(event)"
                 :style="{
                   top: `${getEventPosition(event.start_time)}px`,
                   height: `${getEventHeight(event.start_time, event.end_time)}px`
                 }"
                 :class="[
-                  'absolute left-1.5 right-1.5 rounded-xl p-2 text-xs font-medium overflow-hidden cursor-pointer transition-all hover:shadow-md hover:scale-[1.02] hover:z-10',
+                  'absolute left-1.5 right-1.5 rounded-xl p-2 text-xs font-medium overflow-hidden transition-all',
+                  isDateBeforeToday(day.date) ? 'opacity-70 cursor-default' : 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:z-30',
                   event.status === 'confirmed' ? 'bg-green-500 text-white' : 
                   event.status === 'pending' ? 'bg-amber-50 text-amber-800 border-2 border-dashed border-amber-400' : 
                   'bg-gray-100 text-gray-600'
@@ -89,9 +114,9 @@
         </div>
 
         <!-- Time labels -->
-        <div class="absolute left-0 top-0 bottom-0 w-12 pl-2 pointer-events-none">
-          <div v-for="i in 12" :key="i" class="h-20 text-xs text-gray-400 pt-2">
-            {{ (7 + i).toString().padStart(2, '0') }}:00
+        <div class="absolute left-0 top-0 bottom-0 w-14 pl-2 pointer-events-none">
+          <div v-for="slot in timeSlots" :key="slot" class="h-16 text-[10px] text-gray-400 leading-[1.1] pt-1">
+            {{ slot }}
           </div>
         </div>
       </div>
@@ -210,6 +235,38 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- Empty slot modal -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="isEmptySlotModalOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+          <div class="absolute inset-0 bg-black/40" @click="closeEmptySlotModal"></div>
+          <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
+            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-bold text-gray-900">Créneau libre sélectionné</h3>
+                <p class="text-sm text-gray-500 mt-0.5">Ce créneau sera marqué comme occupé.</p>
+              </div>
+              <button @click="closeEmptySlotModal" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+              <p class="text-sm text-gray-600">Voulez-vous rendre ce créneau occupé ?</p>
+              <p class="text-base font-semibold text-gray-900">{{ formatDateFull(selectedEmptySlot.date) }}</p>
+              <p class="text-sm text-gray-700">De {{ selectedEmptySlot.start }} à {{ selectedEmptySlot.end }}</p>
+              <p class="text-sm text-gray-500">Ce créneau sera désormais marqué comme occupé une fois confirmé.</p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-3">
+              <button @click="closeEmptySlotModal" class="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all">Annuler</button>
+              <button @click="confirmOccupyEmptySlot" class="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all">Confirmer</button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -223,6 +280,8 @@ const toastStore = useToastStore()
 const weekStart = ref(new Date())
 const today = new Date()
 const selectedAppointment = ref(null)
+const selectedEmptySlot = ref(null)
+const isEmptySlotModalOpen = ref(false)
 
 const weekDays = computed(() => {
   const days = []
@@ -233,9 +292,10 @@ const weekDays = computed(() => {
     const date = new Date(start)
     date.setDate(start.getDate() + i)
     days.push({
-      date: date.toISOString().split('T')[0],
+      date: toLocalISODate(date),
       shortName: names[i],
       dayNumber: date.getDate(),
+      monthIndex: date.getMonth(),
       isToday: date.toDateString() === today.toDateString()
     })
   }
@@ -246,13 +306,37 @@ const currentWeekDisplay = computed(() => {
   const start = weekDays.value[0]
   const end = weekDays.value[6]
   const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
-  const startDate = new Date(start.date)
-  const endDate = new Date(end.date)
 
-  if (startDate.getMonth() === endDate.getMonth()) {
-    return `${startDate.getDate()} — ${endDate.getDate()} ${monthNames[endDate.getMonth()]}`
+  // On réutilise directement dayNumber/monthIndex déjà calculés en local
+  // (on évite de reparser start.date/end.date, ce qui repasserait par UTC et redécalerait la date)
+  if (start.monthIndex === end.monthIndex) {
+    return `${start.dayNumber} — ${end.dayNumber} ${monthNames[end.monthIndex]}`
   }
-  return `${startDate.getDate()} ${monthNames[startDate.getMonth()]} — ${endDate.getDate()} ${monthNames[endDate.getMonth()]}`
+  return `${start.dayNumber} ${monthNames[start.monthIndex]} — ${end.dayNumber} ${monthNames[end.monthIndex]}`
+})
+
+// Formate une date en YYYY-MM-DD à partir de ses composants LOCAUX
+// (ne jamais utiliser toISOString() ici : ça convertit en UTC et peut décaler d'un jour)
+function toLocalISODate(date) {
+  const y = date.getFullYear()
+  const m = (date.getMonth() + 1).toString().padStart(2, '0')
+  const d = date.getDate().toString().padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const timeSlots = computed(() => {
+  const labels = []
+  const startHour = 8
+  const totalSlots = 24 // 12h de 30 minutes
+
+  for (let index = 0; index < totalSlots; index++) {
+    const hour = startHour + Math.floor(index / 2)
+    const minute = index % 2 === 0 ? '00' : '30'
+    const nextHour = startHour + Math.floor((index + 1) / 2)
+    const nextMinute = (index + 1) % 2 === 0 ? '00' : '30'
+    labels.push(`${hour}h${minute}-${nextHour}h${nextMinute}`)
+  }
+  return labels
 })
 
 function getWeekStart(date) {
@@ -274,24 +358,68 @@ function getWeekEnd(date) {
 async function loadWeek() {
   const start = getWeekStart(weekStart.value)
   const end = getWeekEnd(weekStart.value)
-  const fmt = d => d.toISOString().split('T')[0]
+  const fmt = d => toLocalISODate(d)
   await store.fetchCalendarAppointments(fmt(start), fmt(end))
 }
 
+function getDaySlots(date) {
+  const appointments = getEventsForDay(date)
+  const slots = []
+
+  for (let index = 0; index < timeSlots.value.length; index++) {
+    const [startLabel, endLabel] = timeSlots.value[index].split('-')
+    const start = labelToTime(startLabel)
+    const end = labelToTime(endLabel)
+    const occupied = appointments.some(event => timeRangesOverlap(event.start_time, event.end_time, start, end))
+    slots.push({ index, start, end, occupied })
+  }
+
+  return slots
+}
+
 function getEventsForDay(date) {
-  return (store.calendarAppointments || []).filter(e => e.date === date && e.status !== 'cancelled')
+  return (store.calendarAppointments || []).filter(e => {
+    const appointmentDate = new Date(e.date).toISOString().split('T')[0]
+    return appointmentDate === date && e.status !== 'cancelled'
+  })
+}
+
+function onEmptySlotClick(slot, date) {
+  selectedEmptySlot.value = { ...slot, date }
+  isEmptySlotModalOpen.value = true
+}
+
+function closeEmptySlotModal() {
+  isEmptySlotModalOpen.value = false
+  selectedEmptySlot.value = null
+}
+
+async function confirmOccupyEmptySlot() {
+  try {
+    await store.createManualAppointment({
+      date: selectedEmptySlot.value.date,
+      start_time: selectedEmptySlot.value.start,
+      end_time: selectedEmptySlot.value.end
+    })
+    toastStore.success(`Créneau ${selectedEmptySlot.value.start} - ${selectedEmptySlot.value.end} du ${formatDateFull(selectedEmptySlot.value.date)} marqué occupé !`)
+    closeEmptySlotModal()
+  } catch (err) {
+    toastStore.error(err.response?.data?.message || 'Erreur lors de la réservation du créneau.')
+  }
 }
 
 function getEventPosition(time) {
   const [hours, minutes] = time.split(':').map(Number)
-  return ((hours - 8) * 80) + (minutes / 60 * 80)
+  const slotIndex = (hours - 8) * 2 + (minutes === 30 ? 1 : 0)
+  return slotIndex * 64
 }
 
 function getEventHeight(startTime, endTime) {
   const [startHour, startMin] = startTime.split(':').map(Number)
   const [endHour, endMin] = endTime.split(':').map(Number)
   const duration = (endHour * 60 + endMin) - (startHour * 60 + startMin)
-  return Math.max((duration / 60) * 80, 40)
+  const slots = duration / 30
+  return Math.max(slots * 64, 40)
 }
 
 function formatTime(time) {
@@ -316,6 +444,27 @@ function formatDateFull(dateStr) {
   } catch {
     return dateStr
   }
+}
+
+function isDateBeforeToday(dateStr) {
+  const todayDate = new Date()
+  todayDate.setHours(0, 0, 0, 0)
+  const checkDate = new Date(dateStr)
+  return checkDate < todayDate
+}
+
+function labelToTime(label) {
+  const [h, m] = label.split('h')
+  return `${h.padStart(2, '0')}:${m}:00`
+}
+
+function parseTimeToMinutes(time) {
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + minutes
+}
+
+function timeRangesOverlap(startA, endA, startB, endB) {
+  return parseTimeToMinutes(startA) < parseTimeToMinutes(endB) && parseTimeToMinutes(endA) > parseTimeToMinutes(startB)
 }
 
 function previousWeek() {

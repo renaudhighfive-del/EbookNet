@@ -95,6 +95,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         Route::get('/appointments', [AdminPlanningController::class, 'getAppointments']);
         Route::get('/appointments/calendar', [AdminPlanningController::class, 'getCalendarAppointments']);
         Route::get('/appointments/{id}', [AdminPlanningController::class, 'getAppointment']);
+        Route::post('/appointments/manual', [AdminPlanningController::class, 'createManualAppointment']);
         Route::put('/appointments/{id}', [AdminPlanningController::class, 'updateAppointment']);
         Route::post('/appointments/{id}/cancel', [AdminPlanningController::class, 'cancelAppointment']);
         Route::get('/settings', [AdminPlanningController::class, 'getSettings']);

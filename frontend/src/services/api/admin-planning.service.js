@@ -43,6 +43,11 @@ export const adminPlanningService = {
     return response.data
   },
 
+  async createManualAppointment(data) {
+    const response = await api.post('/admin/planning/appointments/manual', data)
+    return response.data
+  },
+
   async updateAppointment(id, data) {
     const response = await api.put(`/admin/planning/appointments/${id}`, data)
     return response.data

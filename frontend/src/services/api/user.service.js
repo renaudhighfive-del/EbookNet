@@ -14,5 +14,10 @@ export const userService = {
   async createDeposit(data) {
     const response = await api.post('/user/deposits', data)
     return response.data
+  },
+
+  async getDepositById(id) {
+    const response = await api.get(`/user/deposits/${id}`)
+    return response.data
   }
 }

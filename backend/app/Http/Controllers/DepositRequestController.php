@@ -21,6 +21,16 @@ class DepositRequestController extends Controller
         return response()->json($deposits);
     }
 
+    /** GET /user/deposits/{id} — Détail d'un dépôt pour l'utilisateur connecté */
+    public function userDepositDetail(Request $request, int $id): JsonResponse
+    {
+        $deposit = DepositRequest::with(['applicant', 'assignedManager', 'category', 'reviews.reviewer', 'reference'])
+            ->where('applicant_id', $request->user()->id)
+            ->findOrFail($id);
+
+        return response()->json(['deposit_request' => $deposit]);
+    }
+
     /** POST /deposits — Créer une demande de dépôt (utilisateur) */
     public function store(Request $request): JsonResponse
     {

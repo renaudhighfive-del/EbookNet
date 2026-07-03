@@ -14,6 +14,7 @@ use App\Http\Requests\Planning\CreateAvailabilityExceptionRequest;
 use App\Http\Requests\Planning\UpdateAppointmentRequest;
 use App\Http\Requests\Planning\CancelAppointmentRequest;
 use App\Http\Requests\Planning\UpdateSettingsRequest;
+use App\Http\Requests\Planning\CreateManualAppointmentRequest;
 
 class AdminPlanningController extends Controller
 {
@@ -85,8 +86,7 @@ class AdminPlanningController extends Controller
             'end_date'   => 'required|date|after_or_equal:start_date',
         ]);
 
-        $appointments = Appointment::where('teacher_id', $request->user()->id)
-            ->whereBetween('date', [$request->start_date, $request->end_date])
+        $appointments = Appointment::whereBetween('date', [$request->start_date, $request->end_date])
             ->where('status', '!=', 'cancelled')
             ->orderBy('date')
             ->orderBy('start_time')
@@ -166,6 +166,49 @@ class AdminPlanningController extends Controller
             'timezone' => 'Africa/Porto-Novo',
         ]);
         return response()->json(['settings' => $settings]);
+    }
+
+    public function createManualAppointment(CreateManualAppointmentRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        
+        // Vérifier que le créneau n'est pas déjà occupé
+        $existing = Appointment::where('teacher_id', $request->user()->id)
+            ->where('date', $validated['date'])
+            ->where(function ($q) use ($validated) {
+                $q->where(function ($q2) use ($validated) {
+                    $q2->where('start_time', '<=', $validated['start_time'])
+                        ->where('end_time', '>', $validated['start_time']);
+                })->orWhere(function ($q2) use ($validated) {
+                    $q2->where('start_time', '<', $validated['end_time'])
+                        ->where('end_time', '>=', $validated['end_time']);
+                });
+            })
+            ->where('status', '!=', 'cancelled')
+            ->first();
+            
+        if ($existing) {
+            return response()->json(['message' => 'Ce créneau est déjà occupé.'], 409);
+        }
+
+        // Créer le rendez-vous manuel (marqué comme confirmé, sans info étudiant)
+        $appointment = Appointment::create([
+            'teacher_id' => $request->user()->id,
+            'student_id' => null,
+            'first_name' => 'Occupé',
+            'last_name' => '(manuel)',
+            'email' => 'manuel@admin.local',
+            'phone' => null,
+            'subject' => 'Créneau marqué occupé par l\'administrateur',
+            'date' => $validated['date'],
+            'start_time' => $validated['start_time'],
+            'end_time' => $validated['end_time'],
+            'status' => 'confirmed',
+            'google_event_id' => null,
+            'cancel_reason' => null,
+        ]);
+
+        return response()->json(['message' => 'Créneau marqué occupé.', 'appointment' => $appointment], 201);
     }
 
     public function updateSettings(UpdateSettingsRequest $request): JsonResponse

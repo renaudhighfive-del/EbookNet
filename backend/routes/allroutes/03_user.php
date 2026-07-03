@@ -17,6 +17,7 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
     Route::prefix('deposits')->group(function () {
         Route::get('/', [DepositRequestController::class, 'userDeposits']);
         Route::post('/', [DepositRequestController::class, 'store']);
+        Route::get('/{id}', [DepositRequestController::class, 'userDepositDetail']);
     });
 });
 
@@ -27,6 +28,7 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
 Route::middleware(['auth:sanctum'])->prefix('planning')->group(function () {
     Route::get('/availability',       [PlanningController::class, 'getAvailability']);
     Route::get('/availability/month', [PlanningController::class, 'getAvailabilityMonth']);
+    Route::get('/appointments', [PlanningController::class, 'calendarAppointments']);
     Route::post('/appointments',      [PlanningController::class, 'createAppointment']);
     Route::get('/appointments/{id}/status', [PlanningController::class, 'getAppointmentStatus']);
     Route::post('/appointments/{id}/cancel', [PlanningController::class, 'cancelAppointment']);

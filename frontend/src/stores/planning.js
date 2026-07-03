@@ -4,6 +4,7 @@ import { planningService } from '../services/api/planning.service'
 
 export const usePlanningStore = defineStore('planning', () => {
   const slots = ref([])
+  const calendarAppointments = ref([])
   const availableDays = ref([])
   const selectedDate = ref(new Date().toISOString().split('T')[0])
   const selectedSlot = ref(null)
@@ -55,12 +56,29 @@ export const usePlanningStore = defineStore('planning', () => {
     }
   }
 
+  async function fetchCalendarAppointments(startDate, endDate) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const data = await planningService.getCalendarAppointments(startDate, endDate)
+      calendarAppointments.value = data
+      return data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Erreur chargement réservations calendrier.'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+
   function selectSlot(slot) {
     selectedSlot.value = slot
   }
 
   return {
     slots,
+    calendarAppointments,
     availableDays,
     selectedDate,
     selectedSlot,
@@ -69,6 +87,7 @@ export const usePlanningStore = defineStore('planning', () => {
     fetchAvailability,
     fetchAvailabilityMonth,
     createAppointment,
-    selectSlot
+    selectSlot,
+    fetchCalendarAppointments,
   }
 })

@@ -11,6 +11,17 @@ export const planningService = {
     return response.data
   },
 
+  async getCalendarAppointments(startDate, endDate) {
+    const response = await api.get('/planning/appointments', {
+      params: {
+        start_date: startDate,
+        end_date: endDate
+      }
+    })
+
+   return response.data
+  },
+
   async createAppointment(data) {
     const response = await api.post('/planning/appointments', data)
     return response.data

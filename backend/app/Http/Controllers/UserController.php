@@ -315,7 +315,7 @@ class UserController extends Controller
     }
     
     // Ajouter les activités de téléchargement
-    $downloadLogs = $user->downloads()->with('reference')->latest()->take(3)->get();
+    $downloadLogs = $user->downloads()->with('reference')->latest('downloaded_at')->take(3)->get();
     
     foreach ($downloadLogs as $download) {
       $activities[] = [
@@ -323,7 +323,7 @@ class UserController extends Controller
         'type' => 'download',
         'description' => "Vous avez téléchargé '" . ($download->reference?->title ?? 'Document') . "'",
         'reference_title' => $download->reference?->title,
-        'created_at' => $download->created_at,
+        'created_at' => $download->downloaded_at,
       ];
     }
     

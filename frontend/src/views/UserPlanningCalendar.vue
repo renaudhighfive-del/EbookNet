@@ -1,327 +1,412 @@
 <template>
   <AuthenticatedLayout>
-    <div class="p-6 max-w-7xl mx-auto">
-      <!-- Mes rendez-vous -->
-      <div v-if="myAppointments.length > 0" class="mb-6 bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
-        <h3 class="text-lg font-bold text-gray-900 mb-4">Mes rendez-vous</h3>
-        <div class="space-y-3">
-          <div
-            v-for="apt in myAppointments"
-            :key="apt.id"
-            class="flex items-center gap-4 p-4 border border-gray-100 rounded-2xl hover:border-blue-200 transition-all"
-          >
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
-              :class="apt.status === 'confirmed' ? 'bg-green-100' : apt.status === 'pending' ? 'bg-amber-100' : 'bg-red-100'"
-            >
-              <svg v-if="apt.status === 'confirmed'" class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <svg v-else-if="apt.status === 'pending'" class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <svg v-else class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-gray-900">
-                {{ formatDateFull(apt.date) }}
-              </p>
-              <p class="text-sm text-gray-500">
-                {{ formatTime(apt.start_time) }} - {{ formatTime(apt.end_time) }}
-              </p>
-              <p v-if="apt.subject" class="text-xs text-gray-400 truncate mt-0.5">{{ apt.subject }}</p>
-            </div>
+  <div class="p-6">
+    <!-- Header navigation -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-4">
+        <button @click="previousWeek" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+        <button @click="goToToday" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50">
+          Aujourd'hui
+        </button>
+        <h2 class="text-xl font-bold text-gray-900">{{ currentWeekDisplay }}</h2>
+        <button @click="nextWeek" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="flex items-center gap-1.5 text-xs text-gray-500">
+          <span class="w-3 h-3 rounded bg-green-500"></span> Confirmé
+        </span>
+        <span class="flex items-center gap-1.5 text-xs text-gray-500">
+          <span class="w-3 h-3 rounded bg-amber-400 border border-dashed border-amber-600"></span> En attente
+        </span>
+        <span class="flex items-center gap-1.5 text-xs text-gray-500">
+          <span class="w-3 h-3 rounded bg-gray-400"></span> Terminé
+        </span>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="store.isLoading" class="flex items-center justify-center py-20">
+      <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
+    </div>
+
+    <!-- Calendar grid -->
+    <div v-else class="rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
+      <!-- Day headers -->
+      <div class="grid grid-cols-7 border-b border-gray-100">
+        <div v-for="day in weekDays" :key="day.date" class="py-4 text-center border-r border-gray-100 last:border-r-0" :class="{ 'opacity-50': isDateBeforeToday(day.date) }">
+          <p class="text-xs text-gray-500 uppercase font-medium">{{ day.shortName }}</p>
+          <div class="mt-1">
             <span
               :class="[
-                'px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap',
-                apt.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                apt.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                'bg-red-100 text-red-700'
+                'w-10 h-10 inline-flex items-center justify-center rounded-full text-lg font-semibold',
+                day.isToday ? 'bg-[#5B8DEF] text-white' : (isDateBeforeToday(day.date) ? 'text-gray-400' : 'text-gray-900')
               ]"
             >
-              {{ getStatusLabel(apt.status) }}
+              {{ day.dayNumber }}
             </span>
           </div>
         </div>
       </div>
 
-      <!-- En-tête -->
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-4">
-          <button @click="previousWeek" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-all">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-          </button>
-          <button @click="goToToday" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all">
-            Aujourd'hui
-          </button>
-          <h2 class="text-xl font-bold text-gray-900 min-w-[200px]">{{ currentWeekDisplay }}</h2>
-          <button @click="nextWeek" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-all">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-          </button>
-        </div>
-        <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-1">
-          <button
-            @click="viewMode = 'week'"
-            :class="['px-4 py-1.5 rounded-lg text-sm font-medium transition-all', viewMode === 'week' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-800']"
-          >
-            Semaine
-          </button>
-          <button
-            @click="viewMode = 'day'"
-            :class="['px-4 py-1.5 rounded-lg text-sm font-medium transition-all', viewMode === 'day' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-800']"
-          >
-            Jour
-          </button>
-        </div>
-      </div>
+      <!-- Time grid -->
+      <div class="relative" style="height: 1536px;">
+        <div class="absolute inset-0 grid grid-cols-7">
+          <div v-for="(day, dayIndex) in weekDays" :key="day.date" class="border-r border-gray-100 last:border-r-0 relative">
+            <!-- Half-hour lines -->
+            <div class="absolute inset-0 pointer-events-none" style="background-size: 100% 64px;">
+              <div v-for="slot in timeSlots" :key="slot" class="h-16 border-t border-gray-100"></div>
+            </div>
 
-      <!-- Calendrier -->
-      <div class="rounded-3xl border border-gray-200 shadow-sm overflow-hidden bg-white">
-        <!-- En-tête des jours -->
-        <div class="grid grid-cols-7 border-b border-gray-100">
-          <div v-for="day in visibleDays" :key="day.date" class="py-4 text-center border-r border-gray-100 last:border-r-0">
-            <p class="text-xs text-gray-500 uppercase font-medium tracking-wide">{{ day.shortName }}</p>
-            <div class="mt-1">
-              <span
+            <!-- Empty slots -->
+            <div class="absolute inset-0 z-10">
+              <template v-for="daySlot in getDaySlots(day.date)" :key="`${day.date}-${daySlot.start}`">
+                <div
+                  v-if="!daySlot.occupied"
+                  @click.stop="!isDateBeforeToday(day.date) && onEmptySlotClick(daySlot, day.date)"
+                  :class="[
+                    'absolute left-1.5 right-1.5 h-16 rounded-xl border border-dashed transition-all flex items-center justify-center',
+                    isDateBeforeToday(day.date)
+                      ? 'border-gray-300 bg-gray-100 cursor-not-allowed opacity-50 pointer-events-none'
+                      : 'border-gray-200 bg-white/80 hover:bg-blue-50 cursor-pointer pointer-events-auto'
+                  ]"
+                  :style="{ top: `${daySlot.index * 64}px` }"
+                >
+                  <span
+                    v-if="!isDateBeforeToday(day.date)"
+                    class="text-blue-400 text-xs font-semibold"
+                  >
+                    +
+                  </span>
+                </div>
+              </template>
+            </div>
+
+            <!-- Events -->
+            <div class="relative z-20">
+              <div
+                v-for="event in getEventsForDay(day.date)"
+                :key="event.id"
+                @click="event.is_mine && !isDateBeforeToday(day.date) && openDetails(event)"
+                :style="{
+                  top: `${getEventPosition(event.start_time)}px`,
+                  height: `${getEventHeight(event.start_time, event.end_time)}px`
+                }"
                 :class="[
-                  'w-10 h-10 inline-flex items-center justify-center rounded-full text-lg font-semibold transition-all',
-                  day.isToday ? 'bg-[#5B8DEF] text-white shadow-sm' : 'text-gray-900',
+                  'absolute left-1.5 right-1.5 rounded-xl p-2 text-xs font-medium overflow-hidden transition-all',
+                  isDateBeforeToday(day.date) ? 'opacity-70 cursor-default' : 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:z-30',
+                    !event.is_mine
+                        ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                        : event.status === 'confirmed'
+                        ? 'bg-green-500 text-white'
+                        : event.status === 'pending'
+                        ? 'bg-amber-50 text-amber-800 border-2 border-dashed border-amber-400'
+                        : event.status === 'cancelled'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-gray-100 text-gray-600'
                 ]"
               >
-                {{ day.dayNumber }}
-              </span>
+                <p class="truncate font-semibold">{{ event.is_mine ? `${event.first_name} ${event.last_name}` : 'Occupé' }}</p>
+                <p class="opacity-80 mt-0.5">{{ formatTime(event.start_time) }}–{{ formatTime(event.end_time) }}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Corps du calendrier -->
-        <div class="relative" :style="{ height: viewMode === 'day' ? '600px' : '800px' }">
-          <div class="absolute inset-0 grid" :class="viewMode === 'day' ? 'grid-cols-1' : 'grid-cols-7'">
-            <div v-for="(day, dayIndex) in visibleDays" :key="day.date" class="border-r border-gray-100 last:border-r-0 relative">
-              <div class="absolute inset-0" style="background-size: 100% 80px;">
-                <div v-for="i in (viewMode === 'day' ? 10 : 12)" :key="i" class="h-20 border-t border-gray-50"></div>
-              </div>
+        <!-- Time labels -->
+        <div class="absolute left-0 top-0 bottom-0 w-14 pl-2 pointer-events-none">
+          <div v-for="slot in timeSlots" :key="slot" class="h-16 text-[10px] text-gray-400 leading-[1.1] pt-1">
+            {{ slot }}
+          </div>
+        </div>
+      </div>
+    </div>
 
-              <div class="relative">
-                <div
-                  v-for="slot in (daySlots[day.date] || [])"
-                  :key="`${day.date}-${slot.start}`"
-                  @click="handleSlotClick(slot, day.date)"
-                  :style="{
-                    top: `${getEventPosition(slot.start, viewMode === 'day' ? 7 : 8)}px`,
-                    height: `${Math.max(getEventHeight(slot.start, slot.end), 36)}px`,
-                    minHeight: '36px',
-                  }"
+    <!-- Sidebar modale des détails -->
+    <Teleport to="body">
+      <Transition name="sidebar">
+        <div v-if="selectedAppointment" class="fixed inset-0 z-50 flex justify-end">
+          <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="closeDetails"></div>
+          <div class="relative w-full max-w-lg bg-white shadow-2xl h-full overflow-y-auto">
+            <!-- En-tête -->
+            <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-between z-10">
+              <div>
+                <h3 class="text-lg font-bold text-gray-900">Détails du rendez-vous</h3>
+                <p class="text-sm text-gray-500 mt-0.5">Consultez cette demande.</p>
+              </div>
+              <button @click="closeDetails" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div v-if="selectedAppointment" class="px-6 py-6 space-y-6">
+              <!-- Statut -->
+              <div class="flex items-center gap-3">
+                <span
                   :class="[
-                    'absolute left-1.5 right-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-all duration-150',
-                    slot.is_mine
-                      ? slot.appointment_status === 'confirmed'
-                        ? 'bg-green-50 border border-green-200 text-green-700 cursor-default shadow-sm'
-                        : 'bg-amber-50 border border-amber-200 text-amber-700 cursor-default shadow-sm'
-                      : slot.available
-                        ? 'bg-white border-2 border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-400 hover:shadow-md cursor-pointer'
-                        : 'bg-gray-50 border border-gray-200 text-gray-400 cursor-not-allowed',
+                    'px-4 py-2 rounded-xl text-sm font-semibold inline-flex items-center gap-2',
+                    selectedAppointment.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                    selectedAppointment.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                    'bg-red-100 text-red-700'
                   ]"
                 >
-                  <div class="flex items-center gap-1.5">
-                    <span class="font-semibold">{{ formatTime(slot.start) }}</span>
-                    <span v-if="slot.is_mine" class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                      :class="slot.appointment_status === 'confirmed' ? 'bg-green-200 text-green-800' : 'bg-amber-200 text-amber-800'"
-                    >
-                      {{ getStatusLabel(slot.appointment_status) }}
-                    </span>
+                  <span class="w-2 h-2 rounded-full" :class="selectedAppointment.status === 'confirmed' ? 'bg-green-500' : selectedAppointment.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'"></span>
+                  {{ getStatusLabel(selectedAppointment.status) }}
+                </span>
+                <span class="text-sm text-gray-400">#{{ selectedAppointment.id }}</span>
+              </div>
+
+              <!-- Infos étudiant -->
+              <div class="bg-gray-50 rounded-2xl p-5 space-y-4">
+                <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Informations étudiant</h4>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-xs text-gray-500 mb-0.5">Prénom</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ selectedAppointment.first_name }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 mb-0.5">Nom</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ selectedAppointment.last_name }}</p>
                   </div>
                 </div>
+                <div>
+                  <p class="text-xs text-gray-500 mb-0.5">Email</p>
+                  <a :href="`mailto:${selectedAppointment.email}`" class="text-sm font-semibold text-blue-600 hover:text-blue-700">{{ selectedAppointment.email }}</a>
+                </div>
+                <div v-if="selectedAppointment.phone">
+                  <p class="text-xs text-gray-500 mb-0.5">Téléphone</p>
+                  <a :href="`tel:${selectedAppointment.phone}`" class="text-sm font-semibold text-gray-900">{{ selectedAppointment.phone }}</a>
+                </div>
+              </div>
+
+              <!-- Infos rendez-vous -->
+              <div class="bg-gray-50 rounded-2xl p-5 space-y-4">
+                <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Créneau</h4>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-xs text-gray-500 mb-0.5">Date</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ formatDateFull(selectedAppointment.date) }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 mb-0.5">Horaire</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ formatTime(selectedAppointment.start_time) }} - {{ formatTime(selectedAppointment.end_time) }}</p>
+                  </div>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500 mb-0.5">Sujet</p>
+                  <p class="text-sm text-gray-900">{{ selectedAppointment.subject || 'Non renseigné' }}</p>
+                </div>
+              </div>
+
+              <!-- Annulé avec raison -->
+              <div v-if="selectedAppointment.status === 'cancelled' && selectedAppointment.cancel_reason" class="bg-red-50 rounded-2xl p-5">
+                <h4 class="text-sm font-bold text-red-800 uppercase tracking-wide mb-2">Raison d'annulation</h4>
+                <p class="text-sm text-red-700">{{ selectedAppointment.cancel_reason }}</p>
               </div>
             </div>
           </div>
+        </div>
+      </Transition>
+    </Teleport>
 
-          <!-- Heures (gauche) -->
-          <div class="absolute left-0 top-0 bottom-0 w-12 pl-2 pointer-events-none">
-            <div v-for="i in (viewMode === 'day' ? 10 : 12)" :key="i" class="h-20 text-xs text-gray-400 pt-2">
-              {{ (viewMode === 'day' ? 8 + i : 7 + i).toString().padStart(2, '0') }}:00
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Légende -->
-      <div class="flex flex-wrap items-center gap-6 mt-5 text-sm text-gray-500">
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-md bg-white border-2 border-blue-200"></div>
-          <span>Disponible</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-md bg-amber-50 border border-amber-200"></div>
-          <span>Ma réservation (en attente)</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-md bg-green-50 border border-green-200"></div>
-          <span>Ma réservation (confirmée)</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-md bg-gray-50 border border-gray-200"></div>
-          <span>Indisponible</span>
-        </div>
-      </div>
-
-      <BookingModal
-        :isOpen="isModalOpen"
-        :slot="selectedSlot"
-        :selected-date="selectedSlotDate"
-        @close="closeModal"
-        @submit="handleBooking"
-      />
-    </div>
-  </AuthenticatedLayout>
+    <BookingModal
+      :isOpen="isBookingModalOpen"
+      :slot="selectedBookingSlot"
+      :selected-date="selectedBookingDate"
+      @close="closeBookingModal"
+      @submit="handleBooking"
+    />
+  </div>
+</AuthenticatedLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { usePlanningStore } from '@/stores/planning'
-import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import BookingModal from '@/components/BookingModal.vue'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 
-const planningStore = usePlanningStore()
-const authStore = useAuthStore()
+const store = usePlanningStore()
 const toastStore = useToastStore()
-
 const weekStart = ref(new Date())
 const today = new Date()
-const isModalOpen = ref(false)
-const selectedSlot = ref(null)
-const selectedSlotDate = ref('')
-const daySlots = ref({})
-const viewMode = ref('week')
+const selectedAppointment = ref(null)
 
-const visibleDays = computed(() => {
-  if (viewMode.value === 'day') {
-    const date = new Date(weekStart.value)
-    const startOfWeek = getWeekStart(date)
-    const names = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-    const dayIndex = date.getDay()
-    const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1
-    const dayDate = new Date(startOfWeek)
-    dayDate.setDate(startOfWeek.getDate() + adjustedIndex)
-    return [{
-      date: dayDate.toISOString().split('T')[0],
-      shortName: names[adjustedIndex],
-      dayNumber: dayDate.getDate(),
-      isToday: dayDate.toDateString() === today.toDateString()
-    }]
-  }
-  return buildWeekDays(weekStart.value)
-})
+const selectedBookingSlot = ref(null)
+const selectedBookingDate = ref('')
+const isBookingModalOpen = ref(false)
 
-function getWeekStart(date) {
-  const start = new Date(date)
-  const day = start.getDay()
-  const diff = start.getDate() - day + (day === 0 ? -6 : 1)
-  start.setDate(diff)
-  return start
-}
-
-function buildWeekDays(date) {
+const weekDays = computed(() => {
   const days = []
-  const start = getWeekStart(date)
+  const start = getWeekStart(weekStart.value)
   const names = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+
   for (let i = 0; i < 7; i++) {
-    const d = new Date(start)
-    d.setDate(start.getDate() + i)
+    const date = new Date(start)
+    date.setDate(start.getDate() + i)
     days.push({
-      date: d.toISOString().split('T')[0],
+      date: toLocalISODate(date),
       shortName: names[i],
-      dayNumber: d.getDate(),
-      isToday: d.toDateString() === today.toDateString()
+      dayNumber: date.getDate(),
+      monthIndex: date.getMonth(),
+      isToday: date.toDateString() === today.toDateString()
     })
   }
   return days
-}
-
-const myAppointments = computed(() => {
-  const allSlots = Object.values(daySlots.value).flat()
-  const seen = new Set()
-  return allSlots
-    .filter(s => s.is_mine && s.appointment_id)
-    .map(s => ({
-      id: s.appointment_id,
-      date: Object.keys(daySlots.value).find(date =>
-        daySlots.value[date]?.some(x => x.appointment_id === s.appointment_id)
-      ),
-      start_time: s.start,
-      end_time: s.end,
-      status: s.appointment_status,
-      subject: null,
-    }))
-    .filter(apt => {
-      if (seen.has(apt.id)) return false
-      seen.add(apt.id)
-      return true
-    })
-    .sort((a, b) => `${a.date}T${a.start_time}`.localeCompare(`${b.date}T${b.start_time}`))
 })
 
 const currentWeekDisplay = computed(() => {
-  const first = visibleDays.value[0]
-  const last = visibleDays.value[visibleDays.value.length - 1]
+  const start = weekDays.value[0]
+  const end = weekDays.value[6]
   const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
-  const startDate = new Date(first.date)
-  const endDate = new Date(last.date)
 
-  if (viewMode.value === 'day') {
-    return `${startDate.getDate()} ${monthNames[startDate.getMonth()]} ${startDate.getFullYear()}`
+  if (start.monthIndex === end.monthIndex) {
+    return `${start.dayNumber} — ${end.dayNumber} ${monthNames[end.monthIndex]}`
   }
-  if (startDate.getMonth() === endDate.getMonth()) {
-    return `${startDate.getDate()} — ${endDate.getDate()} ${monthNames[endDate.getMonth()]} ${startDate.getFullYear()}`
-  }
-  return `${startDate.getDate()} ${monthNames[startDate.getMonth()]} — ${endDate.getDate()} ${monthNames[endDate.getMonth()]} ${endDate.getFullYear()}`
+  return `${start.dayNumber} ${monthNames[start.monthIndex]} — ${end.dayNumber} ${monthNames[end.monthIndex]}`
 })
 
-function slotClass(slot) {
-  if (slot.is_mine) {
-    return slot.appointment_status === 'confirmed'
-      ? 'bg-green-50 border border-green-200 text-green-700 cursor-default'
-      : 'bg-amber-50 border border-amber-200 text-amber-700 cursor-default'
-  }
-  if (slot.available) {
-    return 'bg-white border-2 border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-400 hover:shadow-md cursor-pointer'
-  }
-  return 'bg-gray-50 border border-gray-200 text-gray-400 cursor-not-allowed'
+function toLocalISODate(date) {
+  const y = date.getFullYear()
+  const m = (date.getMonth() + 1).toString().padStart(2, '0')
+  const d = date.getDate().toString().padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
-function handleSlotClick(slot, date) {
-  if (slot.is_mine) return
-  if (slot.available) openBookingModal(slot, date)
+const timeSlots = computed(() => {
+  const labels = []
+  const startHour = 8
+  const totalSlots = 24
+
+  for (let index = 0; index < totalSlots; index++) {
+    const hour = startHour + Math.floor(index / 2)
+    const minute = index % 2 === 0 ? '00' : '30'
+    const nextHour = startHour + Math.floor((index + 1) / 2)
+    const nextMinute = (index + 1) % 2 === 0 ? '00' : '30'
+    labels.push(`${hour}h${minute}-${nextHour}h${nextMinute}`)
+  }
+  return labels
+})
+
+function getWeekStart(date) {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  d.setDate(diff)
+  d.setHours(0, 0, 0, 0)
+  return d
 }
 
-function getEventPosition(time, startHour = 8) {
+function getWeekEnd(date) {
+  const start = getWeekStart(date)
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+  return end
+}
+
+async function loadWeek() {
+  const start = getWeekStart(weekStart.value)
+  const end = getWeekEnd(weekStart.value)
+  const fmt = d => toLocalISODate(d)
+
+  await store.fetchCalendarAppointments(fmt(start), fmt(end))
+  console.log('Appointments loaded:', store.calendarAppointments)
+}
+
+function getDaySlots(date) {
+  const appointments = getEventsForDay(date)
+  const slots = []
+
+  for (let index = 0; index < timeSlots.value.length; index++) {
+    const [startLabel, endLabel] = timeSlots.value[index].split('-')
+    const start = labelToTime(startLabel)
+    const end = labelToTime(endLabel)
+    const occupied = appointments.some(event => timeRangesOverlap(event.start_time, event.end_time, start, end))
+    slots.push({ index, start, end, occupied })
+  }
+
+  return slots
+}
+
+function getEventsForDay(date) {
+
+  return (store.calendarAppointments || []).filter(e => {
+    const appointmentDate = normalizeDate(e.date)
+
+    return (
+    appointmentDate === date &&
+    (e.is_mine || e.status !== 'cancelled')
+    )
+  })
+}
+
+function normalizeDate(dateValue) {
+  if (!dateValue) return ''
+  if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return dateValue
+  }
+
+  return toLocalISODate(new Date(dateValue))
+}
+
+function onEmptySlotClick(slot, date) {
+  selectedBookingSlot.value = {
+    start: slot.start,
+    end: slot.end,
+    available: true
+  }
+  selectedBookingDate.value = date
+  isBookingModalOpen.value = true
+}
+
+function closeBookingModal() {
+  isBookingModalOpen.value = false
+  selectedBookingSlot.value = null
+  selectedBookingDate.value = ''
+}
+
+async function handleBooking(data) {
+  try {
+    await store.createAppointment(data)
+    closeBookingModal()
+    await loadWeek()
+    toastStore.success('Rendez-vous soumis ! En attente de validation.')
+  } catch (error) {
+    const msg = error.response?.data?.message || 'Erreur lors de la réservation.'
+    toastStore.error(msg)
+
+    if (error.response?.status === 409) {
+      await loadWeek()
+    }
+  }
+}
+
+function getEventPosition(time) {
   const [hours, minutes] = time.split(':').map(Number)
-  return ((hours - startHour) * 80) + (minutes / 60 * 80)
+  const slotIndex = (hours - 8) * 2 + (minutes === 30 ? 1 : 0)
+  return slotIndex * 64
 }
 
 function getEventHeight(startTime, endTime) {
   const [startHour, startMin] = startTime.split(':').map(Number)
   const [endHour, endMin] = endTime.split(':').map(Number)
   const duration = (endHour * 60 + endMin) - (startHour * 60 + startMin)
-  return Math.max((duration / 60) * 80, 36)
+  const slots = duration / 30
+  return Math.max(slots * 64, 40)
 }
 
 function formatTime(time) {
-  if (!time) return ''
-  return time.slice(0, 5)
-}
-
-function formatDateFull(dateStr) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  return time ? time.slice(0, 5) : ''
 }
 
 function getStatusLabel(status) {
@@ -335,61 +420,93 @@ function getStatusLabel(status) {
   return labels[status] || status
 }
 
-async function loadSlots() {
-  daySlots.value = {}
-  const promises = visibleDays.value.map(async day => {
-    await planningStore.fetchAvailability(day.date)
-    daySlots.value[day.date] = [...planningStore.slots]
-  })
-  await Promise.all(promises)
-}
-
-function openBookingModal(slot, date) {
-  selectedSlot.value = slot
-  selectedSlotDate.value = date
-  isModalOpen.value = true
-}
-
-function closeModal() {
-  isModalOpen.value = false
-  selectedSlot.value = null
-  selectedSlotDate.value = ''
-}
-
-async function handleBooking(data) {
+function formatDateFull(dateStr) {
   try {
-    await planningStore.createAppointment(data)
-    closeModal()
-    await loadSlots()
-    toastStore.success('Rendez-vous soumis ! En attente de validation.')
-  } catch (error) {
-    const msg = error.response?.data?.message || 'Erreur lors de la réservation.'
-    toastStore.error(msg)
-    if (error.response?.status === 409) {
-      await loadSlots()
-    }
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  } catch {
+    return dateStr
   }
 }
 
+function isDateBeforeToday(dateStr) {
+  const todayDate = new Date()
+  todayDate.setHours(0, 0, 0, 0)
+
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const checkDate = new Date(year, month - 1, day)
+  checkDate.setHours(0, 0, 0, 0)
+
+  return checkDate < todayDate
+}
+
+function labelToTime(label) {
+  const [h, m] = label.split('h')
+  return `${h.padStart(2, '0')}:${m}:00`
+}
+
+function parseTimeToMinutes(time) {
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + minutes
+}
+
+function timeRangesOverlap(startA, endA, startB, endB) {
+  return parseTimeToMinutes(startA) < parseTimeToMinutes(endB) && parseTimeToMinutes(endA) > parseTimeToMinutes(startB)
+}
+
 function previousWeek() {
-  const days = viewMode.value === 'day' ? 1 : 7
-  weekStart.value = new Date(weekStart.value.getFullYear(), weekStart.value.getMonth(), weekStart.value.getDate() - days)
+  const d = new Date(weekStart.value)
+  d.setDate(d.getDate() - 7)
+  weekStart.value = d
 }
 
 function nextWeek() {
-  const days = viewMode.value === 'day' ? 1 : 7
-  weekStart.value = new Date(weekStart.value.getFullYear(), weekStart.value.getMonth(), weekStart.value.getDate() + days)
+  const d = new Date(weekStart.value)
+  d.setDate(d.getDate() + 7)
+  weekStart.value = d
 }
 
 function goToToday() {
   weekStart.value = new Date()
 }
 
-watch(weekStart, async () => {
-  await loadSlots()
-}, { immediate: true })
+watch(weekStart, () => {
+  loadWeek()
+})
 
-watch(viewMode, async () => {
-  await loadSlots()
+function openDetails(appointment) {
+  selectedAppointment.value = appointment
+}
+
+function closeDetails() {
+  selectedAppointment.value = null
+}
+
+onMounted(async () => {
+  await loadWeek()
 })
 </script>
+
+<style scoped>
+.sidebar-enter-active > div:first-child {
+  transition: opacity 0.25s ease-out;
+}
+.sidebar-leave-active > div:first-child {
+  transition: opacity 0.2s ease-in;
+}
+.sidebar-enter-from > div:first-child,
+.sidebar-leave-to > div:first-child {
+  opacity: 0;
+}
+
+.sidebar-enter-active > div:last-child {
+  transition: transform 0.25s ease-out;
+}
+.sidebar-leave-active > div:last-child {
+  transition: transform 0.2s ease-in;
+}
+.sidebar-enter-from > div:last-child,
+.sidebar-leave-to > div:last-child {
+  transform: translateX(100%);
+}
+</style>

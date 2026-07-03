@@ -21,6 +21,29 @@ class PlanningController extends Controller
         return User::where('role', 'admin')->first();
     }
 
+    // récupération des rendez-vous pour l'utilisateur connecté
+    public function calendarAppointments(Request $request)
+{
+    $teacher = $this->getTeacher();
+
+    $appointments = Appointment::where('teacher_id', $teacher->id)
+        ->whereBetween('date', [
+            $request->start_date,
+            $request->end_date
+        ])
+        ->orderBy('date')
+        ->orderBy('start_time')
+        ->get()
+        ->map(function ($appointment) use ($request) {
+
+            $appointment->is_mine = $appointment->student_id == $request->user()->id;
+
+            return $appointment;
+        });
+
+    return response()->json($appointments);
+}
+
     // Helper pour générer les créneaux
     private function generateSlots($date, $teacher, $settings, $user = null): array
     {
