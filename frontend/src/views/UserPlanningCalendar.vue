@@ -59,7 +59,7 @@
       <!-- Time grid -->
       <div class="relative" style="height: 1536px;">
         <div class="absolute inset-0 grid grid-cols-7">
-          <div v-for="(day, dayIndex) in weekDays" :key="day.date" class="border-r border-gray-100 last:border-r-0 relative">
+          <div v-for="day in weekDays" :key="day.date" class="border-r border-gray-100 last:border-r-0 relative">
             <!-- Half-hour lines -->
             <div class="absolute inset-0 pointer-events-none" style="background-size: 100% 64px;">
               <div v-for="slot in timeSlots" :key="slot" class="h-16 border-t border-gray-100"></div>
@@ -69,7 +69,12 @@
             <div class="absolute inset-0 z-10">
               <template v-for="daySlot in getDaySlots(day.date)" :key="`${day.date}-${daySlot.start}`">
                 <div
-                  v-if="!daySlot.occupied"
+                  v-if="daySlot.outOfRange"
+                  class="absolute left-1.5 right-1.5 h-16 rounded-xl border border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed pointer-events-none"
+                  :style="{ top: `${daySlot.index * 64}px` }"
+                ></div>
+                <div
+                  v-else-if="!daySlot.occupied"
                   @click.stop="!isDateBeforeToday(day.date) && onEmptySlotClick(daySlot, day.date)"
                   :class="[
                     'absolute left-1.5 right-1.5 h-16 rounded-xl border border-dashed transition-all flex items-center justify-center',
@@ -220,7 +225,7 @@
 
     <BookingModal
       :isOpen="isBookingModalOpen"
-      :slot="selectedBookingSlot"
+      :booking-slot="selectedBookingSlot"
       :selected-date="selectedBookingDate"
       @close="closeBookingModal"
       @submit="handleBooking"
@@ -245,6 +250,7 @@ const selectedAppointment = ref(null)
 const selectedBookingSlot = ref(null)
 const selectedBookingDate = ref('')
 const isBookingModalOpen = ref(false)
+const availabilityByDate = ref({})
 
 const weekDays = computed(() => {
   const days = []
@@ -320,7 +326,36 @@ async function loadWeek() {
   const fmt = d => toLocalISODate(d)
 
   await store.fetchCalendarAppointments(fmt(start), fmt(end))
-  console.log('Appointments loaded:', store.calendarAppointments)
+  await loadAvailabilityForWeek()
+}
+
+async function loadAvailabilityForWeek() {
+  const requests = weekDays.value.map(day =>
+    store.fetchAvailability(day.date)
+      .then(data => {
+        availabilityByDate.value[day.date] = data.slots || []
+      })
+      .catch(() => {
+        availabilityByDate.value[day.date] = []
+      })
+  )
+
+  await Promise.all(requests)
+}
+
+function getAvailabilitySlots(date) {
+  if (availabilityByDate.value[date] === undefined) {
+    return null
+  }
+  return availabilityByDate.value[date] || []
+}
+
+function isSlotAllowed(date, start, end) {
+  const slots = getAvailabilitySlots(date)
+  if (slots === null) {
+    return true
+  }
+  return slots.some(slot => slot.start === start && slot.end === end && slot.available)
 }
 
 function getDaySlots(date) {
@@ -332,7 +367,8 @@ function getDaySlots(date) {
     const start = labelToTime(startLabel)
     const end = labelToTime(endLabel)
     const occupied = appointments.some(event => timeRangesOverlap(event.start_time, event.end_time, start, end))
-    slots.push({ index, start, end, occupied })
+    const allowed = isSlotAllowed(date, start, end)
+    slots.push({ index, start, end, occupied, outOfRange: !allowed })
   }
 
   return slots

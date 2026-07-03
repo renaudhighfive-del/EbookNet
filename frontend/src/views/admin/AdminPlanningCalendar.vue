@@ -68,7 +68,12 @@
             <div class="absolute inset-0 z-10">
               <template v-for="daySlot in getDaySlots(day.date)" :key="`${day.date}-${daySlot.start}`">
                 <div
-                  v-if="!daySlot.occupied"
+                  v-if="daySlot.outOfRange"
+                  class="absolute left-1.5 right-1.5 h-16 rounded-xl border border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed pointer-events-none"
+                  :style="{ top: `${daySlot.index * 64}px` }"
+                ></div>
+                <div
+                  v-else-if="!daySlot.occupied"
                   @click.stop="!isDateBeforeToday(day.date) && onEmptySlotClick(daySlot, day.date)"
                   :class="[
                     'absolute left-1.5 right-1.5 h-16 rounded-xl border border-dashed transition-all flex items-center justify-center',
@@ -356,14 +361,41 @@ function getWeekEnd(date) {
 }
 
 async function loadWeek() {
+  await store.fetchRules()
   const start = getWeekStart(weekStart.value)
   const end = getWeekEnd(weekStart.value)
   const fmt = d => toLocalISODate(d)
   await store.fetchCalendarAppointments(fmt(start), fmt(end))
 }
 
+const dayRules = computed(() => store.rules || [])
+
+function getRuleForDate(date) {
+  return dayRules.value.find(rule => rule.day_of_week === getLocalDayIndex(date))
+}
+
+function getLocalDayIndex(date) {
+  const d = new Date(date)
+  const jsDay = d.getDay()
+  return jsDay === 0 ? 6 : jsDay - 1
+}
+
+function isSlotAllowedByRule(rule, start, end) {
+  if (!rule || !rule.is_active || !rule.start_time || !rule.end_time) {
+    return false
+  }
+
+  const slotStart = parseTimeToMinutes(start)
+  const slotEnd = parseTimeToMinutes(end)
+  const ruleStart = parseTimeToMinutes(rule.start_time)
+  const ruleEnd = parseTimeToMinutes(rule.end_time)
+
+  return slotStart >= ruleStart && slotEnd <= ruleEnd
+}
+
 function getDaySlots(date) {
   const appointments = getEventsForDay(date)
+  const rule = getRuleForDate(date)
   const slots = []
 
   for (let index = 0; index < timeSlots.value.length; index++) {
@@ -371,7 +403,8 @@ function getDaySlots(date) {
     const start = labelToTime(startLabel)
     const end = labelToTime(endLabel)
     const occupied = appointments.some(event => timeRangesOverlap(event.start_time, event.end_time, start, end))
-    slots.push({ index, start, end, occupied })
+    const allowed = isSlotAllowedByRule(rule, start, end)
+    slots.push({ index, start, end, occupied, outOfRange: !allowed })
   }
 
   return slots

@@ -108,7 +108,7 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  slot: {
+  bookingSlot: {
     type: Object,
     default: null
   },
@@ -134,7 +134,7 @@ const canSubmit = computed(() =>
   form.value.firstName &&
   form.value.lastName &&
   form.value.email &&
-  props.slot
+  props.bookingSlot
 )
 
 watch(() => [props.isOpen, authStore.user], () => {
@@ -179,8 +179,8 @@ async function handleSubmit() {
   try {
     emit('submit', {
       date: props.selectedDate,
-      start_time: props.slot.start,
-      end_time: props.slot.end,
+      start_time: props.bookingSlot.start,
+      end_time: props.bookingSlot.end,
       first_name: form.value.firstName,
       last_name: form.value.lastName,
       email: form.value.email,
