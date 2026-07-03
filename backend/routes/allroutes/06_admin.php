@@ -93,6 +93,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         Route::delete('/availability-rules/{id}', [AdminPlanningController::class, 'deleteAvailabilityRule']);
         Route::post('/availability-exceptions', [AdminPlanningController::class, 'createAvailabilityException']);
         Route::get('/appointments', [AdminPlanningController::class, 'getAppointments']);
+        Route::get('/appointments/calendar', [AdminPlanningController::class, 'getCalendarAppointments']);
         Route::get('/appointments/{id}', [AdminPlanningController::class, 'getAppointment']);
         Route::put('/appointments/{id}', [AdminPlanningController::class, 'updateAppointment']);
         Route::post('/appointments/{id}/cancel', [AdminPlanningController::class, 'cancelAppointment']);

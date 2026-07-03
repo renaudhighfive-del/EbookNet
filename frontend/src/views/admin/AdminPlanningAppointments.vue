@@ -15,7 +15,7 @@
           type="text"
           placeholder="Rechercher par nom, email, téléphone..."
           @input="debouncedSearch"
-          class="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          class="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
         />
       </div>
       <div class="flex gap-2">
@@ -26,7 +26,7 @@
           :class="[
             'px-4 py-2 rounded-xl text-sm font-medium transition-all',
             activeFilter === filter.id
-              ? 'bg-blue-500 text-white'
+              ? 'bg-blue-500 text-white shadow-sm'
               : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
           ]"
         >
@@ -46,10 +46,11 @@
       <div
         v-for="appointment in filteredAppointments"
         :key="appointment.id"
-        class="flex items-center gap-4 p-4 border border-gray-100 rounded-2xl hover:border-blue-200 hover:bg-blue-50/30 transition-all"
+        @click="openDetails(appointment)"
+        class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl hover:border-blue-200 hover:shadow-sm transition-all cursor-pointer"
       >
         <div
-          class="w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold text-blue-500"
+          class="w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold text-blue-500 shrink-0"
           :style="{ backgroundColor: getInitialsBg(`${appointment.first_name} ${appointment.last_name}`) }"
         >
           {{ getInitials(`${appointment.first_name} ${appointment.last_name}`) }}
@@ -57,6 +58,10 @@
         <div class="flex-1 min-w-0">
           <p class="text-base font-semibold text-gray-900">{{ appointment.first_name }} {{ appointment.last_name }}</p>
           <p class="text-sm text-gray-500 truncate">{{ appointment.subject || 'Sans sujet' }}</p>
+          <div class="flex items-center gap-3 mt-1 text-xs text-gray-400">
+            <span>{{ appointment.email }}</span>
+            <span v-if="appointment.phone">· {{ appointment.phone }}</span>
+          </div>
         </div>
         <div class="text-right shrink-0">
           <p class="text-sm font-semibold text-gray-900">{{ formatDate(appointment.date) }}</p>
@@ -68,44 +73,157 @@
               'px-3 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1',
               appointment.status === 'confirmed' ? 'bg-green-100 text-green-700' :
               appointment.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-              appointment.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-              'bg-gray-100 text-gray-700'
+              'bg-red-100 text-red-700'
             ]"
           >
             <span class="w-1.5 h-1.5 rounded-full" :class="appointment.status === 'confirmed' ? 'bg-green-500' : appointment.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'"></span>
             {{ getStatusLabel(appointment.status) }}
           </span>
         </div>
-        <div v-if="appointment.status === 'pending'" class="flex items-center gap-2">
-          <button @click="confirmAppointment(appointment)" class="w-9 h-9 rounded-xl bg-green-100 text-green-600 flex items-center justify-center hover:bg-green-200 transition-all">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-          </button>
-          <button @click="cancelAppointment(appointment)" class="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 transition-all">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
+        <div class="shrink-0 text-gray-300">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
         </div>
       </div>
 
-      <div v-if="filteredAppointments.length === 0" class="text-center py-12">
-        <p class="text-gray-500">Aucun rendez-vous trouvé</p>
+      <div v-if="filteredAppointments.length === 0" class="text-center py-16">
+        <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        <p class="text-gray-500 font-medium">Aucun rendez-vous trouvé</p>
+        <p class="text-gray-400 text-sm mt-1">Essayez de modifier vos filtres de recherche.</p>
       </div>
     </div>
+
+    <!-- Sidebar modale des détails -->
+    <Teleport to="body">
+      <Transition name="sidebar">
+        <div v-if="selectedAppointment" class="fixed inset-0 z-50 flex justify-end">
+          <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="closeDetails"></div>
+          <div class="relative w-full max-w-lg bg-white shadow-2xl h-full overflow-y-auto">
+            <!-- En-tête -->
+            <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-between z-10">
+              <div>
+                <h3 class="text-lg font-bold text-gray-900">Détails du rendez-vous</h3>
+                <p class="text-sm text-gray-500 mt-0.5">Consultez et gérez cette demande.</p>
+              </div>
+              <button @click="closeDetails" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div v-if="selectedAppointment" class="px-6 py-6 space-y-6">
+              <!-- Statut -->
+              <div class="flex items-center gap-3">
+                <span
+                  :class="[
+                    'px-4 py-2 rounded-xl text-sm font-semibold inline-flex items-center gap-2',
+                    selectedAppointment.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                    selectedAppointment.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                    'bg-red-100 text-red-700'
+                  ]"
+                >
+                  <span class="w-2 h-2 rounded-full" :class="selectedAppointment.status === 'confirmed' ? 'bg-green-500' : selectedAppointment.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'"></span>
+                  {{ getStatusLabel(selectedAppointment.status) }}
+                </span>
+                <span class="text-sm text-gray-400">#{{ selectedAppointment.id }}</span>
+              </div>
+
+              <!-- Infos étudiant -->
+              <div class="bg-gray-50 rounded-2xl p-5 space-y-4">
+                <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Informations étudiant</h4>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-xs text-gray-500 mb-0.5">Prénom</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ selectedAppointment.first_name }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 mb-0.5">Nom</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ selectedAppointment.last_name }}</p>
+                  </div>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500 mb-0.5">Email</p>
+                  <a :href="`mailto:${selectedAppointment.email}`" class="text-sm font-semibold text-blue-600 hover:text-blue-700">{{ selectedAppointment.email }}</a>
+                </div>
+                <div v-if="selectedAppointment.phone">
+                  <p class="text-xs text-gray-500 mb-0.5">Téléphone</p>
+                  <a :href="`tel:${selectedAppointment.phone}`" class="text-sm font-semibold text-gray-900">{{ selectedAppointment.phone }}</a>
+                </div>
+              </div>
+
+              <!-- Infos rendez-vous -->
+              <div class="bg-gray-50 rounded-2xl p-5 space-y-4">
+                <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Créneau</h4>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-xs text-gray-500 mb-0.5">Date</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ formatDateFull(selectedAppointment.date) }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 mb-0.5">Horaire</p>
+                    <p class="text-sm font-semibold text-gray-900">{{ formatTime(selectedAppointment.start_time) }} - {{ formatTime(selectedAppointment.end_time) }}</p>
+                  </div>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500 mb-0.5">Sujet</p>
+                  <p class="text-sm text-gray-900">{{ selectedAppointment.subject || 'Non renseigné' }}</p>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div v-if="selectedAppointment.status === 'pending'" class="border-t border-gray-100 pt-6 space-y-3">
+                <p class="text-sm text-gray-500 mb-1">Actions</p>
+                <div class="grid grid-cols-2 gap-3">
+                  <button
+                    @click="confirmFromSidebar"
+                    class="w-full py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Confirmer
+                  </button>
+                  <button
+                    @click="cancelFromSidebar"
+                    class="w-full py-3 bg-red-100 text-red-700 font-semibold rounded-xl hover:bg-red-200 transition-all flex items-center justify-center gap-2"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Refuser
+                  </button>
+                </div>
+              </div>
+
+              <!-- Annulé avec raison -->
+              <div v-if="selectedAppointment.status === 'cancelled' && selectedAppointment.cancel_reason" class="bg-red-50 rounded-2xl p-5">
+                <h4 class="text-sm font-bold text-red-800 uppercase tracking-wide mb-2">Raison d'annulation</h4>
+                <p class="text-sm text-red-700">{{ selectedAppointment.cancel_reason }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAdminPlanningStore } from '@/stores/admin-planning'
+import { useToastStore } from '@/stores/toast'
 import { debounce } from 'lodash-es'
 
 const store = useAdminPlanningStore()
+const toastStore = useToastStore()
 
 const searchQuery = ref('')
 const activeFilter = ref('all')
+const selectedAppointment = ref(null)
 
 const filters = [
   { id: 'all', label: 'Tous' },
@@ -117,11 +235,11 @@ const filters = [
 
 const filteredAppointments = computed(() => {
   let appointments = store.appointments || []
-  
+
   if (activeFilter.value !== 'all') {
     appointments = appointments.filter(a => a.status === activeFilter.value)
   }
-  
+
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
     appointments = appointments.filter(a =>
@@ -130,7 +248,7 @@ const filteredAppointments = computed(() => {
       (a.phone && a.phone.includes(q))
     )
   }
-  
+
   return appointments
 })
 
@@ -138,9 +256,7 @@ onMounted(async () => {
   await store.fetchAppointments()
 })
 
-const debouncedSearch = debounce(() => {
-  // We could fetch with search params, but for now filter client-side
-}, 300)
+const debouncedSearch = debounce(() => {}, 300)
 
 function getInitials(name) {
   return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
@@ -175,6 +291,15 @@ function formatDate(dateStr) {
   }
 }
 
+function formatDateFull(dateStr) {
+  try {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  } catch {
+    return dateStr
+  }
+}
+
 function formatTime(timeStr) {
   try {
     return timeStr.slice(0, 5)
@@ -188,19 +313,57 @@ function getFilterCount(filterId) {
   return (store.appointments || []).filter(a => a.status === filterId).length
 }
 
-async function confirmAppointment(appointment) {
+function openDetails(appointment) {
+  selectedAppointment.value = appointment
+}
+
+function closeDetails() {
+  selectedAppointment.value = null
+}
+
+async function confirmFromSidebar() {
+  if (!selectedAppointment.value) return
   try {
-    await store.updateAppointment(appointment.id, { status: 'confirmed' })
+    await store.updateAppointment(selectedAppointment.value.id, { status: 'confirmed' })
+    toastStore.success(`Rendez-vous de ${selectedAppointment.value.first_name} confirmé.`)
+    closeDetails()
   } catch (e) {
-    console.error(e)
+    toastStore.error('Erreur lors de la confirmation.')
   }
 }
 
-async function cancelAppointment(appointment) {
+async function cancelFromSidebar() {
+  if (!selectedAppointment.value) return
   try {
-    await store.cancelAppointment(appointment.id, { cancel_reason: 'Annulé par l\'administrateur' })
+    await store.cancelAppointment(selectedAppointment.value.id, { cancel_reason: 'Annulé par l\'administrateur' })
+    toastStore.info(`Rendez-vous de ${selectedAppointment.value.first_name} annulé.`)
+    closeDetails()
   } catch (e) {
-    console.error(e)
+    toastStore.error('Erreur lors de l\'annulation.')
   }
 }
 </script>
+
+<style scoped>
+.sidebar-enter-active > div:first-child {
+  transition: opacity 0.25s ease-out;
+}
+.sidebar-leave-active > div:first-child {
+  transition: opacity 0.2s ease-in;
+}
+.sidebar-enter-from > div:first-child,
+.sidebar-leave-to > div:first-child {
+  opacity: 0;
+}
+
+.sidebar-enter-active > div:last-child {
+  transition: transform 0.25s ease-out;
+}
+.sidebar-leave-active > div:last-child {
+  transition: transform 0.2s ease-in;
+}
+.sidebar-enter-from > div:last-child,
+.sidebar-leave-to > div:last-child {
+  transform: translateX(100%);
+}
+</style>

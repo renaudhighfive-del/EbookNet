@@ -31,6 +31,13 @@ export const adminPlanningService = {
     return response.data
   },
 
+  async getCalendarAppointments(startDate, endDate) {
+    const response = await api.get('/admin/planning/appointments/calendar', {
+      params: { start_date: startDate, end_date: endDate }
+    })
+    return response.data
+  },
+
   async getAppointment(id) {
     const response = await api.get(`/admin/planning/appointments/${id}`)
     return response.data

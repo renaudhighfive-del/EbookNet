@@ -22,88 +22,93 @@ class PlanningController extends Controller
     }
 
     // Helper pour générer les créneaux
-    private function generateSlots($date, $teacher, $settings): array
+    private function generateSlots($date, $teacher, $settings, $user = null): array
     {
-        $dayOfWeek = Carbon::parse($date)->dayOfWeek; // 0 = Dimanche dans Carbon, on ajuste
-        $adjustedDayOfWeek = $dayOfWeek === 0 ? 6 : $dayOfWeek - 1; // 0 = Lundi, 6 = Dimanche
-        
+        $dayOfWeek = Carbon::parse($date)->dayOfWeek;
+        $adjustedDayOfWeek = $dayOfWeek === 0 ? 6 : $dayOfWeek - 1;
+
         $rules = AvailabilityRule::where('teacher_id', $teacher->id)
             ->where('day_of_week', $adjustedDayOfWeek)
             ->where('is_active', true)
             ->get();
-        
+
         $exceptions = AvailabilityException::where('teacher_id', $teacher->id)
             ->where('date', $date)
             ->get();
-        
+
         $slots = [];
-        
+
         // Vérifier si la journée est complètement bloquée
         $blockedDay = $exceptions->first(function ($e) {
             return $e->type === 'blocked' && !$e->start_time && !$e->end_time;
         });
-        
+
         if ($blockedDay) {
             return $slots;
         }
-        
+
         foreach ($rules as $rule) {
             $currentTime = Carbon::createFromFormat('H:i:s', $rule->start_time);
             $endTime = Carbon::createFromFormat('H:i:s', $rule->end_time);
             $slotDuration = $rule->slot_duration_minutes;
             $buffer = $rule->buffer_minutes;
-            
+
             while ($currentTime->copy()->addMinutes($slotDuration)->lte($endTime)) {
                 $slotStart = $currentTime->format('H:i:s');
                 $slotEnd = $currentTime->copy()->addMinutes($slotDuration)->format('H:i:s');
-                
-                // Vérifier si le créneau est bloqué par une exception
+
                 $isBlocked = $exceptions->contains(function ($e) use ($slotStart, $slotEnd) {
                     if ($e->type !== 'blocked') return false;
                     if (!$e->start_time || !$e->end_time) return false;
-                    
+
                     $eStart = Carbon::createFromFormat('H:i:s', $e->start_time);
                     $eEnd = Carbon::createFromFormat('H:i:s', $e->end_time);
                     $sStart = Carbon::createFromFormat('H:i:s', $slotStart);
                     $sEnd = Carbon::createFromFormat('H:i:s', $slotEnd);
-                    
+
                     return $sStart->lt($eEnd) && $sEnd->gt($eStart);
                 });
-                
+
                 if (!$isBlocked) {
                     $slots[] = [
                         'start' => $slotStart,
                         'end' => $slotEnd,
                         'available' => true,
+                        'is_mine' => false,
+                        'appointment_id' => null,
+                        'appointment_status' => null,
                     ];
                 }
-                
+
                 $currentTime->addMinutes($slotDuration + $buffer);
             }
         }
-        
+
         // Vérifier les créneaux déjà réservés
         $booked = Appointment::where('teacher_id', $teacher->id)
             ->where('date', $date)
             ->whereIn('status', ['pending', 'confirmed'])
             ->get();
-        
+
         foreach ($slots as &$slot) {
-            $isBooked = $booked->contains(function ($b) use ($slot) {
+            $booking = $booked->first(function ($b) use ($slot) {
                 return $b->start_time === $slot['start'];
             });
-            
-            if ($isBooked) {
+
+            if ($booking) {
                 $slot['available'] = false;
+                $slot['is_mine'] = $user && $booking->student_id === $user->id;
+                $slot['appointment_id'] = $booking->id;
+                $slot['appointment_status'] = $booking->status;
             }
-            
+
             // Vérifier le délai de préavis
             $slotDateTime = Carbon::parse($date . ' ' . $slot['start']);
             if ($slotDateTime->lt(now()->addHours($settings->min_notice_hours))) {
                 $slot['available'] = false;
             }
         }
-        
+
         return $slots;
     }
 
@@ -114,11 +119,11 @@ class PlanningController extends Controller
     {
         $date = $request->input('date', now()->format('Y-m-d'));
         $teacher = $this->getTeacher();
-        
+
         if (!$teacher) {
             return response()->json(['message' => 'Aucun enseignant disponible.'], 404);
         }
-        
+
         $settings = $teacher->settings ?? Setting::create([
             'teacher_id' => $teacher->id,
             'min_notice_hours' => 2,
@@ -126,15 +131,14 @@ class PlanningController extends Controller
             'auto_confirm' => false,
             'timezone' => 'Africa/Porto-Novo',
         ]);
-        
-        // Vérifier si la date est trop éloignée
+
         $requestedDate = Carbon::parse($date);
         if ($requestedDate->gt(now()->addDays($settings->max_advance_days))) {
             return response()->json(['slots' => [], 'message' => 'Date trop éloignée.']);
         }
-        
-        $slots = $this->generateSlots($date, $teacher, $settings);
-        
+
+        $slots = $this->generateSlots($date, $teacher, $settings, $request->user());
+
         return response()->json(['slots' => $slots, 'date' => $date]);
     }
 
@@ -143,11 +147,11 @@ class PlanningController extends Controller
     {
         $month = $request->input('month', now()->format('Y-m'));
         $teacher = $this->getTeacher();
-        
+
         if (!$teacher) {
             return response()->json(['message' => 'Aucun enseignant disponible.'], 404);
         }
-        
+
         $settings = $teacher->settings ?? Setting::create([
             'teacher_id' => $teacher->id,
             'min_notice_hours' => 2,
@@ -155,27 +159,26 @@ class PlanningController extends Controller
             'auto_confirm' => false,
             'timezone' => 'Africa/Porto-Novo',
         ]);
-        
+
         $start = Carbon::parse($month)->startOfMonth();
         $end = Carbon::parse($month)->endOfMonth();
-        
-        // Limiter à max_advance_days
+
         $maxDate = now()->addDays($settings->max_advance_days);
         if ($end->gt($maxDate)) {
             $end = $maxDate;
         }
-        
+
         $availableDays = [];
-        
+
         for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
-            $slots = $this->generateSlots($date->format('Y-m-d'), $teacher, $settings);
+            $slots = $this->generateSlots($date->format('Y-m-d'), $teacher, $settings, $request->user());
             $hasAvailable = collect($slots)->some(fn($s) => $s['available']);
-            
+
             if ($hasAvailable) {
                 $availableDays[] = $date->format('Y-m-d');
             }
         }
-        
+
         return response()->json(['available_days' => $availableDays, 'month' => $month]);
     }
 
@@ -184,19 +187,11 @@ class PlanningController extends Controller
     {
         $validated = $request->validated();
         $teacher = $this->getTeacher();
-        
+
         if (!$teacher) {
             return response()->json(['message' => 'Aucun enseignant disponible.'], 404);
         }
-        
-        $settings = $teacher->settings ?? Setting::create([
-            'teacher_id' => $teacher->id,
-            'min_notice_hours' => 2,
-            'max_advance_days' => 30,
-            'auto_confirm' => false,
-            'timezone' => 'Africa/Porto-Novo',
-        ]);
-        
+
         DB::beginTransaction();
         try {
             $appointment = Appointment::create([
@@ -210,14 +205,12 @@ class PlanningController extends Controller
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
                 'subject' => $validated['subject'] ?? null,
-                'status' => $settings->auto_confirm ? 'confirmed' : 'pending',
+                'status' => 'pending',
             ]);
-            
-            // TODO: Envoyer les emails de notification
-            
+
             DB::commit();
             return response()->json([
-                'message' => $settings->auto_confirm ? 'Réservation confirmée !' : 'Réservation soumise, en attente de validation.',
+                'message' => 'Réservation soumise, en attente de validation.',
                 'appointment' => $appointment,
             ], 201);
         } catch (\Illuminate\Database\QueryException $e) {

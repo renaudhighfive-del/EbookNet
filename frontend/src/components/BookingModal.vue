@@ -1,120 +1,100 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-        <button @click="close" class="p-2 hover:bg-gray-100 rounded-full">
-          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-          </svg>
-        </button>
-        <button @click="close" class="p-2 hover:bg-gray-100 rounded-full">
-          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-
-      <div class="px-6 py-4">
-        <input
-          v-model="form.title"
-          type="text"
-          placeholder="Ajouter un titre"
-          class="w-full text-2xl font-bold text-gray-900 border-b-2 border-transparent focus:border-blue-600 outline-none pb-2"
-        >
-      </div>
-
-      <div class="px-6 py-4">
-        <div class="space-y-4">
-          <div class="flex items-center gap-4">
-            <svg class="w-5 h-5 text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3 3-3 3-3"></path>
+  <Teleport to="body">
+    <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="close"></div>
+      <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-scale-in">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-gray-900">Nouveau rendez-vous</h3>
+            <p class="text-sm text-gray-500 mt-0.5">
+              {{ formatDate(selectedDate) }} · {{ formatTime(slot?.start) }} - {{ formatTime(slot?.end) }}
+            </p>
+          </div>
+          <button @click="close" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
-            <div class="flex-1">
-              <p class="text-gray-900 font-medium">{{ formatDate(selectedDate) }}, {{ formatTime(slot.start) }} - {{ formatTime(slot.end) }}</p>
+          </button>
+        </div>
+
+        <div class="px-6 py-5 space-y-5">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Prénom *</label>
+              <input
+                v-model="form.firstName"
+                type="text"
+                placeholder="Votre prénom"
+                required
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Nom *</label>
+              <input
+                v-model="form.lastName"
+                type="text"
+                placeholder="Votre nom"
+                required
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+              />
             </div>
           </div>
 
           <div>
-            <div class="flex items-center gap-4">
-              <svg class="w-5 h-5 text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v6"></path>
-              </svg>
-              <input
-                v-model="form.firstName"
-                type="text"
-                placeholder="Prénom"
-                required
-                class="flex-1 border-b border-gray-300 focus:border-blue-600 outline-none py-2"
-              >
-              <input
-                v-model="form.lastName"
-                type="text"
-                placeholder="Nom"
-                required
-                class="flex-1 border-b border-gray-300 focus:border-blue-600 outline-none py-2"
-              >
-            </div>
-          </div>
-
-          <div class="flex items-center gap-4">
-            <svg class="w-5 h-5 text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 0 0 2.22 0L21 8"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"></path>
-            </svg>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Email *</label>
             <input
               v-model="form.email"
               type="email"
-              placeholder="Email"
+              placeholder="votre@email.com"
               required
-              class="flex-1 border-b border-gray-300 focus:border-blue-600 outline-none py-2"
-            >
+              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            />
           </div>
 
-          <div class="flex items-center gap-4">
-            <svg class="w-5 h-5 text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h6"></path>
-            </svg>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Téléphone</label>
             <input
               v-model="form.phone"
               type="tel"
-              placeholder="Téléphone (optionnel)"
-              class="flex-1 border-b border-gray-300 focus:border-blue-600 outline-none py-2"
-            >
+              placeholder="+229 XX XX XX XX"
+              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            />
           </div>
 
-          <div class="flex items-start gap-4">
-            <svg class="w-5 h-5 text-gray-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
-            </svg>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Sujet de l'entretien</label>
             <textarea
               v-model="form.subject"
-              placeholder="Sujet (optionnel)"
+              placeholder="Décrivez brièvement l'objet de votre demande..."
               rows="3"
-              class="flex-1 border-b border-gray-300 focus:border-blue-600 outline-none py-2 resize-none"
+              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all resize-none"
             ></textarea>
           </div>
         </div>
-      </div>
 
-      <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
-        <button
-          @click="close"
-          class="px-6 py-2 text-blue-600 font-semibold hover:bg-blue-50 rounded-xl transition-all"
-        >
-          Annuler
-        </button>
-        <button
-          @click="handleSubmit"
-          :disabled="isLoading || !canSubmit"
-          class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {{ isLoading ? 'Réservation en cours...' : 'Enregistrer' }}
-        </button>
+        <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50/50">
+          <button
+            @click="close"
+            class="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all"
+          >
+            Annuler
+          </button>
+          <button
+            @click="handleSubmit"
+            :disabled="isLoading || !canSubmit"
+            class="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <svg v-if="isLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            {{ isLoading ? 'Réservation...' : 'Confirmer le rendez-vous' }}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -141,7 +121,6 @@ const props = defineProps({
 const emit = defineEmits(['close', 'submit'])
 
 const form = ref({
-  title: '',
   firstName: '',
   lastName: '',
   email: '',
@@ -151,17 +130,16 @@ const form = ref({
 
 const isLoading = ref(false)
 
-const canSubmit = computed(() => 
-  form.value.firstName && 
-  form.value.lastName && 
-  form.value.email && 
+const canSubmit = computed(() =>
+  form.value.firstName &&
+  form.value.lastName &&
+  form.value.email &&
   props.slot
 )
 
 watch(() => [props.isOpen, authStore.user], () => {
   if (props.isOpen && authStore.user) {
     form.value = {
-      title: '',
       firstName: authStore.user.first_name || '',
       lastName: authStore.user.last_name || '',
       email: authStore.user.email || '',
@@ -170,7 +148,6 @@ watch(() => [props.isOpen, authStore.user], () => {
     }
   } else if (!props.isOpen) {
     form.value = {
-      title: '',
       firstName: '',
       lastName: '',
       email: '',
@@ -181,12 +158,13 @@ watch(() => [props.isOpen, authStore.user], () => {
 }, { immediate: true })
 
 function formatDate(dateStr) {
+  if (!dateStr) return ''
   const date = new Date(dateStr)
-  const options = { weekday: 'long', day: 'numeric', month: 'long' }
-  return date.toLocaleDateString('fr-FR', options)
+  return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function formatTime(timeStr) {
+  if (!timeStr) return ''
   return timeStr.slice(0, 5)
 }
 
@@ -196,7 +174,7 @@ function close() {
 
 async function handleSubmit() {
   if (!canSubmit.value) return
-  
+
   isLoading.value = true
   try {
     emit('submit', {
@@ -214,3 +192,19 @@ async function handleSubmit() {
   }
 }
 </script>
+
+<style scoped>
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+</style>

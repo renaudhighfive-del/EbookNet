@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import AppToast from '@/components/AppToast.vue'
 import {
   BookOpen,
   Bell,
@@ -461,6 +462,8 @@ async function confirmLogout() {
         <slot />
       </main>
     </div>
+
+    <AppToast />
 
     <!-- Modal de confirmation de déconnexion -->
     <Teleport to="body">

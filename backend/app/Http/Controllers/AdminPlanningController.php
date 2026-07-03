@@ -77,6 +77,24 @@ class AdminPlanningController extends Controller
 
     // --- Appointments ---
 
+    /** GET /admin/planning/appointments/calendar — Rendez-vous pour une période (calendrier) */
+    public function getCalendarAppointments(Request $request): JsonResponse
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $appointments = Appointment::where('teacher_id', $request->user()->id)
+            ->whereBetween('date', [$request->start_date, $request->end_date])
+            ->where('status', '!=', 'cancelled')
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get();
+
+        return response()->json($appointments);
+    }
+
     public function getAppointments(Request $request): JsonResponse
     {
         $query = Appointment::where('teacher_id', $request->user()->id);

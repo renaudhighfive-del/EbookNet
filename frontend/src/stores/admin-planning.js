@@ -5,6 +5,7 @@ import { adminPlanningService } from '../services/api/admin-planning.service'
 export const useAdminPlanningStore = defineStore('adminPlanning', () => {
   const rules = ref([])
   const appointments = ref([])
+  const calendarAppointments = ref([])
   const pagination = ref({})
   const settings = ref(null)
   const isLoading = ref(false)
@@ -104,15 +105,41 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  async function fetchCalendarAppointments(startDate, endDate) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const data = await adminPlanningService.getCalendarAppointments(startDate, endDate)
+      calendarAppointments.value = Array.isArray(data) ? data : []
+      return data
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Erreur chargement calendrier.'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function _syncAppointmentInList(list, appointment) {
+    const index = list.findIndex(a => a.id === appointment.id)
+    if (index !== -1) {
+      list[index] = appointment
+    }
+    return list
+  }
+
+  function _removeAppointmentFromList(list, id) {
+    return list.filter(a => a.id !== id)
+  }
+
   async function updateAppointment(id, data) {
     isActionLoading.value = true
     error.value = null
     try {
       const result = await adminPlanningService.updateAppointment(id, data)
-      const index = appointments.value.findIndex(a => a.id === id)
-      if (index !== -1) {
-        appointments.value[index] = result.appointment
-      }
+      const updated = result.appointment
+      _syncAppointmentInList(appointments.value, updated)
+      _syncAppointmentInList(calendarAppointments.value, updated)
       return result
     } catch (err) {
       error.value = err.response?.data?.message || 'Erreur mise à jour rendez-vous.'
@@ -127,10 +154,9 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     error.value = null
     try {
       const result = await adminPlanningService.cancelAppointment(id, data)
-      const index = appointments.value.findIndex(a => a.id === id)
-      if (index !== -1) {
-        appointments.value[index] = result.appointment
-      }
+      const cancelled = result.appointment
+      _syncAppointmentInList(appointments.value, cancelled)
+      _syncAppointmentInList(calendarAppointments.value, cancelled)
       return result
     } catch (err) {
       error.value = err.response?.data?.message || 'Erreur annulation rendez-vous.'
@@ -173,6 +199,7 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
   return {
     rules,
     appointments,
+    calendarAppointments,
     pagination,
     settings,
     isLoading,
@@ -184,9 +211,10 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     deleteRule,
     createAvailabilityException,
     fetchAppointments,
+    fetchCalendarAppointments,
     updateAppointment,
     cancelAppointment,
     fetchSettings,
-    updateSettings
+    updateSettings,
   }
 })
