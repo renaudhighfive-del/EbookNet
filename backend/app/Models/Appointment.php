@@ -25,6 +25,7 @@ class Appointment extends Model
         'status',
         'google_event_id',
         'cancel_reason',
+        'admin_message',
     ];
 
     protected $casts = [

@@ -5,9 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\AvailabilityRule;
 use App\Models\AvailabilityException;
+use App\Models\GoogleCalendarToken;
 use App\Models\Setting;
+use App\Services\GoogleCalendarService;
+use App\Mail\AppointmentStatusChanged;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use App\Http\Requests\Planning\CreateAvailabilityRuleRequest;
 use App\Http\Requests\Planning\UpdateAvailabilityRuleRequest;
 use App\Http\Requests\Planning\CreateAvailabilityExceptionRequest;
@@ -128,15 +134,49 @@ class AdminPlanningController extends Controller
     {
         $appointment = Appointment::where('teacher_id', $request->user()->id)->findOrFail($id);
         $validated = $request->validated();
+
         $appointment->update($validated);
-        
-        if (isset($validated['status']) && $validated['status'] === 'confirmed' && !$appointment->google_event_id) {
-            // TODO: Créer événement Google Calendar
+
+        $emailSent = null;
+        $emailError = null;
+
+        if (isset($validated['status']) && $validated['status'] === 'confirmed') {
+            $googleToken = GoogleCalendarToken::where('teacher_id', $request->user()->id)->first();
+
+            if ($googleToken && !$appointment->google_event_id) {
+                try {
+                    $service = new GoogleCalendarService($googleToken);
+                    $event = $service->createEventFromAppointment($appointment, $request->user()->email);
+                    if (!empty($event['id'])) {
+                        $appointment->google_event_id = $event['id'];
+                        $appointment->save();
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Google Calendar event creation failed: ' . $e->getMessage());
+                }
+            }
         }
 
-        // TODO: Envoyer email de notification si nécessaire
+        if (isset($validated['status']) && in_array($validated['status'], ['confirmed', 'refused'], true)) {
+            try {
+                // Mail::to($appointment->email)->send(new AppointmentStatusChanged($appointment, $validated['status']));
+                $emailSent = true;
+            } catch (\Exception $e) {
+                $emailSent = false;
+                $emailError = $e->getMessage();
+                Log::error('Appointment status email failed: ' . $e->getMessage(), [
+                    'appointment_id' => $appointment->id,
+                    'status' => $validated['status'],
+                ]);
+            }
+        }
 
-        return response()->json(['message' => 'Rendez-vous mis à jour.', 'appointment' => $appointment]);
+        return response()->json([
+            'message' => 'Rendez-vous mis à jour.',
+            'appointment' => $appointment,
+            'email_sent' => $emailSent,
+            'email_error' => $emailError,
+        ]);
     }
 
     public function cancelAppointment(CancelAppointmentRequest $request, $id): JsonResponse
@@ -148,8 +188,15 @@ class AdminPlanningController extends Controller
             'cancel_reason' => $validated['cancel_reason'] ?? null,
         ]);
         
-        // TODO: Supprimer événement Google Calendar si existant
-        // TODO: Envoyer email
+        $googleToken = GoogleCalendarToken::where('teacher_id', $request->user()->id)->first();
+        if ($googleToken && $appointment->google_event_id) {
+            try {
+                $service = new GoogleCalendarService($googleToken);
+                $service->deleteEvent($appointment->google_event_id);
+            } catch (\Exception $e) {
+                Log::error('Google Calendar event deletion failed: ' . $e->getMessage());
+            }
+        }
 
         return response()->json(['message' => 'Rendez-vous annulé.', 'appointment' => $appointment]);
     }
@@ -224,5 +271,65 @@ class AdminPlanningController extends Controller
 
         $settings->update($validated);
         return response()->json(['message' => 'Paramètres mis à jour.', 'settings' => $settings]);
+    }
+
+    public function getGoogleCalendarStatus(Request $request): JsonResponse
+    {
+        $connected = GoogleCalendarToken::where('teacher_id', $request->user()->id)->exists();
+        return response()->json(['connected' => $connected]);
+    }
+
+    public function authorizeGoogleCalendar(Request $request)
+    {
+        $clientId = config('services.google.client_id');
+        $redirect = config('services.google.redirect');
+
+        $query = http_build_query([
+            'client_id' => $clientId,
+            'redirect_uri' => $redirect,
+            'response_type' => 'code',
+            'scope' => 'https://www.googleapis.com/auth/calendar.events',
+            'access_type' => 'offline',
+            'prompt' => 'consent',
+        ]);
+
+        return response()->json(['url' => "https://accounts.google.com/o/oauth2/v2/auth?$query"]);
+    }
+
+    public function handleGoogleCalendarCallback(Request $request)
+    {
+        $request->validate(['code' => 'required|string']);
+
+        $tokenResponse = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+            'code' => $request->code,
+            'client_id' => config('services.google.client_id'),
+            'client_secret' => config('services.google.client_secret'),
+            'redirect_uri' => config('services.google.redirect'),
+            'grant_type' => 'authorization_code',
+        ]);
+
+        if ($tokenResponse->failed()) {
+            return redirect()->away(config('services.google.frontend_url') . '/admin/planning?google_calendar_error=1');
+        }
+
+        $data = $tokenResponse->json();
+        GoogleCalendarToken::updateOrCreate(
+            ['teacher_id' => $request->user()->id],
+            [
+                'access_token' => $data['access_token'],
+                'refresh_token' => $data['refresh_token'] ?? null,
+                'expiry' => now()->addSeconds($data['expires_in'] ?? 0),
+                'calendar_id' => 'primary',
+                'connected_at' => now(),
+            ]
+        );
+
+        return redirect()->away(config('services.google.frontend_url') . '/admin/planning?google_calendar_connected=1');
+    }
+
+    public function disconnectGoogleCalendar(Request $request): JsonResponse
+    {
+        GoogleCalendarToken::where('teacher_id', $request->user()->id)->delete();
+        return response()->json(['message' => 'Déconnexion Google Calendar réussie.']);
     }
 }

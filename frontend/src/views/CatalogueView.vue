@@ -194,7 +194,7 @@ onMounted(loadData)
 
           <div class="flex flex-col lg:flex-row gap-8">
             <!-- Filters Sidebar -->
-            <aside class="w-full lg:w-72 flex-shrink-0">
+            <aside class="w-full lg:w-72 shrink-0">
               <div class="bg-white rounded-2xl p-6 shadow-sm sticky top-24">
                 <h3 class="font-semibold text-[#1B2A4A] mb-5 flex items-center gap-2">
                   <SlidersHorizontal class="w-4 h-4 text-[#0D9488]" />

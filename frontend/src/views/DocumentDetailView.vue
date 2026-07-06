@@ -93,9 +93,9 @@ onMounted(async () => {
 
         <div class="flex flex-col lg:flex-row gap-8">
           <!-- Left Column -->
-          <aside class="w-full lg:w-80 flex-shrink-0">
+          <aside class="w-full lg:w-80 shrink-0">
             <div class="sticky top-24">
-              <div class="bg-gradient-to-br from-[#1B2A4A] to-[#2D4A7A] rounded-xl aspect-[3/4] shadow-lg flex items-center justify-center mb-4">
+              <div class="bg-linear-to-br from-[#1B2A4A] to-[#2D4A7A] rounded-xl aspect-3/4 shadow-lg flex items-center justify-center mb-4">
                 <BookOpen class="w-32 h-32 text-white/30" />
               </div>
               <div class="text-center mb-4">

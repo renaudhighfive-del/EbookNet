@@ -15,7 +15,8 @@ class UpdateAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['sometimes', Rule::in(['pending', 'confirmed', 'cancelled', 'completed', 'no_show'])],
+            'status' => ['sometimes', Rule::in(['pending', 'confirmed', 'cancelled', 'completed', 'no_show', 'refused'])],
+            'admin_message' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 

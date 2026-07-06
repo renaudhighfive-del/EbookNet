@@ -139,8 +139,23 @@
               <p class="text-sm text-gray-500">Synchroniser vos rendez-vous</p>
             </div>
 
-            <button class="px-4 py-2 border rounded-xl text-sm">
-              Connecter
+            <button
+              @click="onGoogleButtonClick"
+              type="button"
+              :disabled="googleLoading"
+              class="px-4 py-2 rounded-xl text-sm font-semibold transition-colors inline-flex items-center justify-center gap-2"
+              :class="googleConnected
+                ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200'
+                : 'bg-blue-500 text-white hover:bg-blue-600'"
+            >
+              <span v-if="googleLoading" class="inline-flex items-center gap-2">
+                <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25" />
+                  <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" class="opacity-75" />
+                </svg>
+                Chargement...
+              </span>
+              <span v-else>{{ googleConnected ? 'Déconnecter' : 'Connecter' }}</span>
             </button>
           </div>
         </div>
@@ -160,6 +175,8 @@ const toast = useToastStore()
 
 const availabilityRules = ref([])
 const previewDayIndex = ref(0)
+const googleConnected = ref(false)
+const googleLoading = ref(false)
 
 const previewDays = [
   'Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'
@@ -172,8 +189,9 @@ const selectedRule = computed(() =>
 const isSaving = computed(() => store.isActionLoading)
 
 onMounted(async () => {
-  await store.fetchRules()
+  await Promise.all([store.fetchRules(), fetchGoogleCalendarStatus()])
   initRules()
+  handleGoogleCallbackQuery()
 })
 
 watch(() => store.rules, initRules, { deep: true })
@@ -192,6 +210,51 @@ function initRules() {
       id: null
     }
   })
+}
+
+function handleGoogleCallbackQuery() {
+  const params = new URLSearchParams(window.location.search)
+  if (params.has('google_calendar_connected')) {
+    toast.success('Google Calendar connecté avec succès.')
+    params.delete('google_calendar_connected')
+    window.history.replaceState({}, document.title, `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`)
+  }
+  if (params.has('google_calendar_error')) {
+    toast.error('Échec de la connexion Google Calendar.')
+    params.delete('google_calendar_error')
+    window.history.replaceState({}, document.title, `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`)
+  }
+}
+
+async function fetchGoogleCalendarStatus() {
+  try {
+    const response = await store.getGoogleCalendarStatus()
+    googleConnected.value = !!response.connected
+  } catch (e) {
+    googleConnected.value = false
+  }
+}
+
+async function onGoogleButtonClick() {
+  googleLoading.value = true
+
+  try {
+    if (googleConnected.value) {
+      await store.disconnectGoogleCalendar()
+      googleConnected.value = false
+      toast.success('Google Calendar déconnecté.')
+      return
+    }
+
+    const response = await store.getGoogleCalendarAuthorizeUrl()
+    if (response.url) {
+      window.location.href = response.url
+    }
+  } catch (e) {
+    toast.error('Impossible de connecter Google Calendar.')
+  } finally {
+    googleLoading.value = false
+  }
 }
 
 async function saveSelectedRule(rule) {

@@ -217,6 +217,48 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  async function getGoogleCalendarStatus() {
+    isLoading.value = true
+    error.value = null
+    try {
+      const result = await adminPlanningService.getGoogleCalendarStatus()
+      return result
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Erreur chargement Google Calendar.'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function getGoogleCalendarAuthorizeUrl() {
+    isActionLoading.value = true
+    error.value = null
+    try {
+      const result = await adminPlanningService.getGoogleCalendarAuthorizeUrl()
+      return result
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Erreur autorisation Google Calendar.'
+      throw err
+    } finally {
+      isActionLoading.value = false
+    }
+  }
+
+  async function disconnectGoogleCalendar() {
+    isActionLoading.value = true
+    error.value = null
+    try {
+      const result = await adminPlanningService.disconnectGoogleCalendar()
+      return result
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Erreur déconnexion Google Calendar.'
+      throw err
+    } finally {
+      isActionLoading.value = false
+    }
+  }
+
   return {
     rules,
     appointments,
@@ -238,5 +280,8 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     cancelAppointment,
     fetchSettings,
     updateSettings,
+    getGoogleCalendarStatus,
+    getGoogleCalendarAuthorizeUrl,
+    disconnectGoogleCalendar,
   }
 })

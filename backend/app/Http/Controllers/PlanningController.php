@@ -12,6 +12,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Planning\CreateAppointmentRequest;
+use App\Mail\AppointmentRequestSubmitted;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class PlanningController extends Controller
 {
@@ -230,6 +233,8 @@ class PlanningController extends Controller
                 'subject' => $validated['subject'] ?? null,
                 'status' => 'pending',
             ]);
+
+            Mail::to($appointment->email)->send(new AppointmentRequestSubmitted($appointment));
 
             DB::commit();
             return response()->json([

@@ -30,7 +30,7 @@
         </div>
 
         <!-- Content -->
-        <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden min-h-[700px]">
+        <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden min-h-175">
           <AdminPlanningCalendar v-if="activeTab === 'calendar'" />
           <AdminPlanningAppointments v-else-if="activeTab === 'appointments'" />
           <AdminPlanningAvailability v-else />

@@ -82,14 +82,14 @@
           </button>
           <button
             @click="handleSubmit"
-            :disabled="isLoading || !canSubmit"
+            :disabled="props.isLoading || !canSubmit"
             class="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            <svg v-if="isLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <svg v-if="props.isLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            {{ isLoading ? 'Réservation...' : 'Confirmer le rendez-vous' }}
+            {{ props.isLoading ? 'Réservation...' : 'Confirmer le rendez-vous' }}
           </button>
         </div>
       </div>
@@ -115,6 +115,10 @@ const props = defineProps({
   selectedDate: {
     type: String,
     default: ''
+  },
+  isLoading: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -127,8 +131,6 @@ const form = ref({
   phone: '',
   subject: ''
 })
-
-const isLoading = ref(false)
 
 const canSubmit = computed(() =>
   form.value.firstName &&
@@ -172,24 +174,19 @@ function close() {
   emit('close')
 }
 
-async function handleSubmit() {
-  if (!canSubmit.value) return
+function handleSubmit() {
+  if (!canSubmit.value || props.isLoading) return
 
-  isLoading.value = true
-  try {
-    emit('submit', {
-      date: props.selectedDate,
-      start_time: props.bookingSlot.start,
-      end_time: props.bookingSlot.end,
-      first_name: form.value.firstName,
-      last_name: form.value.lastName,
-      email: form.value.email,
-      phone: form.value.phone,
-      subject: form.value.subject
-    })
-  } finally {
-    isLoading.value = false
-  }
+  emit('submit', {
+    date: props.selectedDate,
+    start_time: props.bookingSlot.start,
+    end_time: props.bookingSlot.end,
+    first_name: form.value.firstName,
+    last_name: form.value.lastName,
+    email: form.value.email,
+    phone: form.value.phone,
+    subject: form.value.subject
+  })
 }
 </script>
 

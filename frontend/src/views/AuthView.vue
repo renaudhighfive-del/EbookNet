@@ -140,7 +140,7 @@ const handleRegister = async () => {
             class="flex items-center gap-3 text-white/75"
           >
             <div
-              class="w-8 h-8 rounded-lg bg-white/[.08] flex items-center justify-center shrink-0"
+              class="w-8 h-8 rounded-lg bg-white/8 flex items-center justify-center shrink-0"
             >
               <component :is="item.icon" class="w-4 h-4" />
             </div>

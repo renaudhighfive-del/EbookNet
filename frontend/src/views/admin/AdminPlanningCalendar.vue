@@ -58,7 +58,7 @@
       <!-- Time grid -->
       <div class="relative" style="height: 1536px;">
         <div class="absolute inset-0 grid grid-cols-7">
-          <div v-for="(day, dayIndex) in weekDays" :key="day.date" class="border-r border-gray-100 last:border-r-0 relative">
+          <div v-for="day in weekDays" :key="day.date" class="border-r border-gray-100 last:border-r-0 relative">
             <!-- Half-hour lines -->
             <div class="absolute inset-0 pointer-events-none" style="background-size: 100% 64px;">
               <div v-for="slot in timeSlots" :key="slot" class="h-16 border-t border-gray-100"></div>
@@ -208,9 +208,9 @@
               <!-- Actions -->
               <div v-if="selectedAppointment.status === 'pending'" class="border-t border-gray-100 pt-6 space-y-3">
                 <p class="text-sm text-gray-500 mb-1">Actions</p>
-                <div class="grid grid-cols-2 gap-3">
+                <div v-if="!selectedAppointmentState()?.action" class="grid grid-cols-2 gap-3">
                   <button
-                    @click="confirmFromSidebar"
+                    @click="startSidebarAction('confirmed')"
                     class="w-full py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,7 +219,7 @@
                     Confirmer
                   </button>
                   <button
-                    @click="cancelFromSidebar"
+                    @click="startSidebarAction('refused')"
                     class="w-full py-3 bg-red-100 text-red-700 font-semibold rounded-xl hover:bg-red-200 transition-all flex items-center justify-center gap-2"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,6 +227,35 @@
                     </svg>
                     Refuser
                   </button>
+                </div>
+
+                <div v-else class="space-y-4">
+                  <p class="text-sm font-medium text-gray-600">
+                    {{ selectedAppointmentState()?.action === 'confirmed' ? 'Confirmation' : 'Refus' }} du rendez-vous
+                  </p>
+                  <label for="admin-message" class="block text-sm font-medium text-gray-700">Message</label>
+                  <textarea
+                    id="admin-message"
+                    v-model="selectedAppointmentState().admin_message"
+                    placeholder="Écrivez un message"
+                    rows="4"
+                    class="w-full rounded-2xl border border-gray-200 p-4 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none resize-none"
+                  ></textarea>
+                  <div class="flex gap-3">
+                    <button
+                      @click="submitSidebarAction"
+                      :disabled="isRowLoading(selectedAppointment.value)"
+                      class="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {{ isRowLoading(selectedAppointment.value) ? 'En cours...' : 'Valider' }}
+                    </button>
+                    <button
+                      @click="cancelSidebarAction"
+                      class="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all"
+                    >
+                      Annuler
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -287,6 +316,8 @@ const today = new Date()
 const selectedAppointment = ref(null)
 const selectedEmptySlot = ref(null)
 const isEmptySlotModalOpen = ref(false)
+const appointmentEdits = ref({})
+const actionLoading = ref({})
 
 const weekDays = computed(() => {
   const days = []
@@ -528,27 +559,68 @@ function closeDetails() {
   selectedAppointment.value = null
 }
 
-async function confirmFromSidebar() {
-  if (!selectedAppointment.value) return
-  try {
-    await store.updateAppointment(selectedAppointment.value.id, { status: 'confirmed' })
-    toastStore.success(`Rendez-vous de ${selectedAppointment.value.first_name} confirmé.`)
-    closeDetails()
-  } catch {
-    toastStore.error('Erreur lors de la confirmation.')
+function getEditingState(appointment) {
+  if (!appointmentEdits.value[appointment.id]) {
+    appointmentEdits.value[appointment.id] = {
+      action: null,
+      admin_message: appointment.admin_message || ''
+    }
   }
+  return appointmentEdits.value[appointment.id]
 }
 
-async function cancelFromSidebar() {
+function selectedAppointmentState() {
+  return selectedAppointment.value ? getEditingState(selectedAppointment.value) : null
+}
+
+function isRowLoading(appointment) {
+  return appointment && actionLoading.value[appointment.id] === true
+}
+
+function startSidebarAction(action) {
   if (!selectedAppointment.value) return
+  const state = getEditingState(selectedAppointment.value)
+  state.action = action
+}
+
+function cancelSidebarAction() {
+  if (!selectedAppointment.value) return
+  const state = getEditingState(selectedAppointment.value)
+  state.action = null
+}
+
+async function submitSidebarAction() {
+  if (!selectedAppointment.value) return
+  const state = getEditingState(selectedAppointment.value)
+  if (!state?.action) return
+
+  actionLoading.value = {
+    ...actionLoading.value,
+    [selectedAppointment.value.id]: true
+  }
+
+  const status = state.action === 'confirmed' ? 'confirmed' : 'refused'
+  const payload = {
+    status,
+    admin_message: state.admin_message || null
+  }
+
   try {
-    await store.cancelAppointment(selectedAppointment.value.id, {
-      cancel_reason: 'Annulé par l\'administrateur'
-    })
-    toastStore.info(`Rendez-vous de ${selectedAppointment.value.first_name} annulé.`)
-    closeDetails()
+    const result = await store.updateAppointment(selectedAppointment.value.id, payload)
+    selectedAppointment.value = result.appointment
+    state.action = null
+    if (result.email_sent === false) {
+      toastStore.error('Le statut a été enregistré, mais l’email n’a pas pu être envoyé.')
+    } else {
+      toastStore.success(`Rendez-vous de ${selectedAppointment.value.first_name} ${status === 'confirmed' ? 'confirmé' : 'refusé'}.`)
+    }
   } catch {
-    toastStore.error('Erreur lors de l\'annulation.')
+    toastStore.error('Erreur lors de la mise à jour du rendez-vous.')
+  } finally {
+    actionLoading.value = {
+      ...actionLoading.value,
+      [selectedAppointment.value.id]: false
+    }
   }
 }
 

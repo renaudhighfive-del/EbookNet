@@ -227,6 +227,7 @@
       :isOpen="isBookingModalOpen"
       :booking-slot="selectedBookingSlot"
       :selected-date="selectedBookingDate"
+      :isLoading="bookingLoading"
       @close="closeBookingModal"
       @submit="handleBooking"
     />
@@ -250,6 +251,7 @@ const selectedAppointment = ref(null)
 const selectedBookingSlot = ref(null)
 const selectedBookingDate = ref('')
 const isBookingModalOpen = ref(false)
+const bookingLoading = ref(false)
 const availabilityByDate = ref({})
 
 const weekDays = computed(() => {
@@ -412,6 +414,7 @@ function closeBookingModal() {
 }
 
 async function handleBooking(data) {
+  bookingLoading.value = true
   try {
     await store.createAppointment(data)
     closeBookingModal()
@@ -424,6 +427,8 @@ async function handleBooking(data) {
     if (error.response?.status === 409) {
       await loadWeek()
     }
+  } finally {
+    bookingLoading.value = false
   }
 }
 

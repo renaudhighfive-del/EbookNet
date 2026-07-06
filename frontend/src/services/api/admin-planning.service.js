@@ -66,5 +66,20 @@ export const adminPlanningService = {
   async updateSettings(data) {
     const response = await api.put('/admin/planning/settings', data)
     return response.data
-  }
+  },
+
+  async getGoogleCalendarStatus() {
+    const response = await api.get('/admin/planning/google-calendar/status')
+    return response.data
+  },
+
+  async getGoogleCalendarAuthorizeUrl() {
+    const response = await api.get('/admin/planning/google-calendar/authorize')
+    return response.data
+  },
+
+  async disconnectGoogleCalendar() {
+    const response = await api.post('/admin/planning/google-calendar/disconnect')
+    return response.data
+  },
 }
