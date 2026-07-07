@@ -110,10 +110,11 @@ onMounted(async () => {
 
         <!-- List -->
         <div v-if="filteredDeposits.length" class="space-y-4">
-          <div
+          <router-link
             v-for="deposit in filteredDeposits"
             :key="deposit.id"
-            class="bg-white rounded-2xl p-5 shadow-soft flex gap-4 items-start"
+            :to="`/my-documents/${deposit.id}`"
+            class="bg-white rounded-2xl p-5 shadow-soft flex gap-4 items-start hover:shadow-md transition-shadow cursor-pointer"
           >
             <div class="w-12 h-16 bg-navy-50 rounded-xl flex items-center justify-center shrink-0">
               <FileText class="w-6 h-6 text-navy-400" />
@@ -141,7 +142,7 @@ onMounted(async () => {
                 <span>{{ formatDate(deposit.created_at) }}</span>
               </div>
             </div>
-          </div>
+          </router-link>
         </div>
 
         <!-- Empty state -->

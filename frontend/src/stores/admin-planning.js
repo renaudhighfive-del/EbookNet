@@ -1,17 +1,30 @@
+// Store Pinia pour la gestion administrative du planning (règles, rendez-vous, Google Calendar, paramètres)
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { adminPlanningService } from '../services/api/admin-planning.service'
 
 export const useAdminPlanningStore = defineStore('adminPlanning', () => {
+  // Liste des règles de disponibilité
   const rules = ref([])
+  // Liste des rendez-vous (pagifiée)
   const appointments = ref([])
+  // Liste des rendez-vous pour l'affichage calendrier
   const calendarAppointments = ref([])
+  // Informations de pagination pour les rendez-vous
   const pagination = ref({})
+  // Paramètres généraux du planning
   const settings = ref(null)
+  // Indicateur de chargement principal
   const isLoading = ref(false)
+  // Indicateur de chargement pour les actions (création, mise à jour, etc.)
   const isActionLoading = ref(false)
+  // Message d'erreur
   const error = ref(null)
 
+  /**
+   * Récupère toutes les règles de disponibilité.
+   * @returns {Promise<Object>} Données contenant les règles.
+   */
   async function fetchRules() {
     isLoading.value = true
     error.value = null
@@ -27,6 +40,11 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Crée une nouvelle règle de disponibilité.
+   * @param {Object} data - Données de la règle.
+   * @returns {Promise<Object>} Résultat contenant la règle créée.
+   */
   async function createRule(data) {
     isActionLoading.value = true
     error.value = null
@@ -42,6 +60,12 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Met à jour une règle de disponibilité existante.
+   * @param {number|string} id - Identifiant de la règle.
+   * @param {Object} data - Nouvelles données.
+   * @returns {Promise<Object>} Résultat contenant la règle mise à jour.
+   */
   async function updateRule(id, data) {
     isActionLoading.value = true
     error.value = null
@@ -60,6 +84,11 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Supprime une règle de disponibilité.
+   * @param {number|string} id - Identifiant de la règle.
+   * @returns {Promise<Object>} Résultat de la suppression.
+   */
   async function deleteRule(id) {
     isActionLoading.value = true
     error.value = null
@@ -75,6 +104,11 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Crée une exception de disponibilité (jour férié, fermeture, etc.).
+   * @param {Object} data - Données de l'exception.
+   * @returns {Promise<Object>} Résultat de la création.
+   */
   async function createAvailabilityException(data) {
     isActionLoading.value = true
     error.value = null
@@ -89,6 +123,11 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Récupère la liste des rendez-vous avec pagination.
+   * @param {Object} [params={}] - Paramètres de filtrage et pagination.
+   * @returns {Promise<Object>} Données paginées des rendez-vous.
+   */
   async function fetchAppointments(params = {}) {
     isLoading.value = true
     error.value = null
@@ -105,6 +144,12 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Récupère les rendez-vous pour un affichage calendrier entre deux dates.
+   * @param {string} startDate - Date de début (ISO).
+   * @param {string} endDate - Date de fin (ISO).
+   * @returns {Promise<Array>} Liste des rendez-vous.
+   */
   async function fetchCalendarAppointments(startDate, endDate) {
     isLoading.value = true
     error.value = null
@@ -120,12 +165,17 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Crée un rendez-vous manuellement (par un admin).
+   * @param {Object} data - Données du rendez-vous.
+   * @returns {Promise<Object>} Résultat contenant le rendez-vous créé.
+   */
   async function createManualAppointment(data) {
     isActionLoading.value = true
     error.value = null
     try {
       const result = await adminPlanningService.createManualAppointment(data)
-      // Ajouter le rendez-vous aux listes
+      // Ajouter le rendez-vous aux listes locales
       if (!appointments.value.find(a => a.id === result.appointment.id)) {
         appointments.value.unshift(result.appointment)
       }
@@ -141,6 +191,12 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Synchronise un rendez-vous dans une liste locale (remplace si existant).
+   * @param {Array} list - Liste locale de rendez-vous.
+   * @param {Object} appointment - Rendez-vous mis à jour.
+   * @returns {Array} Liste mise à jour.
+   */
   function _syncAppointmentInList(list, appointment) {
     const index = list.findIndex(a => a.id === appointment.id)
     if (index !== -1) {
@@ -149,10 +205,22 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     return list
   }
 
+  /**
+   * Retire un rendez-vous d'une liste locale par son identifiant.
+   * @param {Array} list - Liste locale.
+   * @param {number|string} id - Identifiant à retirer.
+   * @returns {Array} Nouvelle liste filtrée.
+   */
   function _removeAppointmentFromList(list, id) {
     return list.filter(a => a.id !== id)
   }
 
+  /**
+   * Met à jour un rendez-vous existant.
+   * @param {number|string} id - Identifiant du rendez-vous.
+   * @param {Object} data - Nouvelles données.
+   * @returns {Promise<Object>} Résultat contenant le rendez-vous mis à jour.
+   */
   async function updateAppointment(id, data) {
     isActionLoading.value = true
     error.value = null
@@ -170,6 +238,12 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Annule un rendez-vous.
+   * @param {number|string} id - Identifiant du rendez-vous.
+   * @param {Object} [data={}] - Données complémentaires (motif, etc.).
+   * @returns {Promise<Object>} Résultat contenant le rendez-vous annulé.
+   */
   async function cancelAppointment(id, data = {}) {
     isActionLoading.value = true
     error.value = null
@@ -187,6 +261,10 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Récupère les paramètres généraux du planning.
+   * @returns {Promise<Object>} Données des paramètres.
+   */
   async function fetchSettings() {
     isLoading.value = true
     error.value = null
@@ -202,6 +280,11 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Met à jour les paramètres généraux du planning.
+   * @param {Object} data - Nouveaux paramètres.
+   * @returns {Promise<Object>} Résultat contenant les paramètres mis à jour.
+   */
   async function updateSettings(data) {
     isActionLoading.value = true
     error.value = null
@@ -217,6 +300,10 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Récupère le statut de connexion Google Calendar.
+   * @returns {Promise<Object>} Statut de connexion.
+   */
   async function getGoogleCalendarStatus() {
     isLoading.value = true
     error.value = null
@@ -231,6 +318,10 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Récupère l'URL d'autorisation Google Calendar.
+   * @returns {Promise<Object>} URL d'autorisation.
+   */
   async function getGoogleCalendarAuthorizeUrl() {
     isActionLoading.value = true
     error.value = null
@@ -245,6 +336,10 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     }
   }
 
+  /**
+   * Déconnecte Google Calendar.
+   * @returns {Promise<Object>} Résultat de la déconnexion.
+   */
   async function disconnectGoogleCalendar() {
     isActionLoading.value = true
     error.value = null

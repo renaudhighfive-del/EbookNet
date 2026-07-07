@@ -1,16 +1,29 @@
+// Store Pinia pour la gestion des références (CRUD, archivage, restauration)
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { adminService } from '@/services/api/admin.service'
 
 export const useReferenceStore = defineStore('reference', () => {
+  // Liste des références actives
   const references = ref([])
+  // Informations de pagination pour les références actives
   const pagination = ref({})
+  // Liste des références archivées
   const archivedReferences = ref([])
+  // Informations de pagination pour les références archivées
   const archivedPagination = ref({})
+  // Indicateur de chargement principal
   const isLoading = ref(false)
+  // Indicateur de chargement pour les actions
   const isActionLoading = ref(false)
+  // Message d'erreur
   const error = ref(null)
 
+  /**
+   * Récupère la liste paginée des références actives.
+   * @param {Object} [params={}] - Paramètres de filtrage et pagination.
+   * @returns {Promise<Object>} Données paginées des références.
+   */
   async function fetchReferences(params = {}) {
     isLoading.value = true
     error.value = null
@@ -27,6 +40,11 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
+  /**
+   * Récupère une référence par son identifiant.
+   * @param {number|string} id - Identifiant de la référence.
+   * @returns {Promise<Object>} Données de la référence.
+   */
   async function fetchReference(id) {
     isLoading.value = true
     error.value = null
@@ -41,6 +59,11 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
+  /**
+   * Crée une nouvelle référence.
+   * @param {Object} data - Données de la référence.
+   * @returns {Promise<Object>} Résultat contenant la référence créée.
+   */
   async function createReference(data) {
     isActionLoading.value = true
     error.value = null
@@ -56,6 +79,12 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
+  /**
+   * Met à jour une référence existante.
+   * @param {number|string} id - Identifiant de la référence.
+   * @param {Object} data - Nouvelles données.
+   * @returns {Promise<Object>} Résultat contenant la référence mise à jour.
+   */
   async function updateReference(id, data) {
     isActionLoading.value = true
     error.value = null
@@ -71,6 +100,11 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
+  /**
+   * Supprime une référence.
+   * @param {number|string} id - Identifiant de la référence.
+   * @returns {Promise<Object>} Résultat de la suppression.
+   */
   async function deleteReference(id) {
     isActionLoading.value = true
     error.value = null
@@ -86,6 +120,12 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
+  /**
+   * Active ou désactive (archive) une référence selon le statut donné.
+   * @param {number|string} id - Identifiant de la référence.
+   * @param {string} status - Nouveau statut (published, archived, etc.).
+   * @returns {Promise<Object>} Résultat contenant la référence mise à jour.
+   */
   async function toggleReferenceStatus(id, status) {
     isActionLoading.value = true
     error.value = null
@@ -101,6 +141,11 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
+  /**
+   * Récupère la liste paginée des références archivées.
+   * @param {Object} [params={}] - Paramètres de filtrage et pagination.
+   * @returns {Promise<Object>} Données paginées des références archivées.
+   */
   async function fetchArchivedReferences(params = {}) {
     isLoading.value = true
     error.value = null
@@ -117,11 +162,17 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
+  /**
+   * Restaure une référence archivée.
+   * @param {number|string} id - Identifiant de la référence.
+   * @returns {Promise<Object>} Résultat de la restauration.
+   */
   async function restoreReference(id) {
     isActionLoading.value = true
     error.value = null
     try {
       const result = await adminService.restoreReference(id)
+      // Retire la référence de la liste des archivées si présente
       const index = archivedReferences.value.findIndex((r) => r.id === Number(id))
       if (index !== -1) {
         archivedReferences.value.splice(index, 1)
@@ -135,6 +186,11 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
+  /**
+   * Met à jour une référence dans la liste locale.
+   * @param {number|string} id - Identifiant.
+   * @param {Object} updatedReference - Données mises à jour.
+   */
   function _updateInList(id, updatedReference) {
     const index = references.value.findIndex((r) => r.id === id)
     if (index !== -1) {
@@ -143,13 +199,27 @@ export const useReferenceStore = defineStore('reference', () => {
     }
   }
 
+  /**
+   * Retire une référence de la liste locale.
+   * @param {number|string} id - Identifiant à retirer.
+   */
   function _removeFromList(id) {
     references.value = references.value.filter((r) => r.id !== id)
   }
 
+  /**
+   * Formate une date au format court français.
+   * @param {string|Date} d - Date à formater.
+   * @returns {string} Date formatée.
+   */
   const formatDate = (d) =>
     new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 
+  /**
+   * Retourne le libellé d'un type de document.
+   * @param {string} type - Code du type.
+   * @returns {string} Libellé.
+   */
   const getDocumentTypeLabel = (type) => {
     const labels = {
       livre: 'Livre',
@@ -164,6 +234,11 @@ export const useReferenceStore = defineStore('reference', () => {
     return labels[type] || type
   }
 
+  /**
+   * Retourne le libellé d'un statut de référence.
+   * @param {string} status - Code du statut.
+   * @returns {string} Libellé.
+   */
   const getStatusLabel = (status) => {
     const labels = {
       draft: 'Brouillon',
@@ -173,6 +248,11 @@ export const useReferenceStore = defineStore('reference', () => {
     return labels[status] || status
   }
 
+  /**
+   * Retourne la classe CSS pour un statut de référence.
+   * @param {string} status - Code du statut.
+   * @returns {string} Classe Tailwind.
+   */
   const getStatusClass = (status) => {
     const classes = {
       draft: 'bg-gray-100 text-gray-600',
@@ -182,6 +262,11 @@ export const useReferenceStore = defineStore('reference', () => {
     return classes[status] || 'bg-gray-100 text-gray-600'
   }
 
+  /**
+   * Retourne le libellé d'une langue.
+   * @param {string} lang - Code ISO de la langue.
+   * @returns {string} Libellé.
+   */
   const getLanguageLabel = (lang) => {
     const labels = {
       fr: 'Français',

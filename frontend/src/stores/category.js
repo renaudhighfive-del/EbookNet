@@ -1,14 +1,25 @@
+// Store Pinia pour la gestion des catégories (CRUD, activation/désactivation, listes)
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { adminService } from '@/services/api/admin.service'
 
 export const useCategoryStore = defineStore('category', () => {
+  // Liste des catégories
   const categories = ref([])
+  // Informations de pagination
   const pagination = ref({})
+  // Indicateur de chargement principal
   const isLoading = ref(false)
+  // Indicateur de chargement pour les actions
   const isActionLoading = ref(false)
+  // Message d'erreur
   const error = ref(null)
 
+  /**
+   * Récupère la liste paginée des catégories.
+   * @param {Object} [params={}] - Paramètres de filtrage et pagination.
+   * @returns {Promise<Object>} Données paginées des catégories.
+   */
   async function fetchCategories(params = {}) {
     isLoading.value = true
     error.value = null
@@ -26,6 +37,10 @@ export const useCategoryStore = defineStore('category', () => {
     }
   }
 
+  /**
+   * Récupère toutes les catégories (sans pagination, pour les listes déroulantes).
+   * @returns {Promise<Array>} Liste de toutes les catégories.
+   */
   async function fetchAllCategories() {
     isLoading.value = true
     error.value = null
@@ -40,6 +55,11 @@ export const useCategoryStore = defineStore('category', () => {
     }
   }
 
+  /**
+   * Récupère une catégorie par son identifiant.
+   * @param {number|string} id - Identifiant de la catégorie.
+   * @returns {Promise<Object>} Données de la catégorie.
+   */
   async function fetchCategory(id) {
     isLoading.value = true
     error.value = null
@@ -54,6 +74,11 @@ export const useCategoryStore = defineStore('category', () => {
     }
   }
 
+  /**
+   * Crée une nouvelle catégorie.
+   * @param {Object} data - Données de la catégorie.
+   * @returns {Promise<Object>} Résultat contenant la catégorie créée.
+   */
   async function createCategory(data) {
     isActionLoading.value = true
     error.value = null
@@ -69,6 +94,12 @@ export const useCategoryStore = defineStore('category', () => {
     }
   }
 
+  /**
+   * Met à jour une catégorie existante.
+   * @param {number|string} id - Identifiant de la catégorie.
+   * @param {Object} data - Nouvelles données.
+   * @returns {Promise<Object>} Résultat contenant la catégorie mise à jour.
+   */
   async function updateCategory(id, data) {
     isActionLoading.value = true
     error.value = null
@@ -84,6 +115,11 @@ export const useCategoryStore = defineStore('category', () => {
     }
   }
 
+  /**
+   * Supprime une catégorie.
+   * @param {number|string} id - Identifiant de la catégorie.
+   * @returns {Promise<Object>} Résultat de la suppression.
+   */
   async function deleteCategory(id) {
     isActionLoading.value = true
     error.value = null
@@ -99,6 +135,11 @@ export const useCategoryStore = defineStore('category', () => {
     }
   }
 
+  /**
+   * Active ou désactive une catégorie.
+   * @param {number|string} id - Identifiant de la catégorie.
+   * @returns {Promise<Object>} Résultat contenant la catégorie mise à jour.
+   */
   async function toggleCategoryStatus(id) {
     isActionLoading.value = true
     error.value = null
@@ -114,6 +155,11 @@ export const useCategoryStore = defineStore('category', () => {
     }
   }
 
+  /**
+   * Met à jour une catégorie dans la liste locale.
+   * @param {number|string} id - Identifiant.
+   * @param {Object} updatedCategory - Données mises à jour.
+   */
   function _updateInList(id, updatedCategory) {
     const index = categories.value.findIndex(c => c.id === id)
     if (index !== -1) {
@@ -122,10 +168,15 @@ export const useCategoryStore = defineStore('category', () => {
     }
   }
 
+  /**
+   * Retire une catégorie de la liste locale.
+   * @param {number|string} id - Identifiant à retirer.
+   */
   function _removeFromList(id) {
     categories.value = categories.value.filter(c => c.id !== id)
   }
 
+  // Catégories filtrées dont le statut est 'active'
   const activeCategories = computed(() => categories.value.filter(c => c.status === 'active'))
 
   return {

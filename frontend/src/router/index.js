@@ -7,6 +7,7 @@ import AuthView from '../views/AuthView.vue'
 import Dashboard from '../views/Dashboard.vue'
 import MyDocuments from '../views/MyDocuments.vue'
 import DepositRequest from '../views/DepositRequest.vue'
+import DepositDetail from '../views/DepositDetail.vue'
 import Profile from '../views/Profile.vue'
 import ManagerDashboard from '../views/responsable/ManagerDashboard.vue'
 import ManagerDeposits from '../views/responsable/ManagerDeposits.vue'
@@ -20,7 +21,9 @@ import RHProfile from '../views/rh/RHProfile.vue'
 import RHActivityLogs from '../views/rh/RHActivityLogs.vue'
 import RHArchive from '../views/rh/RHArchive.vue'
 import AdminDashboard from '../views/admin/AdminDashboard.vue'
-import AdminDepositRequests from '../views/admin/AdminDepositRequests.vue'
+// import AdminDepositRequests from '../views/admin/AdminDepositRequests.vue'
+import DepositListView from '../views/admin/deposits/DepositListView.vue'
+import DepositDetailView from '../views/admin/deposits/DepositDetailView.vue'
 import AdminReferencesList from '../views/admin/AdminReferencesList.vue'
 import AdminUsersList from '../views/admin/AdminUsersList.vue'
 import AdminCategories from '../views/admin/AdminCategories.vue'
@@ -85,6 +88,12 @@ const routes = [
     path: '/deposit-request',
     name: 'deposit-request',
     component: DepositRequest,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/my-documents/:id',
+    name: 'deposit-detail',
+    component: DepositDetail,
     meta: { requiresAuth: true },
   },
   {
@@ -174,7 +183,13 @@ const routes = [
   {
     path: '/admin/demandes',
     name: 'admin-demandes',
-    component: AdminDepositRequests,
+    component: DepositListView,
+    meta: { requiresAuth: true, roles: ['admin'] },
+  },
+  {
+    path: '/admin/demandes/:id',
+    name: 'admin-deposit-detail',
+    component: DepositDetailView,
     meta: { requiresAuth: true, roles: ['admin'] },
   },
   {

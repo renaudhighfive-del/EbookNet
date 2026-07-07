@@ -1,14 +1,23 @@
+// Store Pinia pour la gestion des dépôts côté utilisateur (soumission, liste de mes dépôts)
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { userService } from '@/services/api/user.service'
 import { useToastStore } from './toast'
 
 export const useDepositStore = defineStore('deposit', () => {
+  // Liste des dépôts de l'utilisateur connecté
   const deposits = ref([])
+  // Indicateur de chargement
   const isLoading = ref(false)
+  // Indicateur de soumission en cours
   const isSubmitting = ref(false)
+  // Message d'erreur
   const error = ref(null)
 
+  /**
+   * Récupère la liste des dépôts de l'utilisateur connecté.
+   * @returns {Promise<Array>} Liste des dépôts.
+   */
   async function fetchMyDeposits() {
     isLoading.value = true
     error.value = null
@@ -24,6 +33,11 @@ export const useDepositStore = defineStore('deposit', () => {
     }
   }
 
+  /**
+   * Crée une nouvelle demande de dépôt.
+   * @param {FormData} formData - Données du formulaire (fichier, métadonnées).
+   * @returns {Promise<Object>} Résultat contenant la demande créée.
+   */
   async function createDeposit(formData) {
     isSubmitting.value = true
     error.value = null

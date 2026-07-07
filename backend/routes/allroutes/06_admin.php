@@ -102,7 +102,6 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         Route::put('/settings', [AdminPlanningController::class, 'updateSettings']);
         Route::get('/google-calendar/status', [AdminPlanningController::class, 'getGoogleCalendarStatus']);
         Route::get('/google-calendar/authorize', [AdminPlanningController::class, 'authorizeGoogleCalendar']);
-
         Route::get('/google-calendar/callback', [AdminPlanningController::class, 'handleGoogleCalendarCallback'])
                 ->withoutMiddleware(['auth:sanctum', 'role:admin']);        
         Route::post('/google-calendar/disconnect', [AdminPlanningController::class, 'disconnectGoogleCalendar']);

@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\Route;
 
 // Routes publiques
 Route::prefix('auth')->group(function () {
-    Route::post('/register',          [AuthController::class, 'register'])->middleware('throttle:3,60');
-    Route::post('/login',             [AuthController::class, 'login'])->middleware('throttle:5,60');
-    Route::post('/forgot-password',   [AuthController::class, 'forgotPassword'])->middleware('throttle:3,60');
-    Route::post('/reset-password',    [AuthController::class, 'resetPassword'])->middleware('throttle:3,60');
+    Route::post('/register',          [AuthController::class, 'register']);
+    Route::post('/login',             [AuthController::class, 'login']);
+    Route::post('/forgot-password',   [AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password',    [AuthController::class, 'resetPassword']);
 });
 
 // Routes protégées (authentifié)
