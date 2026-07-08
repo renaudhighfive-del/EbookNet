@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('action', 255);
+            $table->text('comment')->nullable();
             $table->string('target_table', 100)->nullable();
             $table->unsignedBigInteger('target_id')->nullable();
             $table->string('ip_address', 45)->nullable();

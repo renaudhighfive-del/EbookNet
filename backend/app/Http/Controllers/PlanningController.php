@@ -26,26 +26,26 @@ class PlanningController extends Controller
 
     // récupération des rendez-vous pour l'utilisateur connecté
     public function calendarAppointments(Request $request)
-{
-    $teacher = $this->getTeacher();
+    {
+        $teacher = $this->getTeacher();
 
-    $appointments = Appointment::where('teacher_id', $teacher->id)
-        ->whereBetween('date', [
-            $request->start_date,
-            $request->end_date
-        ])
-        ->orderBy('date')
-        ->orderBy('start_time')
-        ->get()
-        ->map(function ($appointment) use ($request) {
+        $appointments = Appointment::where('teacher_id', $teacher->id)
+            ->whereBetween('date', [
+                $request->start_date,
+                $request->end_date
+            ])
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get()
+            ->map(function ($appointment) use ($request) {
 
-            $appointment->is_mine = $appointment->student_id == $request->user()->id;
+                $appointment->is_mine = $appointment->student_id == $request->user()->id;
 
-            return $appointment;
-        });
+                return $appointment;
+            });
 
-    return response()->json($appointments);
-}
+        return response()->json($appointments);
+    }
 
     // Helper pour générer les créneaux
     private function generateSlots($date, $teacher, $settings, $user = null): array
@@ -84,8 +84,10 @@ class PlanningController extends Controller
                 $slotEnd = $currentTime->copy()->addMinutes($slotDuration)->format('H:i:s');
 
                 $isBlocked = $exceptions->contains(function ($e) use ($slotStart, $slotEnd) {
-                    if ($e->type !== 'blocked') return false;
-                    if (!$e->start_time || !$e->end_time) return false;
+                    if ($e->type !== 'blocked')
+                        return false;
+                    if (!$e->start_time || !$e->end_time)
+                        return false;
 
                     $eStart = Carbon::createFromFormat('H:i:s', $e->start_time);
                     $eEnd = Carbon::createFromFormat('H:i:s', $e->end_time);

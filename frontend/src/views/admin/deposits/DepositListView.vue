@@ -13,11 +13,45 @@ import {
   CheckSquare,
   X,
   FileText,
+  User,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Eye,
+  Scale,
+  Loader2,
+  FileDown,
 } from '@lucide/vue'
 
 const router = useRouter()
 const store = useDepositsStore()
 const toast = useToastStore()
+
+// Icônes associées à chaque clé d'action du registre du store (le store ne
+// connaît que les données, les icônes restent une préoccupation d'affichage).
+const ACTION_ICONS = {
+  assign: User,
+  reassign: User,
+  remind: AlertCircle,
+  reject_direct: XCircle,
+  approve_publish: CheckCircle,
+  second_opinion_req: Eye,
+  reject_definitive: XCircle,
+  confirm_reject: XCircle,
+  override_publish: CheckCircle,
+  unpublish: XCircle,
+}
+
+const VARIANT_CLASSES = {
+  green: 'bg-green-600 text-white hover:bg-green-700',
+  red: 'bg-red-600 text-white hover:bg-red-700',
+  blue: 'bg-blue-600 text-white hover:bg-blue-700',
+  amber: 'bg-amber-600 text-white hover:bg-amber-700',
+  orange: 'bg-orange-500 text-white hover:bg-orange-600',
+  white: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50',
+  'red-outline': 'bg-white text-red-600 border-2 border-red-500 hover:bg-red-50',
+}
 
 const searchQuery = ref('')
 const selectedStatuses = ref([])
@@ -34,6 +68,9 @@ const selectedIds = ref([])
 const showFilters = ref(false)
 const isSelectAll = ref(false)
 
+// Ligne actuellement dépliée (accordéon simple, un seul panneau ouvert à la fois)
+const expandedId = ref(null)
+
 const showBulkAssignDialog = ref(false)
 const showBulkRejectDialog = ref(false)
 const bulkRejectComment = ref('')
@@ -46,17 +83,22 @@ const assignTargetId = ref(null)
 const assignManagerId = ref('')
 const isAssignSubmitting = ref(false)
 
-const remindDepositId = ref(null)
-const isRemindSubmitting = ref(false)
+// Dialogue de confirmation générique pour les actions du panneau accordéon
+const showActionDialog = ref(false)
+const actionTargetId = ref(null)
+const actionDef = ref(null) // { key, label, variant, requiresComment, minLength }
+const actionComment = ref('')
+const isActionSubmitting = ref(false)
 
-const statusOptions = [
+const statusTabs = [
+  { value: 'all', label: 'Toutes' },
   { value: 'pending', label: 'En attente' },
-  { value: 'assigned', label: 'Assignée' },
-  { value: 'manager_approved', label: 'Validée (resp.)' },
-  { value: 'manager_rejected', label: 'Refusée (resp.)' },
+  { value: 'assigned', label: 'Assignées' },
+  { value: 'manager_approved', label: 'Validées resp.' },
+  { value: 'manager_rejected', label: 'Refusées resp.' },
   { value: 'second_opinion', label: 'Second avis' },
-  { value: 'approved_published', label: 'Publiée' },
-  { value: 'rejected', label: 'Rejetée' },
+  { value: 'approved_published', label: 'Publiées' },
+  { value: 'rejected', label: 'Rejetées' },
 ]
 
 const typeOptions = [
@@ -78,7 +120,7 @@ const filteredDeposits = computed(() => {
     const q = searchQuery.value.toLowerCase()
     list = list.filter(d =>
       d.title.toLowerCase().includes(q) ||
-      d.id.toLowerCase().includes(q) ||
+      d.id.toString().toLowerCase().includes(q) ||
       d.authors?.some(a => a.toLowerCase().includes(q)) ||
       d.submittedBy?.first_name?.toLowerCase().includes(q) ||
       d.submittedBy?.last_name?.toLowerCase().includes(q) ||
@@ -87,43 +129,18 @@ const filteredDeposits = computed(() => {
       d.keywords?.some(k => k.toLowerCase().includes(q))
     )
   }
-
-  if (selectedStatuses.value.length > 0) {
-    list = list.filter(d => selectedStatuses.value.includes(d.status))
-  }
-
-  if (selectedManagerId.value) {
-    list = list.filter(d => d.assignedManagerId === parseInt(selectedManagerId.value))
-  }
-
-  if (selectedCategoryId.value) {
-    list = list.filter(d => d.category?.id === parseInt(selectedCategoryId.value))
-  }
-
-  if (selectedType.value) {
-    list = list.filter(d => d.type === selectedType.value)
-  }
-
-  if (dateFrom.value) {
-    const from = new Date(dateFrom.value)
-    list = list.filter(d => new Date(d.submittedAt) >= from)
-  }
-
-  if (dateTo.value) {
-    const to = new Date(dateTo.value)
-    to.setHours(23, 59, 59, 999)
-    list = list.filter(d => new Date(d.submittedAt) <= to)
-  }
+  if (selectedStatuses.value.length > 0) list = list.filter(d => selectedStatuses.value.includes(d.status))
+  if (selectedManagerId.value) list = list.filter(d => d.assignedManagerId === parseInt(selectedManagerId.value))
+  if (selectedCategoryId.value) list = list.filter(d => d.category?.id === parseInt(selectedCategoryId.value))
+  if (selectedType.value) list = list.filter(d => d.type === selectedType.value)
+  if (dateFrom.value) { const from = new Date(dateFrom.value); list = list.filter(d => new Date(d.submittedAt) >= from) }
+  if (dateTo.value) { const to = new Date(dateTo.value); to.setHours(23, 59, 59, 999); list = list.filter(d => new Date(d.submittedAt) <= to) }
 
   list.sort((a, b) => {
     let cmp = 0
-    if (sortField.value === 'submittedAt') {
-      cmp = new Date(a.submittedAt) - new Date(b.submittedAt)
-    } else if (sortField.value === 'title') {
-      cmp = a.title.localeCompare(b.title)
-    } else if (sortField.value === 'status') {
-      cmp = (a.status || '').localeCompare(b.status || '')
-    }
+    if (sortField.value === 'submittedAt') cmp = new Date(a.submittedAt) - new Date(b.submittedAt)
+    else if (sortField.value === 'title') cmp = a.title.localeCompare(b.title)
+    else if (sortField.value === 'status') cmp = (a.status || '').localeCompare(b.status || '')
     return sortDir.value === 'asc' ? cmp : -cmp
   })
 
@@ -131,21 +148,14 @@ const filteredDeposits = computed(() => {
 })
 
 const totalFiltered = computed(() => filteredDeposits.value.length)
-
 const paginatedDeposits = computed(() => {
   const start = (currentPage.value - 1) * perPage.value
   return filteredDeposits.value.slice(start, start + perPage.value)
 })
-
 const totalPages = computed(() => Math.ceil(filteredDeposits.value.length / perPage.value) || 1)
-
 const availableManagers = computed(() => store.getAvailableManagers())
-
 const allManagers = computed(() => store.getActiveManagers())
-
-const currentSortIcon = computed(() => {
-  return sortDir.value === 'asc' ? ChevronUp : ChevronDown
-})
+const currentSortIcon = computed(() => (sortDir.value === 'asc' ? ChevronUp : ChevronDown))
 
 const categories = computed(() => {
   const cats = store.deposits.map(d => d.category).filter(Boolean)
@@ -154,71 +164,63 @@ const categories = computed(() => {
   return [...unique.values()]
 })
 
+const statusCounts = computed(() => {
+  const counts = {}
+  store.deposits.forEach(d => { counts[d.status] = (counts[d.status] || 0) + 1 })
+  return counts
+})
+
+const hasActiveFilters = computed(() =>
+  searchQuery.value || selectedStatuses.value.length > 0 || selectedManagerId.value ||
+  selectedCategoryId.value || selectedType.value || dateFrom.value || dateTo.value
+)
+
 function toggleSort(field) {
-  if (sortField.value === field) {
-    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortField.value = field
-    sortDir.value = 'desc'
-  }
+  if (sortField.value === field) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  else { sortField.value = field; sortDir.value = 'desc' }
 }
 
 function toggleSelectAll() {
-  if (isSelectAll.value) {
-    selectedIds.value = []
-    isSelectAll.value = false
-  } else {
-    selectedIds.value = paginatedDeposits.value.map(d => d.id)
-    isSelectAll.value = true
-  }
+  if (isSelectAll.value) { selectedIds.value = []; isSelectAll.value = false }
+  else { selectedIds.value = paginatedDeposits.value.map(d => d.id); isSelectAll.value = true }
 }
 
 function toggleSelect(id) {
   const idx = selectedIds.value.indexOf(id)
-  if (idx === -1) {
-    selectedIds.value.push(id)
-  } else {
-    selectedIds.value.splice(idx, 1)
-  }
-  isSelectAll.value = selectedIds.value.length === paginatedDeposits.value.length
+  if (idx === -1) selectedIds.value.push(id)
+  else selectedIds.value.splice(idx, 1)
+  isSelectAll.value = selectedIds.value.length === paginatedDeposits.value.length && paginatedDeposits.value.length > 0
 }
 
 function clearFilters() {
-  searchQuery.value = ''
-  selectedStatuses.value = []
-  selectedManagerId.value = ''
-  selectedCategoryId.value = ''
-  selectedType.value = ''
-  dateFrom.value = ''
-  dateTo.value = ''
+  searchQuery.value = ''; selectedStatuses.value = []; selectedManagerId.value = ''
+  selectedCategoryId.value = ''; selectedType.value = ''; dateFrom.value = ''; dateTo.value = ''
   currentPage.value = 1
 }
 
-function toggleStatus(value) {
-  const idx = selectedStatuses.value.indexOf(value)
-  idx === -1 ? selectedStatuses.value.push(value) : selectedStatuses.value.splice(idx, 1)
-}
-
-const hasActiveFilters = computed(() =>
-  searchQuery.value ||
-  selectedStatuses.value.length > 0 ||
-  selectedManagerId.value ||
-  selectedCategoryId.value ||
-  selectedType.value ||
-  dateFrom.value ||
-  dateTo.value
-)
-
-function changePage(page) {
-  if (page < 1 || page > totalPages.value) return
-  currentPage.value = page
-}
+function changePage(page) { if (page >= 1 && page <= totalPages.value) currentPage.value = page }
 
 function getAssigneeName(deposit) {
   const mgr = store.getManagerById(deposit.assignedManagerId)
   return mgr ? `${mgr.first_name} ${mgr.last_name}` : null
 }
 
+function setStatusFilter(status) {
+  selectedStatuses.value = status === 'all' ? [] : [status]
+}
+
+function getStatusTabCount(status) {
+  return status === 'all' ? store.deposits.length : (statusCounts.value[status] || 0)
+}
+
+// --- Panneau accordéon ---
+function toggleExpand(id) {
+  expandedId.value = expandedId.value === id ? null : id
+}
+
+function isExpanded(id) { return expandedId.value === id }
+
+// --- Dialogue d'assignation (ligne unique) ---
 function openAssignDialog(depositId) {
   assignTargetId.value = depositId
   assignManagerId.value = ''
@@ -226,15 +228,11 @@ function openAssignDialog(depositId) {
 }
 
 async function confirmAssign() {
-  if (!assignManagerId.value) {
-    toast.error('Veuillez sélectionner un responsable.')
-    return
-  }
+  if (!assignManagerId.value) { toast.error('Veuillez sélectionner un responsable.'); return }
   isAssignSubmitting.value = true
   try {
     await store.assignManager(assignTargetId.value, parseInt(assignManagerId.value))
     showAssignDialog.value = false
-    toast.success('Demande assignée avec succès.')
   } catch {
     toast.error("Erreur lors de l'assignation.")
   } finally {
@@ -242,18 +240,54 @@ async function confirmAssign() {
   }
 }
 
-async function remindManager(depositId) {
-  isRemindSubmitting.value = true
+// --- Dialogue générique d'action (relance, rejet, publication, second avis...) ---
+function openActionDialog(depositId, def) {
+  actionTargetId.value = depositId
+  actionDef.value = def
+  actionComment.value = ''
+  showActionDialog.value = true
+}
+
+const actionCommentValid = computed(() => {
+  if (!actionDef.value?.requiresComment) return true
+  return actionComment.value.length >= (actionDef.value.minLength || 0)
+})
+
+async function confirmActionDialog() {
+  if (!actionCommentValid.value) return
+  isActionSubmitting.value = true
+  const { key } = actionDef.value
+  const id = actionTargetId.value
   try {
-    await store.remindManager(depositId)
-    toast.success('Relance envoyée au responsable.')
+    if (key === 'remind') await store.remindManager(id)
+    else if (key === 'approve_publish') await store.approveAndPublish(id)
+    else if (key === 'override_publish') await store.approveAndPublish(id, { comment: actionComment.value, adminOverride: true })
+    else if (key === 'reject_direct' || key === 'reject_definitive' || key === 'confirm_reject') {
+      await store.updateDepositStatus(id, 'rejected', { comment: actionComment.value })
+    } else if (key === 'second_opinion_req') {
+      await store.updateDepositStatus(id, 'second_opinion', { comment: actionComment.value })
+    } else if (key === 'unpublish') {
+      await store.updateDepositStatus(id, 'pending', { comment: actionComment.value })
+    }
+    showActionDialog.value = false
+    expandedId.value = null
   } catch {
-    toast.error('Erreur lors de la relance.')
+    toast.error("Erreur lors de l'exécution de l'action.")
   } finally {
-    isRemindSubmitting.value = false
+    isActionSubmitting.value = false
   }
 }
 
+// Point d'entrée unique appelé par les boutons du panneau : ouvre soit le
+// sélecteur de responsable, soit le dialogue de confirmation générique.
+function runAction(deposit, def) {
+  if (def.key === 'assign' || def.key === 'reassign') openAssignDialog(deposit.id)
+  else openActionDialog(deposit.id, def)
+}
+
+function viewDetail(id) { router.push(`/admin/demandes/${id}`) }
+
+// --- Actions groupées ---
 async function openBulkAssign() {
   if (selectedIds.value.length === 0) return
   showBulkAssignDialog.value = true
@@ -261,18 +295,14 @@ async function openBulkAssign() {
 }
 
 async function confirmBulkAssign() {
-  if (!bulkAssignTarget.value) {
-    toast.error('Veuillez sélectionner un responsable.')
-    return
-  }
+  if (!bulkAssignTarget.value) { toast.error('Veuillez sélectionner un responsable.'); return }
   isBulkSubmitting.value = true
   try {
-    for (const id of selectedIds.value) {
-      await store.assignManager(id, parseInt(bulkAssignTarget.value))
-    }
+    for (const id of selectedIds.value) await store.assignManager(id, parseInt(bulkAssignTarget.value))
     showBulkAssignDialog.value = false
-    selectedIds.value = []
-    toast.success(`${selectedIds.value.length} demandes assignées avec succès.`)
+    const count = selectedIds.value.length
+    selectedIds.value = []; isSelectAll.value = false
+    toast.success(`${count} demande(s) assignée(s) avec succès.`)
   } catch {
     toast.error("Erreur lors de l'assignation en masse.")
   } finally {
@@ -283,8 +313,7 @@ async function confirmBulkAssign() {
 function openBulkReject() {
   if (selectedIds.value.length === 0) return
   showBulkRejectDialog.value = true
-  bulkRejectComment.value = ''
-  bulkRejectError.value = ''
+  bulkRejectComment.value = ''; bulkRejectError.value = ''
 }
 
 async function confirmBulkReject() {
@@ -294,13 +323,21 @@ async function confirmBulkReject() {
   }
   bulkRejectError.value = ''
   isBulkSubmitting.value = true
+  let rejectedCount = 0, skippedCount = 0
   try {
     for (const id of selectedIds.value) {
-      await store.updateDepositStatus(id, 'rejected', { comment: bulkRejectComment.value })
+      const dep = store.deposits.find(d => String(d.id) === String(id))
+      if (dep && store.canTransition(dep.status, 'rejected')) {
+        await store.updateDepositStatus(id, 'rejected', { comment: bulkRejectComment.value })
+        rejectedCount++
+      } else {
+        skippedCount++
+      }
     }
     showBulkRejectDialog.value = false
-    selectedIds.value = []
-    toast.success(`${selectedIds.value.length} demandes rejetées.`)
+    selectedIds.value = []; isSelectAll.value = false
+    if (rejectedCount > 0) toast.success(`${rejectedCount} demande(s) rejetée(s).`)
+    if (skippedCount > 0) toast.warning(`${skippedCount} demande(s) ignorée(s) (statut non compatible).`)
   } catch {
     toast.error('Erreur lors du rejet en masse.')
   } finally {
@@ -321,10 +358,8 @@ function exportCSV() {
     store.formatDate(d.submittedAt),
     getAssigneeName(d) || 'Non assigné',
   ])
-
   const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n')
-  const BOM = '\uFEFF'
-  const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -334,56 +369,24 @@ function exportCSV() {
   toast.success('Export CSV téléchargé.')
 }
 
-function viewDetail(id) {
-  router.push(`/admin/demandes/${id}`)
-}
-
-function getQuickActions(deposit) {
-  const actions = []
-  switch (deposit.status) {
-    case 'pending':
-      actions.push({ label: 'Assigner', action: () => openAssignDialog(deposit.id), cls: 'text-blue-600 hover:bg-blue-50' })
-      break
-    case 'assigned':
-      actions.push({ label: 'Relancer', action: () => remindManager(deposit.id), cls: 'text-amber-600 hover:bg-amber-50' })
-      break
-    case 'manager_approved':
-    case 'manager_rejected':
-      actions.push({ label: 'Décider', action: () => viewDetail(deposit.id), cls: 'text-teal-600 hover:bg-teal-50' })
-      break
-    case 'second_opinion':
-      actions.push({ label: 'Voir', action: () => viewDetail(deposit.id), cls: 'text-purple-600 hover:bg-purple-50' })
-      break
-    case 'approved_published':
-    case 'rejected':
-      actions.push({ label: 'Consulter', action: () => viewDetail(deposit.id), cls: 'text-gray-600 hover:bg-gray-50' })
-      break
-  }
-  return actions
-}
-
 watch([selectedStatuses, selectedManagerId, selectedCategoryId, selectedType, dateFrom, dateTo, searchQuery], () => {
   currentPage.value = 1
 })
 
 onMounted(async () => {
-  try {
-    await store.fetchDeposits()
-  } catch {
-    toast.error('Erreur lors du chargement des demandes.')
-  }
+  try { await store.fetchDeposits() } catch { toast.error('Erreur lors du chargement des demandes.') }
 })
 </script>
 
 <template>
   <AdminLayout>
-    <div>
-      <div class="flex items-center justify-between mb-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div>
           <h1 class="text-2xl font-bold text-navy-800 font-serif">Demandes de dépôt</h1>
           <p class="text-sm text-gray-500 mt-1">{{ totalFiltered }} demande(s) trouvée(s)</p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
           <button
             @click="showFilters = !showFilters"
             class="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
@@ -403,31 +406,36 @@ onMounted(async () => {
         </div>
       </div>
 
+      <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
+        <button
+          v-for="tab in statusTabs"
+          :key="tab.value"
+          @click="setStatusFilter(tab.value)"
+          class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors"
+          :class="selectedStatuses.length === 0 && tab.value === 'all'
+            ? 'bg-navy-800 text-white'
+            : (selectedStatuses.length === 1 && selectedStatuses[0] === tab.value)
+              ? 'bg-teal-600 text-white'
+              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'"
+        >
+          {{ tab.label }}
+          <span
+            class="ml-1.5 px-1.5 py-0.5 rounded-full text-xs"
+            :class="(selectedStatuses.length === 0 && tab.value === 'all') || (selectedStatuses.length === 1 && selectedStatuses[0] === tab.value)
+              ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'"
+          >
+            {{ getStatusTabCount(tab.value) }}
+          </span>
+        </button>
+      </div>
+
       <div v-if="showFilters" class="bg-white rounded-2xl p-5 border border-gray-100 shadow-soft mb-4">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1.5">Statut</label>
-            <div class="flex flex-wrap gap-1.5">
-              <button
-                v-for="opt in statusOptions"
-                :key="opt.value"
-                @click="toggleStatus(opt.value)"
-                class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
-                :class="selectedStatuses.includes(opt.value)
-                  ? 'bg-navy-800 text-white border-navy-800'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'"
-              >
-                {{ opt.label }}
-              </button>
-            </div>
-          </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1.5">Responsable</label>
             <select v-model="selectedManagerId" class="w-full bg-beige border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-teal-500">
               <option value="">Tous</option>
-              <option v-for="m in allManagers" :key="m.id" :value="m.id">
-                {{ m.first_name }} {{ m.last_name }}
-              </option>
+              <option v-for="m in allManagers" :key="m.id" :value="m.id">{{ m.first_name }} {{ m.last_name }}</option>
             </select>
           </div>
           <div>
@@ -452,10 +460,7 @@ onMounted(async () => {
             <input type="date" v-model="dateTo" class="w-full bg-beige border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-teal-500" />
           </div>
           <div class="flex items-end">
-            <button
-              @click="clearFilters"
-              class="px-4 py-2 text-sm text-gray-500 hover:text-navy-800 font-medium transition-colors"
-            >
+            <button @click="clearFilters" class="px-4 py-2 text-sm text-gray-500 hover:text-navy-800 font-medium transition-colors">
               Effacer les filtres
             </button>
           </div>
@@ -463,26 +468,13 @@ onMounted(async () => {
       </div>
 
       <div class="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
-        <div v-if="selectedIds.length > 0" class="flex items-center gap-3 px-4 py-3 bg-navy-50 border-b border-navy-100">
-          <CheckSquare class="w-4 h-4 text-navy-600" />
+        <div v-if="selectedIds.length > 0" class="flex items-center gap-3 px-4 py-3 bg-navy-50 border-b border-navy-100 flex-wrap">
+          <CheckSquare class="w-4 h-4 text-navy-600 shrink-0" />
           <span class="text-sm font-medium text-navy-700">{{ selectedIds.length }} sélectionnée(s)</span>
-          <div class="ml-auto flex items-center gap-2">
-            <button
-              @click="openBulkAssign"
-              class="px-3 py-1.5 bg-navy-800 text-white rounded-lg text-xs font-medium hover:bg-navy-900 transition-colors"
-            >
-              Assigner
-            </button>
-            <button
-              @click="openBulkReject"
-              class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 transition-colors"
-            >
-              Rejeter
-            </button>
-            <button
-              @click="selectedIds = []; isSelectAll = false"
-              class="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-xs font-medium"
-            >
+          <div class="ml-auto flex items-center gap-2 flex-wrap">
+            <button @click="openBulkAssign" class="px-3 py-1.5 bg-navy-800 text-white rounded-lg text-xs font-medium hover:bg-navy-900 transition-colors">Assigner</button>
+            <button @click="openBulkReject" class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 transition-colors">Rejeter</button>
+            <button @click="selectedIds = []; isSelectAll = false" class="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-xs font-medium">
               <X class="w-4 h-4" />
             </button>
           </div>
@@ -493,175 +485,164 @@ onMounted(async () => {
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               v-model="searchQuery"
-              placeholder="Rechercher par titre, auteur, ISBN, éditeur, mots-clés..."
+              placeholder="Rechercher (titre, déposant, id)..."
               class="w-full bg-beige border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
             />
           </div>
         </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full">
+          <table class="w-full min-w-225">
             <thead>
               <tr class="border-b border-gray-200 bg-gray-50/50">
                 <th class="p-4 w-10">
-                  <input
-                    type="checkbox"
-                    :checked="isSelectAll && paginatedDeposits.length > 0"
-                    :indeterminate="selectedIds.length > 0 && !isSelectAll"
-                    @change="toggleSelectAll"
-                    class="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                  />
+                  <input type="checkbox" :checked="isSelectAll && paginatedDeposits.length > 0" @change="toggleSelectAll" class="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
                 </th>
-                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Référence</th>
-                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Auteur</th>
-                <th
-                  class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer select-none"
-                  @click="toggleSort('submittedAt')"
-                >
-                  <span class="inline-flex items-center gap-1">
-                    Date
-                    <component :is="currentSortIcon" v-if="sortField === 'submittedAt'" class="w-3 h-3" />
-                  </span>
+                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Réf.</th>
+                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Titre</th>
+                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Déposant</th>
+                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Responsable</th>
+                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer select-none whitespace-nowrap" @click="toggleSort('submittedAt')">
+                  <span class="inline-flex items-center gap-1">Soumise <component :is="currentSortIcon" v-if="sortField === 'submittedAt'" class="w-3 h-3" /></span>
                 </th>
-                <th
-                  class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer select-none"
-                  @click="toggleSort('title')"
-                >
-                  <span class="inline-flex items-center gap-1">
-                    Titre
-                    <component :is="currentSortIcon" v-if="sortField === 'title'" class="w-3 h-3" />
-                  </span>
+                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer select-none whitespace-nowrap" @click="toggleSort('status')">
+                  <span class="inline-flex items-center gap-1">Statut <component :is="currentSortIcon" v-if="sortField === 'status'" class="w-3 h-3" /></span>
                 </th>
-                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Ancienneté</th>
-                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Responsable</th>
-                <th
-                  class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider cursor-pointer select-none"
-                  @click="toggleSort('status')"
-                >
-                  <span class="inline-flex items-center gap-1">
-                    Statut
-                    <component :is="currentSortIcon" v-if="sortField === 'status'" class="w-3 h-3" />
-                  </span>
-                </th>
-                <th class="text-right p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                <th class="text-right p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-              <tr
-                v-for="deposit in paginatedDeposits"
-                :key="deposit.id"
-                class="hover:bg-gray-50/60 transition-colors"
-                :class="{ 'bg-teal-50/30': selectedIds.includes(deposit.id) }"
-              >
-                <td class="p-4">
-                  <input
-                    type="checkbox"
-                    :checked="selectedIds.includes(deposit.id)"
-                    @change="toggleSelect(deposit.id)"
-                    class="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                  />
-                </td>
-                <td class="p-4">
-                  <div class="flex items-center gap-3">
-                    <div class="w-11 h-11 bg-navy-50 rounded-xl flex items-center justify-center text-navy-800 text-lg shrink-0">
-                      <FileText class="w-5 h-5 text-navy-400" />
+              <template v-for="deposit in paginatedDeposits" :key="deposit.id">
+                <tr
+                  class="hover:bg-gray-50/60 transition-colors cursor-pointer"
+                  :class="{ 'bg-teal-50/30': selectedIds.includes(deposit.id) || isExpanded(deposit.id) }"
+                  @click="toggleExpand(deposit.id)"
+                >
+                  <td class="p-4" @click.stop>
+                    <input type="checkbox" :checked="selectedIds.includes(deposit.id)" @change="toggleSelect(deposit.id)" class="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                  </td>
+                  <td class="p-4"><span class="text-sm font-mono text-slate-600 whitespace-nowrap">DEP-{{ deposit.id }}</span></td>
+                  <td class="p-4">
+                    <div class="flex items-center gap-3 max-w-xs">
+                      <div class="w-10 h-10 bg-navy-50 rounded-xl flex items-center justify-center shrink-0">
+                        <FileText class="w-5 h-5 text-navy-400" />
+                      </div>
+                      <div class="min-w-0">
+                        <p class="font-medium text-[#1B2A4A] text-sm truncate">{{ deposit.title }}</p>
+                        <p class="text-xs text-slate-500">{{ store.getTypeLabel(deposit.type) }}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p class="font-medium text-[#1B2A4A] text-sm">{{ deposit.title }}</p>
-                      <p class="text-xs text-slate-500">{{ deposit.id }} · {{ store.getTypeLabel(deposit.type) }}</p>
+                  </td>
+                  <td class="p-4">
+                    <div class="flex items-center gap-2">
+                      <div class="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 text-xs font-bold shrink-0">
+                        {{ store.getUserInitials(deposit.submittedBy) }}
+                      </div>
+                      <span class="text-sm text-[#1B2A4A] whitespace-nowrap">{{ deposit.submittedBy?.first_name }} {{ deposit.submittedBy?.last_name }}</span>
                     </div>
-                  </div>
-                </td>
-                <td class="p-4">
-                  <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 text-xs font-bold shrink-0">
-                      {{ store.getUserInitials(deposit.submittedBy) }}
+                  </td>
+                  <td class="p-4">
+                    <div v-if="deposit.assignedManagerId" class="flex items-center gap-2">
+                      <span class="text-sm text-[#1B2A4A] whitespace-nowrap">{{ getAssigneeName(deposit) }}</span>
                     </div>
-                    <span class="text-sm text-[#1B2A4A]">{{ deposit.submittedBy?.first_name }} {{ deposit.submittedBy?.last_name }}</span>
-                  </div>
-                </td>
-                <td class="p-4 text-sm text-slate-600 whitespace-nowrap">{{ store.formatDate(deposit.submittedAt) }}</td>
-                <td class="p-4 text-sm text-slate-600 max-w-[200px] truncate">{{ deposit.title }}</td>
-                <td class="p-4">
-                  <span
-                    v-if="store.getAgingBadge(deposit.submittedAt)"
-                    :class="`px-2 py-0.5 rounded-full text-xs font-medium ${store.getAgingBadge(deposit.submittedAt).cls}`"
-                  >
-                    {{ store.getAgingBadge(deposit.submittedAt).label }}
-                  </span>
-                  <span v-else class="text-xs text-slate-400">—</span>
-                </td>
-                <td class="p-4">
-                  <div v-if="deposit.assignedManagerId" class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 text-xs font-bold shrink-0">
-                      {{ (store.getManagerById(deposit.assignedManagerId)?.first_name?.[0] || '') + (store.getManagerById(deposit.assignedManagerId)?.last_name?.[0] || '') }}
-                    </div>
-                    <span class="text-sm text-[#1B2A4A]">
-                      {{ store.getManagerById(deposit.assignedManagerId)?.first_name }} {{ store.getManagerById(deposit.assignedManagerId)?.last_name }}
+                    <span v-else class="text-sm text-slate-500 italic">Non assignée</span>
+                  </td>
+                  <td class="p-4 text-sm text-slate-600 whitespace-nowrap">{{ store.formatDate(deposit.submittedAt) }}</td>
+                  <td class="p-4">
+                    <span :class="store.getStatusConfig(deposit.status).cls" class="px-3 py-1 rounded-full text-xs font-semibold inline-block whitespace-nowrap">
+                      {{ store.getStatusConfig(deposit.status).label }}
                     </span>
-                  </div>
-                  <span v-else class="text-sm text-slate-500 italic">Non assigné</span>
-                </td>
-                <td class="p-4">
-                  <span :class="store.getStatusConfig(deposit.status).cls" class="px-3 py-1 rounded-full text-xs font-semibold inline-block">
-                    {{ store.getStatusConfig(deposit.status).label }}
-                  </span>
-                </td>
-                <td class="p-4 text-right">
-                  <div class="flex items-center justify-end gap-1">
-                    <template v-if="deposit.status === 'pending'">
-                      <button
-                        @click="openAssignDialog(deposit.id)"
-                        class="px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        Assigner
+                  </td>
+                  <td class="p-4 text-right" @click.stop>
+                    <div class="flex items-center justify-end gap-1">
+                      <button @click="viewDetail(deposit.id)" class="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors" title="Ouvrir la vue détaillée">
+                        <Eye class="w-4 h-4" />
                       </button>
-                    </template>
-                    <template v-else-if="deposit.status === 'assigned'">
-                      <button
-                        @click="remindManager(deposit.id)"
-                        :disabled="isRemindSubmitting"
-                        class="px-3 py-1.5 text-xs font-medium text-amber-600 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        Relancer
+                      <button @click="toggleExpand(deposit.id)" class="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+                        <component :is="isExpanded(deposit.id) ? ChevronUp : ChevronDown" class="w-4 h-4" />
                       </button>
-                    </template>
-                    <template v-else-if="deposit.status === 'manager_approved' || deposit.status === 'manager_rejected'">
-                      <button
-                        @click="viewDetail(deposit.id)"
-                        class="px-3 py-1.5 text-xs font-medium text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
-                      >
-                        Décider
-                      </button>
-                    </template>
-                    <template v-else-if="deposit.status === 'second_opinion'">
-                      <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 mr-1">Second avis</span>
-                      <button
-                        @click="viewDetail(deposit.id)"
-                        class="px-3 py-1.5 text-xs font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                      >
-                        Voir
-                      </button>
-                    </template>
-                    <template v-else>
-                      <button
-                        @click="viewDetail(deposit.id)"
-                        class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                      >
-                        Consulter
-                      </button>
-                    </template>
-                    <router-link
-                      :to="`/admin/demandes/${deposit.id}`"
-                      class="px-3 py-1.5 text-xs font-medium text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
-                    >
-                      Détail
-                    </router-link>
-                  </div>
-                </td>
-              </tr>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Panneau accordéon : Aperçu de la demande + Actions disponibles -->
+                <tr v-if="isExpanded(deposit.id)">
+                  <td colspan="8" class="p-0 bg-teal-50/30 border-t border-teal-100">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+                      <div>
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Aperçu de la demande</h3>
+                        <div class="flex gap-4">
+                          <div class="w-20 h-24 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                            <FileText class="w-8 h-8 text-navy-300" />
+                          </div>
+                          <div class="min-w-0">
+                            <p class="font-serif font-bold text-navy-800 mb-1">{{ deposit.title }}</p>
+                            <p class="text-sm text-gray-600">Déposant : {{ deposit.submittedBy?.first_name }} {{ deposit.submittedBy?.last_name }}</p>
+                            <p class="text-sm text-gray-600">Type : {{ store.getTypeLabel(deposit.type) }}</p>
+                            <p class="text-sm text-gray-600 mb-2">Catégorie : {{ deposit.category?.name || 'Non spécifiée' }}</p>
+                            <a v-if="deposit.file" href="#" @click.prevent class="text-teal-600 text-sm font-medium hover:underline inline-flex items-center gap-1">
+                              <FileDown class="w-3.5 h-3.5" /> Voir le fichier PDF
+                            </a>
+                          </div>
+                        </div>
+
+                        <div class="mt-4">
+                          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Historique</h4>
+                          <div class="space-y-1.5">
+                            <div v-for="(entry, i) in deposit.history" :key="i" class="flex items-start gap-2 text-sm">
+                              <div class="w-1.5 h-1.5 mt-1.5 rounded-full bg-navy-400 shrink-0"></div>
+                              <div>
+                                <span class="text-navy-800">{{ entry.action }}</span>
+                                <span class="text-gray-400"> — {{ entry.actor }} · {{ store.formatDate(entry.at) }}</span>
+                                <p v-if="entry.comment" class="text-gray-500 italic">« {{ entry.comment }} »</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                          <Scale class="w-4 h-4" /> Actions disponibles
+                        </h3>
+
+                        <div v-if="deposit.status === 'pending'" class="bg-white border border-gray-200 rounded-xl px-4 py-3 mb-3 text-sm text-gray-500 flex items-center gap-2">
+                          <FileText class="w-4 h-4 shrink-0" /> Cette demande n'est pas encore assignée.
+                        </div>
+                        <div v-else-if="deposit.status === 'assigned'" class="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-3 text-sm text-blue-700 flex items-center gap-2">
+                          <Clock class="w-4 h-4 shrink-0" /> Assignée à {{ getAssigneeName(deposit) }} — en attente de revue.
+                        </div>
+                        <div v-else-if="deposit.status === 'second_opinion'" class="bg-purple-50 border border-purple-100 rounded-xl px-4 py-3 mb-3 text-sm text-purple-700 flex items-center gap-2">
+                          <Eye class="w-4 h-4 shrink-0" /> En attente du second avis.
+                        </div>
+                        <div v-else-if="deposit.status === 'rejected'" class="bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 mb-3 text-sm text-gray-500">
+                          Demande rejetée — lecture seule.
+                        </div>
+
+                        <div class="space-y-2.5">
+                          <button
+                            v-for="def in store.getActionsForStatus(deposit.status)"
+                            :key="def.key"
+                            @click="runAction(deposit, def)"
+                            class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-colors"
+                            :class="VARIANT_CLASSES[def.variant]"
+                          >
+                            <component :is="ACTION_ICONS[def.key]" class="w-4 h-4" />
+                            {{ def.label }}
+                          </button>
+                        </div>
+
+                        <button @click="viewDetail(deposit.id)" class="mt-3 text-teal-600 text-sm font-medium hover:underline">
+                          Ouvrir la vue détaillée →
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+
               <tr v-if="!paginatedDeposits.length">
-                <td colspan="9" class="text-center py-16 text-slate-400 text-sm">
+                <td colspan="8" class="text-center py-16 text-slate-400 text-sm">
                   <FileText class="w-12 h-12 mx-auto mb-3 text-gray-300" />
                   Aucune demande de dépôt trouvée.
                   <button v-if="hasActiveFilters" @click="clearFilters" class="block mx-auto mt-2 text-teal-600 font-medium hover:underline">
@@ -673,13 +654,10 @@ onMounted(async () => {
           </table>
         </div>
 
-        <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+        <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100 flex-wrap gap-4">
           <div class="flex items-center gap-2">
             <span class="text-sm text-slate-500">Afficher</span>
-            <select
-              v-model.number="perPage"
-              class="bg-beige border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none"
-            >
+            <select v-model.number="perPage" class="bg-beige border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none">
               <option :value="25">25</option>
               <option :value="50">50</option>
               <option :value="100">100</option>
@@ -687,86 +665,112 @@ onMounted(async () => {
             <span class="text-sm text-slate-500">sur {{ totalFiltered }}</span>
           </div>
           <div class="flex gap-2">
-            <button
-              :disabled="currentPage <= 1"
-              @click="changePage(currentPage - 1)"
-              class="px-4 py-2 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Précédent
-            </button>
-            <span class="flex items-center text-sm text-slate-500 px-2">
-              Page {{ currentPage }} / {{ totalPages }}
-            </span>
-            <button
-              :disabled="currentPage >= totalPages"
-              @click="changePage(currentPage + 1)"
-              class="px-4 py-2 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Suivant
-            </button>
+            <button :disabled="currentPage <= 1" @click="changePage(currentPage - 1)" class="px-4 py-2 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Précédent</button>
+            <span class="flex items-center text-sm text-slate-500 px-2">Page {{ currentPage }} / {{ totalPages }}</span>
+            <button :disabled="currentPage >= totalPages" @click="changePage(currentPage + 1)" class="px-4 py-2 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Suivant</button>
           </div>
         </div>
       </div>
 
       <Teleport to="body">
-        <div v-if="showAssignDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showAssignDialog = false">
+        <!-- Dialog d'assignation (ligne unique) -->
+        <div v-if="showAssignDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="showAssignDialog = false">
           <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
-            <h3 class="text-lg font-semibold text-navy-800 mb-4">Assigner à un responsable</h3>
-            <select
-              v-model="assignManagerId"
-              class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 mb-4"
-            >
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-navy-800">Assigner à un responsable</h3>
+              <button @click="showAssignDialog = false" class="text-gray-400 hover:text-gray-600"><X class="w-5 h-5" /></button>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">Sélectionnez un responsable disponible (sans demande en cours d'examen).</p>
+            <select v-model="assignManagerId" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 mb-4">
               <option value="">Sélectionnez un responsable</option>
-              <option v-for="m in availableManagers" :key="m.id" :value="m.id">
-                {{ m.first_name }} {{ m.last_name }} ({{ m.open_deposits }} demandes ouvertes)
-              </option>
+              <option v-for="m in availableManagers" :key="m.id" :value="m.id">{{ m.first_name }} {{ m.last_name }} ({{ m.open_deposits }} demande(s) ouverte(s))</option>
             </select>
+            <div v-if="availableManagers.length === 0" class="text-sm text-amber-600 mb-4 flex items-center gap-2">
+              <AlertCircle class="w-4 h-4" /> Aucun responsable disponible pour le moment.
+            </div>
             <div class="flex gap-3 justify-end">
-              <button @click="showAssignDialog = false" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">
-                Annuler
-              </button>
+              <button @click="showAssignDialog = false" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Annuler</button>
               <button
                 @click="confirmAssign"
-                :disabled="isAssignSubmitting || !assignManagerId"
-                class="px-4 py-2.5 rounded-xl bg-navy-800 text-white text-sm font-semibold hover:bg-navy-900 disabled:opacity-50 transition-colors"
+                :disabled="isAssignSubmitting || !assignManagerId || availableManagers.length === 0"
+                class="px-4 py-2.5 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2"
               >
+                <Loader2 v-if="isAssignSubmitting" class="w-4 h-4 animate-spin" />
                 {{ isAssignSubmitting ? 'Assignation...' : 'Assigner' }}
               </button>
             </div>
           </div>
         </div>
 
-        <div v-if="showBulkAssignDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showBulkAssignDialog = false">
-          <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
-            <h3 class="text-lg font-semibold text-navy-800 mb-2">Assignation en masse</h3>
-            <p class="text-sm text-gray-500 mb-4">{{ selectedIds.length }} demande(s) sélectionnée(s)</p>
-            <select
-              v-model="bulkAssignTarget"
-              class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 mb-4"
-            >
-              <option value="">Sélectionnez un responsable</option>
-              <option v-for="m in availableManagers" :key="m.id" :value="m.id">
-                {{ m.first_name }} {{ m.last_name }} ({{ m.open_deposits }} demandes ouvertes)
-              </option>
-            </select>
-            <div class="flex gap-3 justify-end">
-              <button @click="showBulkAssignDialog = false" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">
-                Annuler
+        <!-- Dialogue générique de confirmation d'action -->
+        <div v-if="showActionDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="isActionSubmitting ? null : (showActionDialog = false)">
+          <div class="bg-white rounded-2xl p-6 w-full max-w-lg mx-4">
+            <h3 class="text-lg font-semibold text-navy-800 mb-2">Confirmation</h3>
+            <p class="text-sm text-gray-600 mb-4">Êtes-vous sûr de vouloir {{ actionDef?.label?.toLowerCase() }} ?</p>
+            <div v-if="actionDef?.requiresComment" class="space-y-3">
+              <label class="block text-sm font-medium text-navy-800">Justification <span class="text-red-600">*</span></label>
+              <textarea
+                v-model="actionComment"
+                rows="4"
+                class="w-full bg-beige border rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors"
+                :class="actionComment.length < actionDef.minLength ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-teal-500'"
+                :placeholder="`Justification (minimum ${actionDef.minLength} caractères)...`"
+              ></textarea>
+              <div class="flex items-center justify-between text-sm">
+                <span :class="actionComment.length < actionDef.minLength ? 'text-red-600' : 'text-green-600'">{{ actionComment.length }} / {{ actionDef.minLength }}</span>
+              </div>
+            </div>
+            <div class="flex gap-3 justify-end mt-6">
+              <button @click="showActionDialog = false" :disabled="isActionSubmitting" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">Annuler</button>
+              <button
+                @click="confirmActionDialog"
+                :disabled="isActionSubmitting || !actionCommentValid"
+                class="px-4 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-2"
+                :class="VARIANT_CLASSES[actionDef?.variant] || 'bg-navy-800'"
+              >
+                <Loader2 v-if="isActionSubmitting" class="w-4 h-4 animate-spin" />
+                {{ isActionSubmitting ? 'Traitement...' : 'Confirmer' }}
               </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dialog d'assignation en masse -->
+        <div v-if="showBulkAssignDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="showBulkAssignDialog = false">
+          <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-navy-800">Assignation en masse</h3>
+              <button @click="showBulkAssignDialog = false" class="text-gray-400 hover:text-gray-600"><X class="w-5 h-5" /></button>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">{{ selectedIds.length }} demande(s) sélectionnée(s)</p>
+            <select v-model="bulkAssignTarget" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 mb-4">
+              <option value="">Sélectionnez un responsable</option>
+              <option v-for="m in availableManagers" :key="m.id" :value="m.id">{{ m.first_name }} {{ m.last_name }} ({{ m.open_deposits }} demande(s) ouverte(s))</option>
+            </select>
+            <div v-if="availableManagers.length === 0" class="text-sm text-amber-600 mb-4 flex items-center gap-2">
+              <AlertCircle class="w-4 h-4" /> Aucun responsable disponible pour le moment.
+            </div>
+            <div class="flex gap-3 justify-end">
+              <button @click="showBulkAssignDialog = false" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Annuler</button>
               <button
                 @click="confirmBulkAssign"
-                :disabled="isBulkSubmitting || !bulkAssignTarget"
-                class="px-4 py-2.5 rounded-xl bg-navy-800 text-white text-sm font-semibold hover:bg-navy-900 disabled:opacity-50 transition-colors"
+                :disabled="isBulkSubmitting || !bulkAssignTarget || availableManagers.length === 0"
+                class="px-4 py-2.5 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2"
               >
+                <Loader2 v-if="isBulkSubmitting" class="w-4 h-4 animate-spin" />
                 {{ isBulkSubmitting ? 'Assignation...' : 'Assigner' }}
               </button>
             </div>
           </div>
         </div>
 
-        <div v-if="showBulkRejectDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showBulkRejectDialog = false">
+        <!-- Dialog de rejet en masse -->
+        <div v-if="showBulkRejectDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="showBulkRejectDialog = false">
           <div class="bg-white rounded-2xl p-6 w-full max-w-lg mx-4">
-            <h3 class="text-lg font-semibold text-navy-800 mb-2">Rejet en masse</h3>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-navy-800">Rejet en masse</h3>
+              <button @click="showBulkRejectDialog = false" class="text-gray-400 hover:text-gray-600"><X class="w-5 h-5" /></button>
+            </div>
             <p class="text-sm text-gray-500 mb-4">{{ selectedIds.length }} demande(s) sélectionnée(s)</p>
             <div class="space-y-3">
               <label class="block text-sm font-medium text-navy-800">Justification commune *</label>
@@ -778,21 +782,18 @@ onMounted(async () => {
                 placeholder="Justification (minimum 50 caractères)..."
               ></textarea>
               <div class="flex items-center justify-between text-sm">
-                <span :class="bulkRejectComment.length < 50 ? 'text-red-600' : 'text-gray-500'">
-                  {{ bulkRejectComment.length }} / 50
-                </span>
+                <span :class="bulkRejectComment.length < 50 ? 'text-red-600' : 'text-gray-500'">{{ bulkRejectComment.length }} / 50</span>
               </div>
               <p v-if="bulkRejectError" class="text-red-600 text-sm">{{ bulkRejectError }}</p>
             </div>
             <div class="flex gap-3 justify-end mt-4">
-              <button @click="showBulkRejectDialog = false" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">
-                Annuler
-              </button>
+              <button @click="showBulkRejectDialog = false" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Annuler</button>
               <button
                 @click="confirmBulkReject"
                 :disabled="isBulkSubmitting || bulkRejectComment.length < 50"
-                class="px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors"
+                class="px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2"
               >
+                <Loader2 v-if="isBulkSubmitting" class="w-4 h-4 animate-spin" />
                 {{ isBulkSubmitting ? 'Rejet...' : 'Rejeter' }}
               </button>
             </div>

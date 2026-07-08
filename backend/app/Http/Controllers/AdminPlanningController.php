@@ -159,7 +159,7 @@ class AdminPlanningController extends Controller
 
         if (isset($validated['status']) && in_array($validated['status'], ['confirmed', 'refused'], true)) {
             try {
-                // Mail::to($appointment->email)->send(new AppointmentStatusChanged($appointment, $validated['status']));
+                Mail::to($appointment->email)->send(new AppointmentStatusChanged($appointment, $validated['status']));
                 $emailSent = true;
             } catch (\Exception $e) {
                 $emailSent = false;

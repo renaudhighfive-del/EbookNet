@@ -18,7 +18,27 @@ class DepositRequest extends Model
         'status',
         'reference_id',
         'rejection_reason',
+        'publisher',
+        'isbn',
+        'language',
+        'type',
+        'keywords',
+        'cover_image',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'keywords' => 'array',
+        ];
+    }
+
+    public function getProposedFileUrlAttribute()
+    {
+        return $this->proposed_file
+            ? url('storage/' . $this->proposed_file)
+            : null;
+    }
 
     public function applicant()
     {

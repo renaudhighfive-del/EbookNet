@@ -1,10 +1,10 @@
-// Store Pinia pour la gestion des demandes de dépôt côté administration et responsable (workflow complet, assignation, publication)
+// Store Pinia pour la gestion des demandes de dépôt côté administration et responsable
+// (workflow complet, assignation, publication)
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useToastStore } from './toast'
 import { useAuthStore } from './auth'
 import { adminService } from '@/services/api/admin.service'
-import { managerService } from '@/services/api/manager.service'
 
 // Mapping des codes ISO de langue vers leur libellé français
 const ISO_LANGUAGES = {
@@ -19,20 +19,58 @@ const DOCUMENT_TYPE_LABELS = {
   revue: 'Revue', rapport: 'Rapport', guide: 'Guide', autre: 'Autre',
 }
 
-// Configuration complète des statuts (libellé, classe CSS, étape du workflow)
+// -----------------------------------------------------------------------
+// STATUTS : une seule source de vérité (les anciens alias API sont mappés
+// une fois pour toutes dans normalizeApiDeposit, jamais dupliqués ici).
+// -----------------------------------------------------------------------
 const STATUS_LABELS = {
-  pending: { label: 'En attente', cls: 'bg-gray-100 text-gray-600', step: 0 },
-  assigned: { label: 'Assignée', cls: 'bg-blue-100 text-blue-700', step: 1 },
-  approved_by_manager: { label: 'Validée (resp.)', cls: 'bg-teal-100 text-teal-700', step: 2 },
-  rejected_by_manager: { label: 'Refusée (resp.)', cls: 'bg-orange-100 text-orange-700', step: -1 },
-  second_review: { label: 'Second avis', cls: 'bg-purple-100 text-purple-700', step: 2 },
-  manager_approved: { label: 'Validée (resp.)', cls: 'bg-teal-100 text-teal-700', step: 2 },
-  manager_rejected: { label: 'Refusée (resp.)', cls: 'bg-orange-100 text-orange-700', step: -1 },
-  second_opinion: { label: 'Second avis', cls: 'bg-purple-100 text-purple-700', step: 2 },
-  approved: { label: 'Approuvée', cls: 'bg-green-100 text-green-700', step: 3 },
-  approved_published: { label: 'Publiée', cls: 'bg-emerald-100 text-emerald-800', step: 4 },
-  rejected: { label: 'Rejetée', cls: 'bg-red-100 text-red-700', step: -2 },
-  published: { label: 'Publiée', cls: 'bg-emerald-100 text-emerald-800', step: 4 },
+  pending:            { label: 'En attente',       cls: 'bg-gray-100 text-gray-600',    step: 0 },
+  assigned:           { label: 'Assignée',         cls: 'bg-blue-100 text-blue-700',    step: 1 },
+  manager_approved:   { label: 'Validée (resp.)',  cls: 'bg-teal-100 text-teal-700',    step: 2 },
+  manager_rejected:   { label: 'Refusée (resp.)',  cls: 'bg-orange-100 text-orange-700',step: -1 },
+  second_opinion:     { label: 'Second avis',      cls: 'bg-purple-100 text-purple-700',step: 2 },
+  approved_published: { label: 'Publiée',          cls: 'bg-emerald-100 text-emerald-800', step: 4 },
+  rejected:           { label: 'Rejetée',          cls: 'bg-red-100 text-red-700',      step: -2 },
+}
+
+// Machine à états : transitions valides depuis chaque statut
+const STATUS_TRANSITIONS = {
+  pending:            ['assigned', 'rejected'],
+  assigned:           ['manager_approved', 'manager_rejected', 'second_opinion', 'pending', 'rejected'],
+  manager_approved:   ['approved_published', 'rejected', 'second_opinion'],
+  manager_rejected:   ['rejected', 'approved_published', 'second_opinion', 'assigned'],
+  second_opinion:     ['manager_approved', 'manager_rejected', 'approved_published', 'rejected', 'assigned'],
+  approved_published: ['pending'],
+  rejected:           [],
+}
+
+// -----------------------------------------------------------------------
+// REGISTRE D'ACTIONS : source UNIQUE utilisée par la liste ET la fiche
+// détaillée. Corrige les 3 bugs constatés (action "remind" introuvable,
+// validation de commentaire incohérente, double publication).
+// -----------------------------------------------------------------------
+const ACTION_REGISTRY = {
+  assign:             { label: 'Assigner à un responsable', variant: 'green',      requiresComment: false, minLength: 0 },
+  reassign:           { label: 'Réassigner',                variant: 'blue',       requiresComment: false, minLength: 0 },
+  remind:             { label: 'Relancer le responsable',   variant: 'amber',      requiresComment: false, minLength: 0 },
+  reject_direct:      { label: 'Rejeter directement',        variant: 'red',        requiresComment: true,  minLength: 30 },
+  approve_publish:    { label: 'Approuver & Publier',        variant: 'green',      requiresComment: false, minLength: 0 },
+  second_opinion_req: { label: 'Demander un 2ème avis',      variant: 'white',      requiresComment: true,  minLength: 20 },
+  reject_definitive:  { label: 'Rejeter définitivement',     variant: 'red',        requiresComment: true,  minLength: 50 },
+  confirm_reject:     { label: 'Confirmer le rejet',         variant: 'red-outline',requiresComment: true,  minLength: 20 },
+  override_publish:   { label: 'Passer outre & Publier',     variant: 'orange',     requiresComment: true,  minLength: 50 },
+  unpublish:          { label: 'Dépublier',                  variant: 'red',        requiresComment: true,  minLength: 30 },
+}
+
+// Actions disponibles pour chaque statut, dans l'ordre d'affichage voulu
+const STATUS_ACTIONS = {
+  pending:            ['assign', 'reject_direct'],
+  assigned:           ['remind', 'reassign'],
+  manager_approved:   ['approve_publish', 'second_opinion_req', 'reject_definitive'],
+  manager_rejected:   ['confirm_reject', 'override_publish', 'second_opinion_req'],
+  second_opinion:     [],
+  approved_published: ['unpublish'],
+  rejected:           [],
 }
 
 // Données factices pour les responsables (utilisées en fallback si l'API échoue)
@@ -42,6 +80,9 @@ const MOCK_MANAGERS = [
   { id: 3, first_name: 'Jean', last_name: 'Kouamé', email: 'jean.kouame@lectoria.bj', role: 'responsable_demande', status: 'active', open_deposits: 5 },
   { id: 4, first_name: 'Fatima', last_name: 'Ouedraogo', email: 'fatima.ouedraogo@lectoria.bj', role: 'responsable_demande', status: 'active', open_deposits: 0 },
 ]
+
+// Statuts qui indiquent qu'un responsable a une demande en cours d'examen
+const MANAGER_BUSY_STATUSES = ['assigned', 'manager_approved', 'manager_rejected', 'second_opinion']
 
 // Données factices pour les utilisateurs (fallback)
 const MOCK_USERS = [
@@ -56,14 +97,17 @@ const STEPS = [
   { key: 'pending', label: 'Soumise', step: 0 },
   { key: 'assigned', label: 'Assignée', step: 1 },
   { key: 'manager_approved', label: 'Validation Responsable', step: 2 },
-  { key: 'approved', label: 'Approuvée', step: 3 },
-  { key: 'published', label: 'Publiée', step: 4 },
+  { key: 'approved_published', label: 'Publiée', step: 4 },
 ]
 
-let mockIdCounter = 0
+// Compteur d'ID pour les dépôts factices. Démarre à 9000 pour ne jamais
+// entrer en collision avec de vrais ID numériques renvoyés par l'API
+// (le fallback mock ne doit servir qu'en démo / hors-ligne, jamais mélangé
+// avec des données réelles).
+let mockIdCounter = 9000
 
 /**
- * Génère un jeu de données factices pour les demandes de dépôt.
+ * Génère un jeu de données factices pour les demandes de dépôt (démo uniquement).
  * @returns {Array} Liste de dépôts mockés.
  */
 function buildMockDeposits() {
@@ -82,6 +126,9 @@ function buildMockDeposits() {
 
 /**
  * Normalise un objet dépôt provenant de l'API vers le format interne du store.
+ * C'est ICI, et uniquement ici, que les anciens libellés de statut API
+ * (approved_by_manager, rejected_by_manager, second_review, approved,
+ * published...) sont convertis vers les statuts canoniques du store.
  * @param {Object} item - Dépôt brut de l'API.
  * @returns {Object} Dépôt normalisé.
  */
@@ -89,7 +136,6 @@ function normalizeApiDeposit(item) {
   const authorNames = item.author
     ? item.author.split(',').map(s => s.trim()).filter(Boolean)
     : []
-  // Mappe les statuts API vers les clés internes
   const mappedStatus = ({
     approved_by_manager: 'manager_approved',
     rejected_by_manager: 'manager_rejected',
@@ -112,7 +158,8 @@ function normalizeApiDeposit(item) {
     summary: item.description || item.summary || null,
     keywords: item.keywords || [],
     file: item.proposed_file || null,
-    cover_image: null,
+    fileUrl: item.proposed_file_url || null,
+    cover_image: item.cover_image || null,
     submittedBy: item.applicant
       ? { id: item.applicant.id, first_name: item.applicant.first_name, last_name: item.applicant.last_name, email: item.applicant.email }
       : null,
@@ -131,129 +178,56 @@ function normalizeApiDeposit(item) {
 }
 
 export const useDepositsStore = defineStore('deposits', () => {
-  // Liste complète des demandes de dépôt
   const deposits = ref([])
-  // Demande de dépôt actuellement consultée
   const currentDeposit = ref(null)
-  // Indicateur de chargement principal
   const isLoading = ref(false)
-  // Indicateur de soumission en cours
   const isSubmitting = ref(false)
-  // Message d'erreur
   const error = ref(null)
-  // Journal des activités récentes
   const activityLogs = ref([])
-  // Informations de pagination
   const pagination = ref(null)
 
-  // Nombre de demandes en attente (pending ou assigned)
   const pendingCount = computed(() => deposits.value.filter(d => d.status === 'pending' || d.status === 'assigned').length)
 
-  /**
-   * Ajoute une entrée dans l'historique d'un dépôt.
-   * @param {Object} deposit - Le dépôt cible.
-   * @param {string} actor - Nom de l'acteur.
-   * @param {string} role - Rôle de l'acteur.
-   * @param {string} action - Action effectuée.
-   * @param {string|null} comment - Commentaire optionnel.
-   */
   function _addHistory(deposit, actor, role, action, comment) {
     deposit.history.push({ actor, role, action, comment: comment || null, at: new Date().toISOString() })
   }
 
-  /**
-   * Ajoute une entrée dans le journal d'activité.
-   * @param {string} action - Description de l'action.
-   * @param {number|string} depositId - Identifiant du dépôt concerné.
-   * @param {string} [color='orange'] - Couleur associée.
-   */
   function _addActivityLog(action, depositId, color = 'orange') {
     activityLogs.value.unshift({ id: Date.now(), type: 'Workflow', action, deposit_id: depositId, color, created_at: new Date().toISOString() })
   }
 
-  /**
-   * Affiche une notification simulée.
-   * @param {string} message - Message de notification.
-   */
-  function _simulateNotification(message) {
-    useToastStore().info(`🔔 ${message}`)
+  function _notify(message) {
+    useToastStore().info(message)
   }
 
-  /**
-   * Met à jour un dépôt dans la liste locale et dans currentDeposit si nécessaire.
-   * @param {number|string} id - Identifiant du dépôt.
-   * @param {Object} updated - Données mises à jour.
-   */
   function _updateInStore(id, updated) {
     const idx = deposits.value.findIndex(d => d.id === id)
     if (idx !== -1) deposits.value[idx] = { ...deposits.value[idx], ...updated }
     if (currentDeposit.value?.id === id) currentDeposit.value = { ...currentDeposit.value, ...updated }
   }
 
-  /**
-   * Retourne la configuration complète d'un statut donné.
-   * @param {string} s - Code du statut.
-   * @returns {Object} Configuration (label, classe CSS, étape).
-   */
   function getStatusConfig(s) {
-    return STATUS_LABELS[s] || STATUS_LABELS[({
-      approved_by_manager: 'manager_approved',
-      rejected_by_manager: 'manager_rejected',
-      second_review: 'second_opinion',
-      approved: 'approved_published',
-      published: 'approved_published',
-    })[s]] || { label: s || 'Inconnu', cls: 'bg-gray-100 text-gray-500', step: -99 }
+    return STATUS_LABELS[s] || { label: s || 'Inconnu', cls: 'bg-gray-100 text-gray-500', step: -99 }
   }
 
-  /**
-   * Retourne le libellé d'un type de document.
-   * @param {string} type - Code du type.
-   * @returns {string} Libellé.
-   */
   function getTypeLabel(type) { return DOCUMENT_TYPE_LABELS[type] || type || 'Non spécifié' }
-
-  /**
-   * Retourne le libellé d'une langue.
-   * @param {string} lang - Code ISO de la langue.
-   * @returns {string} Libellé.
-   */
   function getLanguageLabel(lang) { return ISO_LANGUAGES[lang] || lang || 'Non spécifié' }
 
-  /**
-   * Retourne les initiales d'un utilisateur.
-   * @param {Object} user - Utilisateur.
-   * @returns {string} Initiales en majuscules.
-   */
   function getUserInitials(user) {
     if (!user) return '?'
     return `${(user.first_name || '')[0] || ''}${(user.last_name || '')[0] || ''}`.toUpperCase()
   }
 
-  /**
-   * Formate une date au format court français.
-   * @param {string|Date} d - Date à formater.
-   * @returns {string} Date formatée ou '—'.
-   */
   function formatDate(d) {
     if (!d) return '—'
     try { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) } catch { return '—' }
   }
 
-  /**
-   * Formate une date avec heure au format long français.
-   * @param {string|Date} d - Date à formater.
-   * @returns {string} Date et heure formatées ou '—'.
-   */
   function formatDateTime(d) {
     if (!d) return '—'
     try { return new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) } catch { return '—' }
   }
 
-  /**
-   * Calcule un texte relatif (il y a X min/h/jour).
-   * @param {string|Date} d - Date de référence.
-   * @returns {string} Texte relatif.
-   */
   function getTimeAgo(d) {
     if (!d) return ''
     const m = Math.floor((Date.now() - new Date(d)) / 60000)
@@ -264,20 +238,10 @@ export const useDepositsStore = defineStore('deposits', () => {
     return `Il y a ${j} jour${j > 1 ? 's' : ''}`
   }
 
-  /**
-   * Calcule le nombre de jours écoulés depuis une date.
-   * @param {string|Date} d - Date de référence.
-   * @returns {number} Nombre de jours.
-   */
   function getAgingDays(d) {
     try { return d ? Math.floor((Date.now() - new Date(d)) / 86400000) : 0 } catch { return 0 }
   }
 
-  /**
-   * Retourne un badge de vieillissement selon le nombre de jours.
-   * @param {string|Date} d - Date de référence.
-   * @returns {Object|null} Badge avec classe CSS et libellé, ou null.
-   */
   function getAgingBadge(d) {
     const days = getAgingDays(d)
     if (days >= 7) return { cls: 'bg-red-100 text-red-700', label: `${days} jours` }
@@ -285,40 +249,51 @@ export const useDepositsStore = defineStore('deposits', () => {
     return null
   }
 
-  /**
-   * Retourne la liste des responsables disponibles (triés par charge de travail croissante).
-   * @returns {Array} Liste des responsables actifs.
-   */
-  function getAvailableManagers() {
-    return MOCK_MANAGERS.filter(m => m.status === 'active' && m.role === 'responsable_demande')
-      .sort((a, b) => a.open_deposits - b.open_deposits)
+  function canTransition(from, to) {
+    if (from === to) return false
+    const allowed = STATUS_TRANSITIONS[from]
+    if (!allowed) return false
+    return allowed.includes(to)
   }
 
   /**
-   * Retourne tous les responsables actifs.
-   * @returns {Array} Liste des responsables actifs.
+   * Retourne, pour un statut donné, la liste ordonnée des actions
+   * possibles avec leur configuration (label, variante de couleur,
+   * exigence de commentaire, longueur minimale). Unique source de vérité
+   * consommée par la liste ET la fiche détaillée : plus aucun risque de
+   * divergence entre les deux écrans.
+   * @param {string} status
+   * @returns {Array<{key:string,label:string,variant:string,requiresComment:boolean,minLength:number}>}
    */
+  function getActionsForStatus(status) {
+    return (STATUS_ACTIONS[status] || []).map(key => ({ key, ...ACTION_REGISTRY[key] }))
+  }
+
+  /**
+   * Retourne la liste des responsables disponibles (triés par charge de travail croissante).
+   * Exclut les responsables qui ont déjà une demande en cours d'examen.
+   * @param {number|null} currentManagerId - Toujours inclus même s'il est occupé (pour permettre de le garder lors d'une réassignation).
+   * @returns {Array} Liste des responsables disponibles.
+   */
+  function getAvailableManagers(currentManagerId = null) {
+    const managerBusyCounts = {}
+    deposits.value.forEach(d => {
+      if (d.assignedManagerId && MANAGER_BUSY_STATUSES.includes(d.status)) {
+        managerBusyCounts[d.assignedManagerId] = (managerBusyCounts[d.assignedManagerId] || 0) + 1
+      }
+    })
+
+    return MOCK_MANAGERS
+      .filter(m => m.status === 'active' && m.role === 'responsable_demande')
+      .filter(m => m.id === currentManagerId || !managerBusyCounts[m.id])
+      .map(m => ({ ...m, open_deposits: managerBusyCounts[m.id] || 0 }))
+      .sort((a, b) => a.open_deposits - b.open_deposits)
+  }
+
   function getActiveManagers() { return MOCK_MANAGERS.filter(m => m.status === 'active' && m.role === 'responsable_demande') }
-
-  /**
-   * Retourne un responsable par son identifiant.
-   * @param {number} id - Identifiant du responsable.
-   * @returns {Object|null} Responsable trouvé ou null.
-   */
   function getManagerById(id) { return MOCK_MANAGERS.find(m => m.id === id) || null }
-
-  /**
-   * Retourne un utilisateur mocké par son identifiant.
-   * @param {number} id - Identifiant utilisateur.
-   * @returns {Object|null} Utilisateur trouvé ou null.
-   */
   function getUserById(id) { return MOCK_USERS.find(u => u.id === id) || null }
 
-  /**
-   * Récupère la liste paginée des demandes de dépôt (fallback mock si API indisponible).
-   * @param {Object} [params={}] - Paramètres de filtrage et pagination.
-   * @returns {Promise<Array>} Liste normalisée des dépôts.
-   */
   async function fetchDeposits(params = {}) {
     isLoading.value = true
     error.value = null
@@ -329,9 +304,9 @@ export const useDepositsStore = defineStore('deposits', () => {
       pagination.value = data.data ? { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total } : null
       return deposits.value
     } catch (err) {
-      // Fallback vers les données mockées si l'API est indisponible et la liste vide
       if (!deposits.value.length) {
         deposits.value = buildMockDeposits()
+        useToastStore().warning('API indisponible : données de démonstration affichées.')
       }
       error.value = err.response?.data?.message || null
       return deposits.value
@@ -340,11 +315,6 @@ export const useDepositsStore = defineStore('deposits', () => {
     }
   }
 
-  /**
-   * Récupère une demande de dépôt par son identifiant (fallback local si API indisponible).
-   * @param {number|string} id - Identifiant du dépôt.
-   * @returns {Promise<Object>} Dépôt normalisé.
-   */
   async function fetchDeposit(id) {
     isLoading.value = true
     error.value = null
@@ -354,7 +324,6 @@ export const useDepositsStore = defineStore('deposits', () => {
       currentDeposit.value = normalizeApiDeposit(item)
       return currentDeposit.value
     } catch (err) {
-      // Fallback : chercher dans la liste locale
       const found = deposits.value.find(d => String(d.id) === String(id))
       if (found) {
         currentDeposit.value = JSON.parse(JSON.stringify(found))
@@ -368,34 +337,35 @@ export const useDepositsStore = defineStore('deposits', () => {
   }
 
   /**
-   * Assigne un responsable à une demande de dépôt.
-   * @param {number|string} id - Identifiant du dépôt.
-   * @param {number} managerId - Identifiant du responsable.
-   * @returns {Promise<Object>} Dépôt mis à jour.
+   * Assigne (ou réassigne) un responsable à une demande de dépôt.
+   * Valide uniquement depuis 'pending' ou 'assigned'.
    */
   async function assignManager(id, managerId) {
     isSubmitting.value = true
     try {
+      const deposit = deposits.value.find(d => String(d.id) === String(id))
+      const allowedFrom = ['pending', 'assigned']
+      if (deposit && !allowedFrom.includes(deposit.status)) {
+        throw new Error('Transition de statut non autorisée.')
+      }
       const result = await adminService.assignDeposit(id, managerId)
       const updated = normalizeApiDeposit(result.deposit_request || result)
       _updateInStore(id, updated)
-      const mgr = getManagerById(managerId)
-      if (mgr) mgr.open_deposits = (mgr.open_deposits || 0) + 1
       useToastStore().success('Demande assignée avec succès.')
-      _simulateNotification(`La demande ${id} vous a été assignée.`)
+      _notify(`La demande ${id} a été assignée.`)
       return updated
     } catch (err) {
-      // Fallback simulation si l'API échoue
-      const msg = err.response?.data?.message || "Erreur lors de l'assignation."
+      const msg = err.response?.data?.message || err.message || "Erreur lors de l'assignation."
       const deposit = deposits.value.find(d => String(d.id) === String(id))
-      if (deposit) {
+      if (deposit && !err.response) {
+        const wasAssigned = deposit.status === 'assigned'
         deposit.status = 'assigned'
         deposit.assignedManagerId = managerId
         deposit.assignedAt = new Date().toISOString()
-        _addHistory(deposit, 'Admin System', 'Administrateur', 'Assignation', `Assigné au responsable #${managerId}`)
+        _addHistory(deposit, 'Admin System', 'Administrateur', wasAssigned ? 'Réassignation' : 'Assignation', `Assigné au responsable #${managerId}`)
         _updateInStore(id, deposit)
-        useToastStore().success('Demande assignée (mode simulation).')
-        _simulateNotification(`La demande ${id} vous a été assignée.`)
+        useToastStore().warning('Assignation enregistrée en mode hors-ligne (non persistée en base).')
+        _notify(`La demande ${id} a été assignée.`)
         return deposit
       }
       useToastStore().error(msg)
@@ -407,33 +377,41 @@ export const useDepositsStore = defineStore('deposits', () => {
 
   /**
    * Approuve et publie une demande de dépôt (génère une référence).
-   * @param {number|string} id - Identifiant du dépôt.
-   * @returns {Promise<Object>} Dépôt mis à jour.
+   * @param {number|string} id
+   * @param {Object} [meta={}] - { comment, adminOverride } : utilisé notamment
+   *   pour le cas "Passer outre & Publier" depuis un statut refusé par le
+   *   responsable — plus besoin d'appeler updateDepositStatus() en plus,
+   *   ce qui évite la double écriture d'historique.
    */
-  async function approveAndPublish(id) {
+  async function approveAndPublish(id, meta = {}) {
     isSubmitting.value = true
     try {
       const result = await adminService.publishDeposit(id)
       const updated = normalizeApiDeposit(result.deposit_request || result)
-      _updateInStore(id, { ...updated, status: 'approved_published', referenceId: result.reference?.id || updated.referenceId })
-      useToastStore().success('✅ Demande approuvée et publiée avec succès.')
+      const patch = { ...updated, status: 'approved_published', referenceId: result.reference?.id || updated.referenceId }
+      if (meta.adminOverride) patch.adminOverride = true
+      if (meta.comment) patch.adminDecisionComment = meta.comment
+      _updateInStore(id, patch)
+      useToastStore().success('Demande approuvée et publiée avec succès.')
       _addActivityLog(`Publication de la demande ${id}`, id, 'green')
-      _simulateNotification(`La demande ${id} a été publiée.`)
+      _notify(`La demande ${id} a été publiée.`)
       return updated
     } catch (err) {
-      // Fallback simulation
       const deposit = deposits.value.find(d => String(d.id) === String(id))
       if (deposit) {
         deposit.status = 'approved_published'
         deposit.referenceId = Math.floor(Math.random() * 1000) + 100
-        _addHistory(deposit, 'Admin System', 'Administrateur', 'Approbation et publication', 'Publiée dans le catalogue.')
+        if (meta.adminOverride) deposit.adminOverride = true
+        if (meta.comment) deposit.adminDecisionComment = meta.comment
+        const label = meta.adminOverride ? 'Passer outre et publier' : 'Approbation et publication'
+        _addHistory(deposit, 'Admin System', 'Administrateur', label, meta.comment || 'Publiée dans le catalogue.')
         _updateInStore(id, deposit)
-        useToastStore().success('✅ Demande approuvée et publiée (mode simulation).')
+        useToastStore().success('Demande approuvée et publiée (mode démonstration).')
         _addActivityLog(`Publication simulée de ${id}`, id, 'green')
-        _simulateNotification(`La demande ${id} a été publiée.`)
+        _notify(`La demande ${id} a été publiée.`)
         return deposit
       }
-      useToastStore().error(err.response?.data?.message || 'Erreur de publication.')
+      useToastStore().error(err.response?.data?.message || 'Erreur lors de la publication.')
       throw err
     } finally {
       isSubmitting.value = false
@@ -441,57 +419,61 @@ export const useDepositsStore = defineStore('deposits', () => {
   }
 
   /**
-   * Met à jour le statut d'une demande de dépôt (workflow complet).
-   * @param {number|string} id - Identifiant du dépôt.
-   * @param {string} nextStatus - Nouveau statut.
-   * @param {Object} [meta={}] - Métadonnées (commentaire, adminOverride, referenceId, assignedManagerId).
-   * @returns {Promise<Object>} Dépôt mis à jour.
+   * Met à jour le statut d'une demande de dépôt (workflow générique).
+   * Ne pas utiliser pour 'approved_published' -> passer par approveAndPublish().
+   * @param {number|string} id
+   * @param {string} nextStatus
+   * @param {Object} [meta={}] - { comment }
    */
   async function updateDepositStatus(id, nextStatus, meta = {}) {
     isSubmitting.value = true
     try {
-      // Délègue à approveAndPublish si le statut cible est la publication
       if (nextStatus === 'approved_published') {
-        return await approveAndPublish(id)
-      }
-      // Délègue à assignManager si le statut cible est assigné avec un manager
-      if (nextStatus === 'assigned' && meta.assignedManagerId) {
-        return await assignManager(id, meta.assignedManagerId)
+        // Toujours passer par approveAndPublish pour éviter une double écriture.
+        return await approveAndPublish(id, meta)
       }
 
-      await new Promise(r => setTimeout(r, 200))
       const deposit = deposits.value.find(d => String(d.id) === String(id))
       if (!deposit) throw new Error('Demande introuvable.')
 
+      if (!canTransition(deposit.status, nextStatus)) {
+        throw new Error(`Transition non autorisée : ${deposit.status} → ${nextStatus}.`)
+      }
+
+      try {
+        if (nextStatus === 'rejected' && adminService.rejectDeposit) {
+          await adminService.rejectDeposit(id, meta.comment || '')
+        }
+      } catch {
+        useToastStore().warning('Mise à jour enregistrée en mode hors-ligne (non persistée en base).')
+      }
+
       deposit.status = nextStatus
       if (meta.comment) deposit.adminDecisionComment = meta.comment
-      if (meta.adminOverride) deposit.adminOverride = true
-      if (meta.referenceId) deposit.referenceId = meta.referenceId
 
       const authStore = useAuthStore()
       const actor = authStore.user ? `${authStore.user.first_name} ${authStore.user.last_name}` : 'Admin System'
       const role = authStore.userRole === 'responsable_demande' ? 'Responsable' : 'Administrateur'
       const actionLabels = {
-        pending: 'Soumission', assigned: 'Assignation', manager_approved: 'Approbation responsable',
+        pending: 'Dépublication', assigned: 'Assignation', manager_approved: 'Approbation responsable',
         manager_rejected: 'Rejet responsable', second_opinion: 'Demande de second avis',
-        approved_published: 'Approbation et publication', rejected: 'Rejet définitif',
+        rejected: 'Rejet définitif',
       }
       _addHistory(deposit, actor, role, actionLabels[nextStatus] || nextStatus, meta.comment || null)
       _updateInStore(id, deposit)
 
       const toast = useToastStore()
-      // Affiche une notification et log selon le statut final
       if (nextStatus === 'rejected') {
-        toast.error('❌ Demande rejetée.')
+        toast.error('Demande rejetée.')
         _addActivityLog(`Rejet de ${id}`, id, 'red')
       } else if (nextStatus === 'second_opinion') {
-        toast.info('🟣 Second avis demandé.')
+        toast.info('Second avis demandé.')
         _addActivityLog(`Second avis pour ${id}`, id, 'purple')
       } else {
-        toast.success(`Statut mis à jour : ${actionLabels[nextStatus] || nextStatus}`)
+        toast.success(actionLabels[nextStatus] || 'Statut mis à jour.')
         _addActivityLog(`${actionLabels[nextStatus] || nextStatus} - ${id}`, id)
       }
-      _simulateNotification(`La demande ${id} a changé de statut.`)
+      _notify(`La demande ${id} a changé de statut.`)
       return deposit
     } catch (err) {
       useToastStore().error(err.message || 'Erreur lors de la mise à jour.')
@@ -501,37 +483,17 @@ export const useDepositsStore = defineStore('deposits', () => {
     }
   }
 
-  /**
-   * Réassigne une demande à un autre responsable.
-   * @param {number|string} id - Identifiant du dépôt.
-   * @param {number} managerId - Identifiant du nouveau responsable.
-   */
   async function reassignManager(id, managerId) {
-    const deposit = deposits.value.find(d => String(d.id) === String(id))
-    if (!deposit) return
-    // Décrémente le compteur de l'ancien responsable
-    const oldMgr = getManagerById(deposit.assignedManagerId)
-    if (oldMgr) oldMgr.open_deposits = Math.max(0, (oldMgr.open_deposits || 0) - 1)
-    deposit.assignedManagerId = managerId
-    deposit.assignedAt = new Date().toISOString()
-    // Incrémente le compteur du nouveau responsable
-    const newMgr = getManagerById(managerId)
-    if (newMgr) newMgr.open_deposits = (newMgr.open_deposits || 0) + 1
-    _addHistory(deposit, 'Admin System', 'Administrateur', 'Réassignation', `Réassigné au responsable #${managerId}`)
-    _updateInStore(id, deposit)
-    useToastStore().success('Demande réassignée.')
-    _simulateNotification(`La demande ${id} vous a été réassignée.`)
+    return assignManager(id, managerId)
   }
 
-  /**
-   * Annule l'assignation d'une demande.
-   * @param {number|string} id - Identifiant du dépôt.
-   */
   async function unassignManager(id) {
     const deposit = deposits.value.find(d => String(d.id) === String(id))
     if (!deposit) return
-    const mgr = getManagerById(deposit.assignedManagerId)
-    if (mgr) mgr.open_deposits = Math.max(0, (mgr.open_deposits || 0) - 1)
+    if (deposit.status !== 'assigned') {
+      useToastStore().error('Annulation impossible pour ce statut.')
+      return
+    }
     deposit.assignedManagerId = null
     deposit.assignedAt = null
     deposit.status = 'pending'
@@ -540,41 +502,22 @@ export const useDepositsStore = defineStore('deposits', () => {
     useToastStore().info('Assignation annulée.')
   }
 
-  /**
-   * Envoie une relance au responsable assigné.
-   * @param {number|string} id - Identifiant du dépôt.
-   */
   async function remindManager(id) {
     const deposit = deposits.value.find(d => String(d.id) === String(id))
     if (!deposit) return
     _addHistory(deposit, 'Admin System', 'Administrateur', 'Relance responsable', 'Relance envoyée.')
     _updateInStore(id, deposit)
     useToastStore().success('Relance envoyée au responsable.')
-    _simulateNotification(`Rappel : la demande ${id} est en attente.`)
+    _notify(`Rappel : la demande ${id} est en attente.`)
   }
 
-  /**
-   * Retourne l'étape actuelle dans le workflow pour un statut donné.
-   * @param {string} status - Code du statut.
-   * @returns {number} Indice de l'étape (ou -1 si négatif).
-   */
   function getCurrentStep(status) {
-    const normalizedStatus = ({
-      approved_by_manager: 'manager_approved', rejected_by_manager: 'manager_rejected',
-      second_review: 'second_opinion', approved: 'approved_published', published: 'approved_published',
-    })[status] || status
-    const cfg = STATUS_LABELS[normalizedStatus]
+    const cfg = STATUS_LABELS[status]
     if (!cfg || cfg.step < 0) return -1
-    if (normalizedStatus === 'approved_published') return 4
-    if (normalizedStatus === 'manager_approved' || normalizedStatus === 'second_opinion') return 2
+    if (status === 'manager_approved' || status === 'second_opinion') return 2
     return cfg.step
   }
 
-  /**
-   * Génère la liste des étapes du stepper avec leur état (active, completed, future).
-   * @param {string} status - Code du statut actuel.
-   * @returns {Array} Étapes enrichies.
-   */
   function getStepsForStatus(status) {
     const currentStep = getCurrentStep(status)
     return STEPS.map((s, i) => ({ ...s, active: i === currentStep, completed: i < currentStep, future: i > currentStep }))
@@ -584,9 +527,9 @@ export const useDepositsStore = defineStore('deposits', () => {
     deposits, currentDeposit, isLoading, isSubmitting, error, activityLogs, pagination, pendingCount,
     getStatusConfig, getTypeLabel, getLanguageLabel, getUserInitials, formatDate, formatDateTime,
     getTimeAgo, getAgingDays, getAgingBadge, getAvailableManagers, getActiveManagers,
-    getManagerById, getUserById,
+    getManagerById, getUserById, canTransition, getActionsForStatus,
     fetchDeposits, fetchDeposit, updateDepositStatus, assignManager, reassignManager,
     unassignManager, remindManager, approveAndPublish, getCurrentStep, getStepsForStatus,
-    STEPS, STATUS_LABELS, ISO_LANGUAGES, DOCUMENT_TYPE_LABELS,
+    STEPS, STATUS_LABELS, ISO_LANGUAGES, DOCUMENT_TYPE_LABELS, STATUS_TRANSITIONS, ACTION_REGISTRY,
   }
 })

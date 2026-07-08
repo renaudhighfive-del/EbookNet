@@ -18,6 +18,7 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
         Route::get('/', [DepositRequestController::class, 'userDeposits']);
         Route::post('/', [DepositRequestController::class, 'store']);
         Route::get('/{id}', [DepositRequestController::class, 'userDepositDetail']);
+        Route::get('/{id}/file', [DepositRequestController::class, 'serveFile'])->name('deposits.file');
     });
 });
 

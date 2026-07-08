@@ -55,7 +55,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     // Gestion des Éditeurs
     Route::prefix('publishers')->group(function () {
         Route::get('/',                [PublisherController::class, 'index']);
-        Route::get('/all',             [PublisherController::class, 'all']);
+        Route::get('/all',             [PublisherController::class, 'all'])->middleware('role:admin,user');
         Route::post('/',               [PublisherController::class, 'store']);
         Route::get('/{id}',            [PublisherController::class, 'show']);
         Route::put('/{id}',            [PublisherController::class, 'update']);
@@ -75,11 +75,20 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     });
 
     // Gestion des Demandes de Dépôt (Admin)
+    // IMPORTANT : /managers est déclarée AVANT /{id} pour éviter que Laravel
+    // ne l'interprète comme un id (les routes statiques doivent précéder les
+    // routes à segment dynamique sur le même verbe HTTP).
     Route::prefix('deposits')->group(function () {
-        Route::get('/', [DepositRequestController::class, 'index']);
-        Route::get('/{id}', [DepositRequestController::class, 'show']);
-        Route::patch('/{id}/assign', [DepositRequestController::class, 'assign']);
-        Route::patch('/{id}/publish', [DepositRequestController::class, 'publish']);
+        Route::get('/managers',                 [DepositRequestController::class, 'availableManagers']);
+        Route::get('/',                         [DepositRequestController::class, 'index']);
+        Route::get('/{id}',                     [DepositRequestController::class, 'show']);
+        Route::patch('/{id}/assign',            [DepositRequestController::class, 'assign']);
+        Route::patch('/{id}/unassign',          [DepositRequestController::class, 'unassign']);
+        Route::patch('/{id}/remind',            [DepositRequestController::class, 'remind']);
+        Route::patch('/{id}/second-opinion',    [DepositRequestController::class, 'secondOpinion']);
+        Route::patch('/{id}/reject-definitive', [DepositRequestController::class, 'rejectDefinitive']);
+        Route::patch('/{id}/publish',           [DepositRequestController::class, 'publish']);
+        Route::patch('/{id}/unpublish',         [DepositRequestController::class, 'unpublish']);
     });
 
     // Journal d'activité (Admin)
@@ -103,7 +112,22 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         Route::get('/google-calendar/status', [AdminPlanningController::class, 'getGoogleCalendarStatus']);
         Route::get('/google-calendar/authorize', [AdminPlanningController::class, 'authorizeGoogleCalendar']);
         Route::get('/google-calendar/callback', [AdminPlanningController::class, 'handleGoogleCalendarCallback'])
-                ->withoutMiddleware(['auth:sanctum', 'role:admin']);        
+                ->withoutMiddleware(['auth:sanctum', 'role:admin']);
         Route::post('/google-calendar/disconnect', [AdminPlanningController::class, 'disconnectGoogleCalendar']);
+    });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  ESPACE RESPONSABLE — Rôle : responsable_demande
+//  PROPOSITION : à fusionner avec un groupe existant si vous en avez déjà un
+//  (ex: liste des dossiers qui lui sont assignés). Ce bloc ne fait que
+//  raccorder les méthodes approve()/reject() du contrôleur, qui existaient
+//  déjà mais n'étaient routées nulle part.
+// ════════════════════════════════════════════════════════════════════════════
+
+Route::middleware(['auth:sanctum', 'role:responsable_demande'])->prefix('responsable')->group(function () {
+    Route::prefix('deposits')->group(function () {
+        Route::patch('/{id}/approve', [DepositRequestController::class, 'approve']);
+        Route::patch('/{id}/reject',  [DepositRequestController::class, 'reject']);
     });
 });

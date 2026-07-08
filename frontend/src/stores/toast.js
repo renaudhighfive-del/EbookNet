@@ -38,5 +38,11 @@ export const useToastStore = defineStore('toast', () => {
    */
   function info(message) { add(message, 'info') }
 
-  return { toasts, add, success, error, info }
+  /**
+   * Affiche un toast de type avertissement.
+   * @param {string} message - Texte du toast.
+   */
+  function warning(message) { add(message, 'warning') }
+
+  return { toasts, add, success, error, info, warning }
 })

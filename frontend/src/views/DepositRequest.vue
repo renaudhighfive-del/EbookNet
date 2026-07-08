@@ -200,19 +200,21 @@ async function handleSubmit() {
   }
   isSubmitting.value = true
   try {
-    const payload = {
-      title: form.value.title,
-      author: form.value.author || null,
-      publication_year: form.value.publication_year ? parseInt(form.value.publication_year) : null,
-      category_id: form.value.category_id || null,
-      description: form.value.description || null,
-      proposed_file: form.value.proposed_file?.name || null,
-      publisher: form.value.publisher || null,
-      isbn: form.value.isbn || null,
-      language: form.value.language,
-      type: form.value.type || null,
-      keywords: form.value.keywords,
+    const payload = new FormData()
+    payload.append('title', form.value.title)
+    if (form.value.author) payload.append('author', form.value.author)
+    if (form.value.publication_year) payload.append('publication_year', String(parseInt(form.value.publication_year)))
+    if (form.value.category_id) payload.append('category_id', String(form.value.category_id))
+    if (form.value.description) payload.append('description', form.value.description)
+    if (form.value.proposed_file instanceof File) payload.append('proposed_file', form.value.proposed_file)
+    if (form.value.publisher) payload.append('publisher', form.value.publisher)
+    if (form.value.isbn) payload.append('isbn', form.value.isbn)
+    payload.append('language', form.value.language)
+    if (form.value.type) payload.append('type', form.value.type)
+    if (form.value.keywords.length) {
+      form.value.keywords.forEach(kw => payload.append('keywords[]', kw))
     }
+    if (form.value.cover_image_preview) payload.append('cover_image', form.value.cover_image_preview)
     await depositStore.createDeposit(payload)
     router.push('/my-documents')
   } catch {

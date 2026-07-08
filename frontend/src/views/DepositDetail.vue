@@ -25,6 +25,7 @@ import {
   Building,
   BookMarked,
   Image,
+  Download,
 } from '@lucide/vue'
 
 const route = useRoute()
@@ -85,6 +86,51 @@ function viewReference() {
   if (deposit.value.reference?.id) {
     router.push(`/catalogue/${deposit.value.reference.id}`)
   }
+}
+
+// Helpers for file viewing
+function getFileExtension(url) {
+  if (!url) return ''
+  try {
+    const pathname = new URL(url).pathname
+    const ext = pathname.split('.').pop()
+    return ext ? ext.toLowerCase() : ''
+  } catch {
+    return ''
+  }
+}
+
+function isPdf(url) {
+  return getFileExtension(url) === 'pdf'
+}
+
+function isViewableFile(url) {
+  const ext = getFileExtension(url)
+  return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)
+}
+
+function getViewerUrl(url) {
+  if (!url) return '#'
+  const ext = getFileExtension(url)
+  // For office documents, use Google Docs Viewer
+  if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp'].includes(getFileExtension(url))) {
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`
+  }
+  // For other files, direct link
+  return url
+}
+
+function getPdfViewerUrl(url) {
+  if (!url) return '#'
+  // Use browser's built-in PDF viewer with a nice UI
+  return `${url}#toolbar=1&navpanes=1&scrollbar&view=FitH`
+}
+
+function formatFileSize(bytes) {
+  if (!bytes || bytes === 0) return 'Taille inconnue'
+  const sizes = ['o', 'Ko', 'Mo', 'Go', 'To']
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
 }
 
 const isUserAdmin = authStore.userRole === 'admin'
@@ -272,10 +318,6 @@ onMounted(async () => {
                   <span class="text-gray-500 block text-xs">Pages</span>
                   <span class="text-navy-800 font-mono">{{ deposit.pages }}</span>
                 </div>
-                <div v-if="deposit.proposed_file">
-                  <span class="text-gray-500 block text-xs">Fichier proposé</span>
-                  <span class="text-navy-800 text-xs break-all">{{ deposit.proposed_file }}</span>
-                </div>
               </div>
             </div>
 
@@ -289,6 +331,63 @@ onMounted(async () => {
                 alt="Couverture du document"
                 class="w-full rounded-xl object-cover border border-gray-200 max-h-60"
               />
+            </div>
+
+            <div v-if="deposit.proposed_file_url || deposit.fileUrl" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
+              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <FileText class="w-4 h-4" />
+                Fichier
+              </h2>
+              <div class="space-y-3">
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <FileText class="w-10 h-10 text-teal-600 shrink-0" />
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-navy-800 truncate">
+                      {{ (deposit.proposed_file || deposit.file || '').split('/').pop() || 'Document joint' }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      {{ getFileExtension(deposit.proposed_file_url || deposit.fileUrl || '') | upper }} ·
+                      {{ formatFileSize(deposit.file_size) }}
+                    </p>
+                  </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <a
+                    :href="deposit.proposed_file_url || deposit.fileUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors"
+                  >
+                    <Download class="w-4 h-4" />
+                    Télécharger
+                  </a>
+                  <a
+                    :href="getViewerUrl(deposit.proposed_file_url || deposit.fileUrl)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-navy-800 text-white rounded-xl text-sm font-medium hover:bg-navy-900 transition-colors"
+                  >
+                    <Eye class="w-4 h-4" />
+                    Voir en ligne
+                  </a>
+                </div>
+                <div v-if="isPdf(deposit.proposed_file_url || deposit.fileUrl)" class="mt-4">
+                  <iframe
+                    :src="getPdfViewerUrl(deposit.proposed_file_url || deposit.fileUrl)"
+                    class="w-full h-96 rounded-xl border border-gray-200"
+                    title="Aperçu PDF"
+                  ></iframe>
+                </div>
+                <div v-else-if="isViewableFile(deposit.proposed_file_url || deposit.fileUrl)" class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <p class="text-sm text-amber-800">
+                    <Eye class="w-4 h-4 inline mr-1" />
+                    Ce format de fichier ne peut pas être prévisualisé directement. 
+                    <a :href="getViewerUrl(deposit.proposed_file_url || deposit.fileUrl)" target="_blank" rel="noopener noreferrer" class="underline hover:text-amber-600">
+                      Cliquez ici pour l'ouvrir
+                    </a>
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
