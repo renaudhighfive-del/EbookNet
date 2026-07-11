@@ -2,25 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Planning\CancelAppointmentRequest;
+use App\Http\Requests\Planning\CreateAvailabilityExceptionRequest;
+use App\Http\Requests\Planning\CreateAvailabilityRuleRequest;
+use App\Http\Requests\Planning\CreateManualAppointmentRequest;
+use App\Http\Requests\Planning\UpdateAppointmentRequest;
+use App\Http\Requests\Planning\UpdateAvailabilityRuleRequest;
+use App\Http\Requests\Planning\UpdateSettingsRequest;
+use App\Mail\AppointmentStatusChanged;
 use App\Models\Appointment;
-use App\Models\AvailabilityRule;
 use App\Models\AvailabilityException;
+use App\Models\AvailabilityRule;
 use App\Models\GoogleCalendarToken;
 use App\Models\Setting;
 use App\Services\GoogleCalendarService;
-use App\Mail\AppointmentStatusChanged;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Http\Requests\Planning\CreateAvailabilityRuleRequest;
-use App\Http\Requests\Planning\UpdateAvailabilityRuleRequest;
-use App\Http\Requests\Planning\CreateAvailabilityExceptionRequest;
-use App\Http\Requests\Planning\UpdateAppointmentRequest;
-use App\Http\Requests\Planning\CancelAppointmentRequest;
-use App\Http\Requests\Planning\UpdateSettingsRequest;
-use App\Http\Requests\Planning\CreateManualAppointmentRequest;
 
 class AdminPlanningController extends Controller
 {
@@ -31,6 +31,7 @@ class AdminPlanningController extends Controller
         $rules = AvailabilityRule::where('teacher_id', $request->user()->id)
             ->orderBy('day_of_week')
             ->get();
+
         return response()->json(['rules' => $rules]);
     }
 
@@ -55,6 +56,7 @@ class AdminPlanningController extends Controller
         $rule = AvailabilityRule::where('teacher_id', $request->user()->id)->findOrFail($id);
         $validated = $request->validated();
         $rule->update($validated);
+
         return response()->json(['message' => 'Règle mise à jour.', 'rule' => $rule]);
     }
 
@@ -62,6 +64,7 @@ class AdminPlanningController extends Controller
     {
         $rule = AvailabilityRule::where('teacher_id', $request->user()->id)->findOrFail($id);
         $rule->delete();
+
         return response()->json(['message' => 'Règle supprimée.']);
     }
 
@@ -89,10 +92,11 @@ class AdminPlanningController extends Controller
     {
         $request->validate([
             'start_date' => 'required|date',
-            'end_date'   => 'required|date|after_or_equal:start_date',
+            'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
-        $appointments = Appointment::whereBetween('date', [$request->start_date, $request->end_date])
+        $appointments = Appointment::where('teacher_id', $request->user()->id)
+            ->whereBetween('date', [$request->start_date, $request->end_date])
             ->where('status', '!=', 'cancelled')
             ->orderBy('date')
             ->orderBy('start_time')
@@ -115,18 +119,20 @@ class AdminPlanningController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%$search%")
-                  ->orWhere('last_name', 'like', "%$search%")
-                  ->orWhere('email', 'like', "%$search%");
+                    ->orWhere('last_name', 'like', "%$search%")
+                    ->orWhere('email', 'like', "%$search%");
             });
         }
 
         $appointments = $query->orderBy('date', 'desc')->orderBy('start_time')->paginate(10);
+
         return response()->json($appointments);
     }
 
     public function getAppointment(Request $request, $id): JsonResponse
     {
         $appointment = Appointment::where('teacher_id', $request->user()->id)->findOrFail($id);
+
         return response()->json(['appointment' => $appointment]);
     }
 
@@ -143,16 +149,16 @@ class AdminPlanningController extends Controller
         if (isset($validated['status']) && $validated['status'] === 'confirmed') {
             $googleToken = GoogleCalendarToken::where('teacher_id', $request->user()->id)->first();
 
-            if ($googleToken && !$appointment->google_event_id) {
+            if ($googleToken && ! $appointment->google_event_id) {
                 try {
                     $service = new GoogleCalendarService($googleToken);
                     $event = $service->createEventFromAppointment($appointment, $request->user()->email);
-                    if (!empty($event['id'])) {
+                    if (! empty($event['id'])) {
                         $appointment->google_event_id = $event['id'];
                         $appointment->save();
                     }
                 } catch (\Exception $e) {
-                    Log::error('Google Calendar event creation failed: ' . $e->getMessage());
+                    Log::error('Google Calendar event creation failed: '.$e->getMessage());
                 }
             }
         }
@@ -164,7 +170,7 @@ class AdminPlanningController extends Controller
             } catch (\Exception $e) {
                 $emailSent = false;
                 $emailError = $e->getMessage();
-                Log::error('Appointment status email failed: ' . $e->getMessage(), [
+                Log::error('Appointment status email failed: '.$e->getMessage(), [
                     'appointment_id' => $appointment->id,
                     'status' => $validated['status'],
                 ]);
@@ -187,14 +193,14 @@ class AdminPlanningController extends Controller
             'status' => 'cancelled',
             'cancel_reason' => $validated['cancel_reason'] ?? null,
         ]);
-        
+
         $googleToken = GoogleCalendarToken::where('teacher_id', $request->user()->id)->first();
         if ($googleToken && $appointment->google_event_id) {
             try {
                 $service = new GoogleCalendarService($googleToken);
                 $service->deleteEvent($appointment->google_event_id);
             } catch (\Exception $e) {
-                Log::error('Google Calendar event deletion failed: ' . $e->getMessage());
+                Log::error('Google Calendar event deletion failed: '.$e->getMessage());
             }
         }
 
@@ -212,13 +218,14 @@ class AdminPlanningController extends Controller
             'auto_confirm' => false,
             'timezone' => 'Africa/Porto-Novo',
         ]);
+
         return response()->json(['settings' => $settings]);
     }
 
     public function createManualAppointment(CreateManualAppointmentRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        
+
         // Vérifier que le créneau n'est pas déjà occupé
         $existing = Appointment::where('teacher_id', $request->user()->id)
             ->where('date', $validated['date'])
@@ -233,7 +240,7 @@ class AdminPlanningController extends Controller
             })
             ->where('status', '!=', 'cancelled')
             ->first();
-            
+
         if ($existing) {
             return response()->json(['message' => 'Ce créneau est déjà occupé.'], 409);
         }
@@ -270,12 +277,14 @@ class AdminPlanningController extends Controller
         ]);
 
         $settings->update($validated);
+
         return response()->json(['message' => 'Paramètres mis à jour.', 'settings' => $settings]);
     }
 
     public function getGoogleCalendarStatus(Request $request): JsonResponse
     {
         $connected = GoogleCalendarToken::where('teacher_id', $request->user()->id)->exists();
+
         return response()->json(['connected' => $connected]);
     }
 
@@ -298,7 +307,7 @@ class AdminPlanningController extends Controller
 
     public function handleGoogleCalendarCallback(Request $request)
     {
-        $request->validate(['code' => 'required|string']);
+        $request->validate(['code' => 'required|string', 'state' => 'nullable|string']);
 
         $tokenResponse = Http::asForm()->post('https://oauth2.googleapis.com/token', [
             'code' => $request->code,
@@ -309,12 +318,18 @@ class AdminPlanningController extends Controller
         ]);
 
         if ($tokenResponse->failed()) {
-            return redirect()->away(config('services.google.frontend_url') . '/admin/planning?google_calendar_error=1');
+            return redirect()->away(config('services.google.frontend_url').'/admin/planning?google_calendar_error=1');
         }
 
         $data = $tokenResponse->json();
+        $teacherId = $request->user()?->id ?? $request->input('state');
+
+        if (! $teacherId) {
+            return redirect()->away(config('services.google.frontend_url').'/admin/planning?google_calendar_error=1');
+        }
+
         GoogleCalendarToken::updateOrCreate(
-            ['teacher_id' => $request->user()->id],
+            ['teacher_id' => $teacherId],
             [
                 'access_token' => $data['access_token'],
                 'refresh_token' => $data['refresh_token'] ?? null,
@@ -324,12 +339,13 @@ class AdminPlanningController extends Controller
             ]
         );
 
-        return redirect()->away(config('services.google.frontend_url') . '/admin/planning?google_calendar_connected=1');
+        return redirect()->away(config('services.google.frontend_url').'/admin/planning?google_calendar_connected=1');
     }
 
     public function disconnectGoogleCalendar(Request $request): JsonResponse
     {
         GoogleCalendarToken::where('teacher_id', $request->user()->id)->delete();
+
         return response()->json(['message' => 'Déconnexion Google Calendar réussie.']);
     }
 }

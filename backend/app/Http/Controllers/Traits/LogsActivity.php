@@ -14,7 +14,7 @@ trait LogsActivity
     {
         try {
             // Vérifier si la table existe et si le modèle est disponible
-            if (!class_exists(ActivityLog::class) || !Schema::hasTable('activity_logs')) {
+            if (! class_exists(ActivityLog::class) || ! Schema::hasTable('activity_logs')) {
                 return;
             }
 
@@ -28,7 +28,7 @@ trait LogsActivity
             ]);
         } catch (\Exception $e) {
             // Ne pas bloquer la requête si le log échoue
-            \Log::warning('Failed to log activity: ' . $e->getMessage());
+            \Log::warning('Failed to log activity: '.$e->getMessage());
         }
     }
 }

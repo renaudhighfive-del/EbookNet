@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Traits\LogsActivity;
-use App\Models\Reference;
-use App\Models\Author;
 use App\Http\Requests\Reference\StoreReferenceRequest;
 use App\Http\Requests\Reference\UpdateReferenceRequest;
+use App\Models\Reference;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,10 +22,10 @@ class ReferenceController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(fn($q) => $q
-                ->where('title', 'like', '%' . $search . '%')
-                ->orWhere('subtitle', 'like', '%' . $search . '%')
-                ->orWhere('isbn', 'like', '%' . $search . '%')
+            $query->where(fn ($q) => $q
+                ->where('title', 'like', '%'.$search.'%')
+                ->orWhere('subtitle', 'like', '%'.$search.'%')
+                ->orWhere('isbn', 'like', '%'.$search.'%')
             );
         }
 
@@ -47,6 +46,7 @@ class ReferenceController extends Controller
         }
 
         $perPage = min((int) $request->input('per_page', 25), 9999);
+
         return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
     }
 
@@ -81,12 +81,12 @@ class ReferenceController extends Controller
         $reference = Reference::create($validated);
 
         // Attach authors if provided
-        if (!empty($validated['authors'])) {
+        if (! empty($validated['authors'])) {
             $reference->authors()->attach($validated['authors']);
         }
 
         // Create keywords if provided
-        if (!empty($validated['keywords'])) {
+        if (! empty($validated['keywords'])) {
             foreach ($validated['keywords'] as $keyword) {
                 $reference->keywords()->create(['keyword' => $keyword]);
             }
@@ -195,9 +195,9 @@ class ReferenceController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(fn($q) => $q
-                ->where('title', 'like', '%' . $search . '%')
-                ->orWhere('isbn', 'like', '%' . $search . '%')
+            $query->where(fn ($q) => $q
+                ->where('title', 'like', '%'.$search.'%')
+                ->orWhere('isbn', 'like', '%'.$search.'%')
             );
         }
 
@@ -206,6 +206,7 @@ class ReferenceController extends Controller
         }
 
         $perPage = min((int) $request->input('per_page', 10), 100);
+
         return response()->json($query->orderBy('created_at', 'desc')->paginate($perPage));
     }
 
@@ -214,7 +215,7 @@ class ReferenceController extends Controller
     {
         $reference = Reference::findOrFail($id);
         $this->authorize('restore', $reference);
-        
+
         if ($reference->status !== 'archived') {
             return response()->json([
                 'message' => 'Cette référence n\'est pas archivée.',

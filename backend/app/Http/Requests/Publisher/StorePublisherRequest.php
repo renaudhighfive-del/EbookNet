@@ -14,18 +14,18 @@ class StorePublisherRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:5000',
-            'country'     => 'nullable|string|max:100',
-            'website'     => 'nullable|url|max:500',
+            'country' => 'nullable|string|max:100',
+            'website' => 'nullable|url|max:500',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'name.required'     => 'Le nom de l\'éditeur est requis.',
-            'website.url'       => 'Le site web doit être une URL valide.',
+            'name.required' => 'Le nom de l\'éditeur est requis.',
+            'website.url' => 'Le site web doit être une URL valide.',
         ];
     }
 }

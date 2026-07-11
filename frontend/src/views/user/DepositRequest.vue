@@ -49,6 +49,7 @@ const form = ref({
   language: 'fr',
   type: '',
   keywords: [],
+  pages: '',
 })
 
 const keywordInput = ref('')
@@ -123,35 +124,35 @@ function onPublisherInput() {
   showPublisherDropdown.value = true
 }
 
-function validateISBN(value) {
-  if (!value) return ''
-  const cleaned = value.replace(/[-\s]/g, '')
-  if (cleaned.length === 10) {
-    let sum = 0
-    for (let i = 0; i < 10; i++) {
-      const c = cleaned[i]
-      if (i < 9 && !/\d/.test(c)) return 'Format ISBN-10 invalide.'
-      if (i === 9 && c !== 'X' && !/\d/.test(c)) return 'Format ISBN-10 invalide.'
-      sum += (i === 9 && c === 'X') ? 10 : (i === 9 ? parseInt(c) : (i + 1) * parseInt(c))
-    }
-    if (sum % 11 !== 0) return 'ISBN-10 invalide (somme de contrôle).'
-    return ''
-  }
-  if (cleaned.length === 13) {
-    if (!/^\d{13}$/.test(cleaned)) return 'Format ISBN-13 invalide.'
-    let sum = 0
-    for (let i = 0; i < 13; i++) {
-      sum += parseInt(cleaned[i]) * (i % 2 === 0 ? 1 : 3)
-    }
-    if (sum % 10 !== 0) return 'ISBN-13 invalide (somme de contrôle).'
-    return ''
-  }
-  return 'L\'ISBN doit contenir 10 ou 13 chiffres.'
-}
+// function validateISBN(value) {
+//   if (!value) return ''
+//   const cleaned = value.replace(/[-\s]/g, '')
+//   if (cleaned.length === 10) {
+//     let sum = 0
+//     for (let i = 0; i < 10; i++) {
+//       const c = cleaned[i]
+//       if (i < 9 && !/\d/.test(c)) return 'Format ISBN-10 invalide.'
+//       if (i === 9 && c !== 'X' && !/\d/.test(c)) return 'Format ISBN-10 invalide.'
+//       sum += (i === 9 && c === 'X') ? 10 : (i === 9 ? parseInt(c) : (i + 1) * parseInt(c))
+//     }
+//     if (sum % 11 !== 0) return 'ISBN-10 invalide (somme de contrôle).'
+//     return ''
+//   }
+//   if (cleaned.length === 13) {
+//     if (!/^\d{13}$/.test(cleaned)) return 'Format ISBN-13 invalide.'
+//     let sum = 0
+//     for (let i = 0; i < 13; i++) {
+//       sum += parseInt(cleaned[i]) * (i % 2 === 0 ? 1 : 3)
+//     }
+//     if (sum % 10 !== 0) return 'ISBN-13 invalide (somme de contrôle).'
+//     return ''
+//   }
+//   return 'L\'ISBN doit contenir 10 ou 13 chiffres.'
+// }
 
-function onIsbnInput() {
-  isbnError.value = validateISBN(form.value.isbn)
-}
+// function onIsbnInput() {
+//   isbnError.value = validateISBN(form.value.isbn)
+// }
 
 function addKeyword() {
   const kw = keywordInput.value.trim().toLowerCase()
@@ -209,6 +210,7 @@ async function handleSubmit() {
     if (form.value.proposed_file instanceof File) payload.append('proposed_file', form.value.proposed_file)
     if (form.value.publisher) payload.append('publisher', form.value.publisher)
     if (form.value.isbn) payload.append('isbn', form.value.isbn)
+    if (form.value.pages) payload.append('pages', String(parseInt(form.value.pages)))
     payload.append('language', form.value.language)
     if (form.value.type) payload.append('type', form.value.type)
     if (form.value.keywords.length) {
@@ -327,7 +329,7 @@ async function handleSubmit() {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label class="block text-sm font-medium text-navy-800 mb-2">Langue</label>
               <select
@@ -348,6 +350,16 @@ async function handleSubmit() {
                 max="2099"
                 class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-navy-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
                 placeholder="2024"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-navy-800 mb-2">Nombre de pages</label>
+              <input
+                type="number"
+                v-model="form.pages"
+                min="1"
+                class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-navy-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
+                placeholder="Ex: 150"
               />
             </div>
           </div>

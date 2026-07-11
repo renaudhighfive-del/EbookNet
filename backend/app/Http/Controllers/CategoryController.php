@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Http\Requests\Category\StoreCategoryRequest;
 use App\Http\Requests\Category\UpdateCategoryRequest;
+use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,9 +19,9 @@ class CategoryController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(fn($q) => $q
-                ->where('name', 'like', '%' . $search . '%')
-                ->orWhere('description', 'like', '%' . $search . '%')
+            $query->where(fn ($q) => $q
+                ->where('name', 'like', '%'.$search.'%')
+                ->orWhere('description', 'like', '%'.$search.'%')
             );
         }
 
@@ -54,6 +54,7 @@ class CategoryController extends Controller
     {
         $category = Category::withCount('references')->findOrFail($id);
         $this->authorize('view', $category);
+
         return response()->json(['category' => $category]);
     }
 
@@ -84,7 +85,7 @@ class CategoryController extends Controller
         if ($category->references()->count() > 0) {
             return response()->json([
                 'message' => 'Impossible de supprimer cette catégorie car elle contient des références.',
-                'references_count' => $category->references()->count()
+                'references_count' => $category->references()->count(),
             ], 400);
         }
 

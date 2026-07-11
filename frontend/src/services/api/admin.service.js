@@ -400,17 +400,43 @@ export const adminService = {
   },
 
   /**
-   * Publie un dépôt (le rend visible).
+   * Publie un dépôt dans le catalogue.
    * @param {number|string} id - Identifiant du dépôt.
-   * @returns {Promise<Object>} Dépôt publié.
+   * @param {Object} [meta={}] - { comment, adminOverride } — requis quand on
+   *   publie après un refus responsable ("Passer outre & Publier") : le
+   *   contrôleur exige alors un commentaire (min 50 caractères).
+   * @returns {Promise<Object>} Dépôt publié + référence créée.
    */
-  async publishDeposit(id) {
-    const response = await api.patch(`/admin/deposits/${id}/publish`)
+  async publishDeposit(id, meta = {}) {
+    const payload = {}
+    if (meta.comment) payload.comment = meta.comment
+    if (meta.adminOverride) payload.admin_override = true
+    const response = await api.patch(`/admin/deposits/${id}/publish`, payload)
     return response.data
   },
 
   /**
-   * Approuve un dépôt.
+   * Annule l'assignation d'un dépôt (retour à 'pending').
+   * @param {number|string} id - Identifiant du dépôt.
+   * @returns {Promise<Object>} Dépôt mis à jour.
+   */
+  async unassignDeposit(id) {
+    const response = await api.patch(`/admin/deposits/${id}/unassign`)
+    return response.data
+  },
+
+  /**
+   * Envoie une relance au responsable assigné.
+   * @param {number|string} id - Identifiant du dépôt.
+   * @returns {Promise<Object>} Confirmation.
+   */
+  async remindDeposit(id) {
+    const response = await api.patch(`/admin/deposits/${id}/remind`)
+    return response.data
+  },
+
+  /**
+   * Approuve un dépôt (action responsable).
    * @param {number|string} id - Identifiant du dépôt.
    * @returns {Promise<Object>} Dépôt approuvé.
    */
@@ -450,6 +476,27 @@ export const adminService = {
   async unpublishDeposit(id, comment) {
     const response = await api.patch(`/admin/deposits/${id}/unpublish`, { comment })
     return response.data
+  },
+
+  // Managers
+  /**
+   * Récupère la liste des responsables disponibles.
+   * @returns {Promise<Array>} Liste des responsables.
+   */
+  async getManagers() {
+    const response = await api.get('/admin/deposits/managers')
+    return response.data
+  },
+
+  /**
+   * Récupère l'URL du fichier d'un dépôt.
+   * @param {number|string} id - Identifiant du dépôt.
+   * @param {boolean} [inline=false - Si true, renvoie l'URL pour prévisualisation inline.
+   * @returns {string} URL du fichier.
+   */
+  getDepositFileUrl(id, inline = false) {
+    const url = `${import.meta.env.VITE_API_URL}/admin/deposits/${id}/file`
+    return inline ? `${url}?inline=1` : url
   },
 
   // Activity Logs

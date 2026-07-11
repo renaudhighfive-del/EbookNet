@@ -14,18 +14,19 @@ class ActivityLogController extends Controller
         $query = ActivityLog::with(['user' => function ($q) {
             $q->select('id', 'first_name', 'last_name', 'email', 'role');
         }])
-        ->where('target_table', 'users')
-        ->orderBy('created_at', 'desc');
+            ->where('target_table', 'users')
+            ->orderBy('created_at', 'desc');
 
         // Filtres
         if ($request->filled('action')) {
-            $query->where('action', 'like', '%' . $request->action . '%');
+            $query->where('action', 'like', '%'.$request->action.'%');
         }
         if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
         }
 
         $perPage = min((int) $request->input('per_page', 50), 100);
+
         return response()->json($query->paginate($perPage));
     }
 
@@ -35,11 +36,11 @@ class ActivityLogController extends Controller
         $query = ActivityLog::with(['user' => function ($q) {
             $q->select('id', 'first_name', 'last_name', 'email', 'role');
         }])
-        ->orderBy('created_at', 'desc');
+            ->orderBy('created_at', 'desc');
 
         // Filtres
         if ($request->filled('action')) {
-            $query->where('action', 'like', '%' . $request->action . '%');
+            $query->where('action', 'like', '%'.$request->action.'%');
         }
         if ($request->filled('target_table')) {
             $query->where('target_table', $request->target_table);
@@ -49,6 +50,7 @@ class ActivityLogController extends Controller
         }
 
         $perPage = min((int) $request->input('per_page', 50), 100);
+
         return response()->json($query->paginate($perPage));
     }
 }

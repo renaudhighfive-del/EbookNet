@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Reference;
-use App\Models\Category;
 use App\Models\Author;
+use App\Models\Category;
 use App\Models\Download;
+use App\Models\Reference;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,16 +15,16 @@ class PublicController extends Controller
     {
         return response()->json([
             'total_references' => Reference::where('status', 'published')->count(),
-            'total_authors'    => Author::count(),
+            'total_authors' => Author::count(),
             'total_categories' => Category::where('status', 'active')->count(),
-            'total_downloads'  => Download::count(),
+            'total_downloads' => Download::count(),
         ]);
     }
 
     public function categories(): JsonResponse
     {
         $categories = Category::where('status', 'active')
-            ->withCount(['references' => fn($q) => $q->where('status', 'published')])
+            ->withCount(['references' => fn ($q) => $q->where('status', 'published')])
             ->orderBy('name', 'asc')
             ->get(['id', 'name', 'slug', 'description']);
 
@@ -40,9 +40,9 @@ class PublicController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('subtitle', 'like', "%{$search}%")
-                  ->orWhere('abstract', 'like', "%{$search}%")
-                  ->orWhere('isbn', 'like', "%{$search}%");
+                    ->orWhere('subtitle', 'like', "%{$search}%")
+                    ->orWhere('abstract', 'like', "%{$search}%")
+                    ->orWhere('isbn', 'like', "%{$search}%");
             });
         }
 
@@ -67,15 +67,16 @@ class PublicController extends Controller
         }
 
         $sortField = match ($request->sort) {
-            'year'     => 'publication_year',
-            'title'    => 'title',
-            'views'    => 'view_count',
-            'downloads'=> 'download_count',
-            default    => 'created_at',
+            'year' => 'publication_year',
+            'title' => 'title',
+            'views' => 'view_count',
+            'downloads' => 'download_count',
+            default => 'created_at',
         };
         $sortDir = $request->sort === 'title' ? 'asc' : 'desc';
 
         $perPage = min((int) $request->input('per_page', 12), 50);
+
         return response()->json(
             $query->orderBy($sortField, $sortDir)->paginate($perPage)
         );
@@ -122,7 +123,7 @@ class PublicController extends Controller
 
         return response()->json([
             'reference' => $reference,
-            'similar'   => $similar,
+            'similar' => $similar,
         ]);
     }
 
@@ -149,11 +150,11 @@ class PublicController extends Controller
                     $q->orWhere('isbn', 'like', "%{$search}%");
                 }
                 if (in_array('authors', $fields)) {
-                    $q->orWhereHas('authors', fn($a) => $a->where('first_name', 'like', "%{$search}%")
+                    $q->orWhereHas('authors', fn ($a) => $a->where('first_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%"));
                 }
                 if (in_array('keywords', $fields)) {
-                    $q->orWhereHas('keywords', fn($k) => $k->where('keyword', 'like', "%{$search}%"));
+                    $q->orWhereHas('keywords', fn ($k) => $k->where('keyword', 'like', "%{$search}%"));
                 }
             });
         }
@@ -179,15 +180,16 @@ class PublicController extends Controller
         }
 
         $sortField = match ($request->sort) {
-            'year'     => 'publication_year',
-            'title'    => 'title',
-            'views'    => 'view_count',
-            'downloads'=> 'download_count',
-            default    => 'created_at',
+            'year' => 'publication_year',
+            'title' => 'title',
+            'views' => 'view_count',
+            'downloads' => 'download_count',
+            default => 'created_at',
         };
         $sortDir = $request->sort === 'title' ? 'asc' : 'desc';
 
         $perPage = min((int) $request->input('per_page', 12), 50);
+
         return response()->json(
             $query->orderBy($sortField, $sortDir)->paginate($perPage)
         );

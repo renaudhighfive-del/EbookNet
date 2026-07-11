@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { userService } from '@/services/api/user.service'
+import { adminService } from '@/services/api/admin.service'
 import { useDepositsStore } from '@/stores/deposits'
 import {
   ArrowLeft,
@@ -134,6 +135,24 @@ function formatFileSize(bytes) {
   const i = Math.floor(Math.log(bytes) / Math.log(1024))
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
 }
+
+const fileUrl = computed(() => {
+  if (!deposit.value?.id) return null
+  // If the user is admin, use admin service
+  if (isUserAdmin) {
+    return adminService.getDepositFileUrl(deposit.value.id)
+  }
+  return userService.getDepositFileUrl(deposit.value.id)
+})
+
+const fileUrlInline = computed(() => {
+  if (!deposit.value?.id) return null
+  // If the user is admin, use admin service
+  if (isUserAdmin) {
+    return adminService.getDepositFileUrl(deposit.value.id, true)
+  }
+  return userService.getDepositFileUrl(deposit.value.id, true)
+})
 
 const isUserAdmin = authStore.userRole === 'admin'
 
@@ -336,7 +355,7 @@ onMounted(async () => {
               />
             </div>
 
-            <div v-if="deposit.proposed_file_url || deposit.fileUrl" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
+            <div v-if="fileUrl" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
               <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2">
                 <FileText class="w-4 h-4" />
                 Fichier
@@ -349,14 +368,14 @@ onMounted(async () => {
                       {{ (deposit.proposed_file || deposit.file || '').split('/').pop() || 'Document joint' }}
                     </p>
                     <p class="text-xs text-gray-500">
-                      {{ getFileExtension(deposit.proposed_file_url || deposit.fileUrl || '') | upper }} ·
+                      {{ getFileExtension(fileUrl || '') | upper }} ·
                       {{ formatFileSize(deposit.file_size) }}
                     </p>
                   </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <a
-                    :href="deposit.proposed_file_url || deposit.fileUrl"
+                    :href="fileUrl"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors"
@@ -365,7 +384,7 @@ onMounted(async () => {
                     Télécharger
                   </a>
                   <a
-                    :href="getViewerUrl(deposit.proposed_file_url || deposit.fileUrl)"
+                    :href="getViewerUrl(fileUrlInline)"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="inline-flex items-center gap-2 px-4 py-2 bg-navy-800 text-white rounded-xl text-sm font-medium hover:bg-navy-900 transition-colors"
@@ -374,18 +393,18 @@ onMounted(async () => {
                     Voir en ligne
                   </a>
                 </div>
-                <div v-if="isPdf(deposit.proposed_file_url || deposit.fileUrl)" class="mt-4">
+                <div v-if="isPdf(fileUrl)" class="mt-4">
                   <iframe
-                    :src="getPdfViewerUrl(deposit.proposed_file_url || deposit.fileUrl)"
+                    :src="fileUrlInline"
                     class="w-full h-96 rounded-xl border border-gray-200"
                     title="Aperçu PDF"
                   ></iframe>
                 </div>
-                <div v-else-if="isViewableFile(deposit.proposed_file_url || deposit.fileUrl)" class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div v-else-if="isViewableFile(fileUrl)" class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                   <p class="text-sm text-amber-800">
                     <Eye class="w-4 h-4 inline mr-1" />
                     Ce format de fichier ne peut pas être prévisualisé directement. 
-                    <a :href="getViewerUrl(deposit.proposed_file_url || deposit.fileUrl)" target="_blank" rel="noopener noreferrer" class="underline hover:text-amber-600">
+                    <a :href="getViewerUrl(fileUrlInline)" target="_blank" rel="noopener noreferrer" class="underline hover:text-amber-600">
                       Cliquez ici pour l'ouvrir
                     </a>
                   </p>

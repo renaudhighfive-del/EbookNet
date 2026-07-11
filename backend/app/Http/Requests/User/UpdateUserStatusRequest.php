@@ -23,7 +23,7 @@ class UpdateUserStatusRequest extends FormRequest
     {
         return [
             'status.required' => 'Le statut est requis.',
-            'status.in'       => 'Le statut doit être actif ou inactif.',
+            'status.in' => 'Le statut doit être actif ou inactif.',
         ];
     }
 }

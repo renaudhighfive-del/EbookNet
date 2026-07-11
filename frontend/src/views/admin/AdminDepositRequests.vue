@@ -163,9 +163,11 @@ const tabs = computed(() => [
   { id: 'all', label: 'Toutes', count: deposits.value.length },
   { id: 'pending', label: 'En attente', count: deposits.value.filter(d => d.status === 'pending').length },
   { id: 'assigned', label: 'Assignées', count: deposits.value.filter(d => d.status === 'assigned').length },
-  { id: 'approved', label: 'Validées', count: deposits.value.filter(d => d.status === 'approved_by_manager').length },
-  { id: 'rejected', label: 'Refusées', count: deposits.value.filter(d => d.status === 'rejected_by_manager').length },
+  { id: 'approved_by_manager', label: 'Validées', count: deposits.value.filter(d => d.status === 'approved_by_manager').length },
+  { id: 'rejected_by_manager', label: 'Refusées', count: deposits.value.filter(d => d.status === 'rejected_by_manager').length },
+  { id: 'second_review', label: 'Second avis', count: deposits.value.filter(d => d.status === 'second_review').length },
   { id: 'published', label: 'Publiées', count: deposits.value.filter(d => d.status === 'published').length },
+  { id: 'rejected', label: 'Rejetées', count: deposits.value.filter(d => d.status === 'rejected').length },
 ])
 
 const filteredDeposits = computed(() => {
@@ -206,7 +208,7 @@ async function loadDeposits(page = 1) {
       params: { page, per_page: 15 }
     })
     deposits.value = response.data.data ?? []
-    pagination.value = response.data ?? response.value
+    pagination.value = response.data
   } catch {
     hasError.value = true
   } finally {

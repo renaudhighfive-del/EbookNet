@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Appointment;
-use App\Models\AvailabilityRule;
-use App\Models\AvailabilityException;
-use App\Models\Setting;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Planning\CreateAppointmentRequest;
 use App\Mail\AppointmentRequestSubmitted;
-use Illuminate\Support\Facades\Log;
+use App\Models\Appointment;
+use App\Models\AvailabilityException;
+use App\Models\AvailabilityRule;
+use App\Models\Setting;
+use App\Models\User;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 class PlanningController extends Controller
@@ -32,7 +32,7 @@ class PlanningController extends Controller
         $appointments = Appointment::where('teacher_id', $teacher->id)
             ->whereBetween('date', [
                 $request->start_date,
-                $request->end_date
+                $request->end_date,
             ])
             ->orderBy('date')
             ->orderBy('start_time')
@@ -66,7 +66,7 @@ class PlanningController extends Controller
 
         // Vérifier si la journée est complètement bloquée
         $blockedDay = $exceptions->first(function ($e) {
-            return $e->type === 'blocked' && !$e->start_time && !$e->end_time;
+            return $e->type === 'blocked' && ! $e->start_time && ! $e->end_time;
         });
 
         if ($blockedDay) {
@@ -84,10 +84,12 @@ class PlanningController extends Controller
                 $slotEnd = $currentTime->copy()->addMinutes($slotDuration)->format('H:i:s');
 
                 $isBlocked = $exceptions->contains(function ($e) use ($slotStart, $slotEnd) {
-                    if ($e->type !== 'blocked')
+                    if ($e->type !== 'blocked') {
                         return false;
-                    if (!$e->start_time || !$e->end_time)
+                    }
+                    if (! $e->start_time || ! $e->end_time) {
                         return false;
+                    }
 
                     $eStart = Carbon::createFromFormat('H:i:s', $e->start_time);
                     $eEnd = Carbon::createFromFormat('H:i:s', $e->end_time);
@@ -97,7 +99,7 @@ class PlanningController extends Controller
                     return $sStart->lt($eEnd) && $sEnd->gt($eStart);
                 });
 
-                if (!$isBlocked) {
+                if (! $isBlocked) {
                     $slots[] = [
                         'start' => $slotStart,
                         'end' => $slotEnd,
@@ -131,7 +133,7 @@ class PlanningController extends Controller
             }
 
             // Vérifier le délai de préavis
-            $slotDateTime = Carbon::parse($date . ' ' . $slot['start']);
+            $slotDateTime = Carbon::parse($date.' '.$slot['start']);
             if ($slotDateTime->lt(now()->addHours($settings->min_notice_hours))) {
                 $slot['available'] = false;
             }
@@ -148,7 +150,7 @@ class PlanningController extends Controller
         $date = $request->input('date', now()->format('Y-m-d'));
         $teacher = $this->getTeacher();
 
-        if (!$teacher) {
+        if (! $teacher) {
             return response()->json(['message' => 'Aucun enseignant disponible.'], 404);
         }
 
@@ -176,7 +178,7 @@ class PlanningController extends Controller
         $month = $request->input('month', now()->format('Y-m'));
         $teacher = $this->getTeacher();
 
-        if (!$teacher) {
+        if (! $teacher) {
             return response()->json(['message' => 'Aucun enseignant disponible.'], 404);
         }
 
@@ -200,7 +202,7 @@ class PlanningController extends Controller
 
         for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
             $slots = $this->generateSlots($date->format('Y-m-d'), $teacher, $settings, $request->user());
-            $hasAvailable = collect($slots)->some(fn($s) => $s['available']);
+            $hasAvailable = collect($slots)->some(fn ($s) => $s['available']);
 
             if ($hasAvailable) {
                 $availableDays[] = $date->format('Y-m-d');
@@ -216,7 +218,7 @@ class PlanningController extends Controller
         $validated = $request->validated();
         $teacher = $this->getTeacher();
 
-        if (!$teacher) {
+        if (! $teacher) {
             return response()->json(['message' => 'Aucun enseignant disponible.'], 404);
         }
 
@@ -239,11 +241,12 @@ class PlanningController extends Controller
             Mail::to($appointment->email)->send(new AppointmentRequestSubmitted($appointment));
 
             DB::commit();
+
             return response()->json([
                 'message' => 'Réservation soumise, en attente de validation.',
                 'appointment' => $appointment,
             ], 201);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             DB::rollBack();
             if (str_contains($e->getMessage(), 'UNIQUE constraint failed')) {
                 return response()->json(['message' => 'Ce créneau vient d\'être réservé, merci d\'en choisir un autre.'], 409);
@@ -256,6 +259,7 @@ class PlanningController extends Controller
     public function getAppointmentStatus($id): JsonResponse
     {
         $appointment = Appointment::findOrFail($id);
+
         return response()->json(['appointment' => $appointment]);
     }
 
@@ -264,6 +268,7 @@ class PlanningController extends Controller
     {
         $appointment = Appointment::findOrFail($id);
         $appointment->update(['status' => 'cancelled']);
+
         // TODO: Envoyer email
         return response()->json(['message' => 'Réservation annulée.', 'appointment' => $appointment]);
     }

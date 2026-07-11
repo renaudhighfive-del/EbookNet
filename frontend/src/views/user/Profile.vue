@@ -26,7 +26,13 @@ const authStore = useAuthStore()
 async function fetchUserProfile() {
   isLoading.value = true
   error.value = null
-  
+
+  if (!authStore.user?.id) {
+    error.value = 'Utilisateur non authentifié'
+    isLoading.value = false
+    return
+  }
+
   try {
     const response = await api.get(`/hr/users/${authStore.user.id}`)
     profileForm.value = {
@@ -47,7 +53,13 @@ async function fetchUserProfile() {
 async function handleSave() {
   isSaving.value = true
   error.value = null
-  
+
+  if (!authStore.user?.id) {
+    error.value = 'Utilisateur non authentifié'
+    isSaving.value = false
+    return
+  }
+
   try {
     const response = await api.put(`/hr/users/${authStore.user.id}`, profileForm.value)
     authStore.user = response.data.user

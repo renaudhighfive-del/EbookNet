@@ -1,17 +1,22 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import PublicLayout from '../layouts/PublicLayout.vue'
 import DocumentCard from '../components/DocumentCard.vue'
-import { ChevronRight, BookOpen, Lock, Eye, Download } from '@lucide/vue'
+import { ChevronRight, BookOpen, Lock, Eye, Download, X, ZoomIn } from '@lucide/vue'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const auth = useAuthStore()
 
 const isLoading = ref(true)
 const hasError = ref(false)
 const doc = ref(null)
 const similarDocs = ref([])
+
+// Lightbox pour la couverture
+const showCoverLightbox = ref(false)
 
 const coverColors = [
   'from-[#1B2A4A] to-[#1E3368]',
@@ -24,18 +29,44 @@ const coverColors = [
   'from-[#6366F1] to-[#4338CA]',
 ]
 
+// Langue affichée
+const LANGUAGE_LABELS = {
+  fr: 'Français', en: 'Anglais', es: 'Espagnol', de: 'Allemand',
+  it: 'Italien', pt: 'Portugais', ar: 'Arabe', zh: 'Chinois', autre: 'Autre',
+}
+
+/**
+ * Normalise un document similaire pour DocumentCard.
+ * Conserve les champs nécessaires sans les écraser.
+ */
 function normalizeDoc(d) {
   return {
     id: d.id,
     title: d.title,
-    authors: d.authors?.map(a => `${a.first_name} ${a.last_name}`) ?? [],
+    // Les auteurs arrivent comme objets {first_name, last_name} depuis l'API —
+    // on garde les objets ici, DocumentCard s'occupera du rendu.
+    authors: d.authors ?? [],
     category: d.category?.name ?? '',
     type: d.document_type ?? '',
     year: d.publication_year,
+    abstract: d.abstract ?? '',
+    isbn: d.isbn ?? null,
+    pages: d.pages ?? null,
+    keywords: d.keywords ?? [],
+    publisher: d.publisher ?? null,
+    view_count: d.view_count ?? 0,
+    download_count: d.download_count ?? 0,
     access: d.status === 'published' ? 'public' : 'restricted',
     coverColor: coverColors[d.id % coverColors.length],
+    cover_image: d.cover_image ?? null,
   }
 }
+
+// URL du fichier PDF (lecture en ligne)
+const fileUrl = computed(() => doc.value?.file_path ?? doc.value?.proposed_file ?? null)
+
+// URL de la couverture
+const coverImageUrl = computed(() => doc.value?.cover_image ?? null)
 
 onMounted(async () => {
   try {
@@ -70,11 +101,14 @@ onMounted(async () => {
           <ChevronRight class="w-4 h-4" />
           <router-link to="/catalogue" class="hover:text-[#0D9488]">Catalogue</router-link>
           <ChevronRight class="w-4 h-4" />
-          <span class="text-[#1B2A4A]">{{ doc.title }}</span>
+          <span class="text-[#1B2A4A] truncate max-w-xs">{{ doc.title }}</span>
         </nav>
 
-        <!-- Login Banner -->
-        <div class="bg-[#E8A020]/10 border-l-4 border-[#E8A020] p-4 rounded-r-xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <!-- Bannière de connexion (uniquement si non connecté) -->
+        <div
+          v-if="!auth.isAuthenticated"
+          class="bg-[#E8A020]/10 border-l-4 border-[#E8A020] p-4 rounded-r-xl mb-8 flex flex-col sm:flex-row items-center justify-between gap-4"
+        >
           <div class="flex items-center gap-3">
             <BookOpen class="w-6 h-6 text-[#E8A020]" />
             <span class="text-[#E8A020] font-medium">
@@ -82,28 +116,73 @@ onMounted(async () => {
             </span>
           </div>
           <div class="flex gap-3">
-            <router-link to="/connexion" class="px-5 py-2 bg-[#0D9488] text-white rounded-lg font-medium hover:bg-[#0F766E] transition-colors">
+            <router-link
+              to="/connexion"
+              class="px-5 py-2 bg-[#0D9488] text-white rounded-lg font-medium hover:bg-[#0F766E] transition-colors"
+            >
               Se connecter
             </router-link>
-            <router-link to="/connexion" class="px-5 py-2 border border-[#1B2A4A] text-[#1B2A4A] rounded-lg font-medium hover:bg-[#1B2A4A]/5 transition-colors">
+            <router-link
+              to="/inscription"
+              class="px-5 py-2 border border-[#1B2A4A] text-[#1B2A4A] rounded-lg font-medium hover:bg-[#1B2A4A]/5 transition-colors"
+            >
               S'inscrire
             </router-link>
           </div>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-8">
-          <!-- Left Column -->
+          <!-- Colonne gauche : couverture + stats -->
           <aside class="w-full lg:w-80 shrink-0">
             <div class="sticky top-24">
-              <div class="bg-linear-to-br from-[#1B2A4A] to-[#2D4A7A] rounded-xl aspect-3/4 shadow-lg flex items-center justify-center mb-4">
-                <BookOpen class="w-32 h-32 text-white/30" />
+
+              <!-- Couverture : image réelle si disponible, placeholder sinon -->
+              <div
+                class="rounded-xl shadow-lg overflow-hidden mb-4 aspect-[3/4] relative group"
+                :class="coverImageUrl ? 'cursor-zoom-in' : ''"
+                @click="coverImageUrl && (showCoverLightbox = true)"
+              >
+                <img
+                  v-if="coverImageUrl"
+                  :src="coverImageUrl"
+                  :alt="`Couverture de ${doc.title}`"
+                  class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div
+                  v-else
+                  class="w-full h-full bg-gradient-to-br from-[#1B2A4A] to-[#2D4A7A] flex items-center justify-center"
+                >
+                  <BookOpen class="w-32 h-32 text-white/30" />
+                </div>
+
+                <!-- Icône zoom (uniquement si image réelle) -->
+                <div
+                  v-if="coverImageUrl"
+                  class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center"
+                >
+                  <ZoomIn class="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                </div>
               </div>
+
+              <!-- Badge accès -->
               <div class="text-center mb-4">
-                <span class="inline-flex items-center gap-2 bg-[#E8A020] text-white px-4 py-1.5 rounded-full text-sm font-medium">
+                <span
+                  v-if="!auth.isAuthenticated"
+                  class="inline-flex items-center gap-2 bg-[#E8A020] text-white px-4 py-1.5 rounded-full text-sm font-medium"
+                >
                   <Lock class="w-4 h-4" />
                   Réservé aux membres inscrits
                 </span>
+                <span
+                  v-else
+                  class="inline-flex items-center gap-2 bg-[#0D9488] text-white px-4 py-1.5 rounded-full text-sm font-medium"
+                >
+                  <Eye class="w-4 h-4" />
+                  Accès autorisé
+                </span>
               </div>
+
+              <!-- Stats vues / téléchargements -->
               <div class="flex items-center justify-center gap-6 text-[#6B7280]">
                 <div class="flex items-center gap-2">
                   <Eye class="w-5 h-5" />
@@ -117,80 +196,123 @@ onMounted(async () => {
             </div>
           </aside>
 
-          <!-- Right Column -->
-          <main class="flex-1">
-            <h1 class="text-3xl md:text-4xl font-bold text-[#1B2A4A] mb-2" style="font-family: 'Playfair Display', serif">
+          <!-- Colonne droite : infos + actions -->
+          <main class="flex-1 min-w-0">
+            <h1
+              class="text-3xl md:text-4xl font-bold text-[#1B2A4A] mb-2"
+              style="font-family: 'Playfair Display', serif"
+            >
               {{ doc.title }}
             </h1>
             <p v-if="doc.subtitle" class="text-lg text-[#6B7280] italic mb-6">{{ doc.subtitle }}</p>
 
-            <!-- Authors -->
+            <!-- Auteurs -->
             <div v-if="doc.authors?.length" class="flex items-center gap-3 mb-6">
               <span class="text-[#1A1A2E]">
                 {{ doc.authors.map(a => `${a.first_name} ${a.last_name}`).join(', ') }}
               </span>
             </div>
 
-            <!-- Metadata Grid -->
+            <!-- Grille de métadonnées -->
             <div class="grid sm:grid-cols-2 gap-4 mb-6">
               <div v-if="doc.publisher" class="flex items-center gap-2">
-                <span class="text-[#6B7280]">Éditeur:</span>
-                <span class="text-[#1A1A2E] font-mono">{{ doc.publisher.name }}</span>
+                <span class="text-[#6B7280]">Éditeur :</span>
+                <span class="text-[#1A1A2E]">{{ doc.publisher.name ?? doc.publisher }}</span>
               </div>
               <div v-if="doc.publication_year" class="flex items-center gap-2">
-                <span class="text-[#6B7280]">Année:</span>
+                <span class="text-[#6B7280]">Année :</span>
                 <span class="text-[#1A1A2E] font-mono">{{ doc.publication_year }}</span>
               </div>
               <div v-if="doc.isbn" class="flex items-center gap-2">
-                <span class="text-[#6B7280]">ISBN:</span>
+                <span class="text-[#6B7280]">ISBN :</span>
                 <span class="text-[#1A1A2E] font-mono">{{ doc.isbn }}</span>
               </div>
               <div v-if="doc.language" class="flex items-center gap-2">
-                <span class="text-[#6B7280]">Langue:</span>
-                <span class="text-[#1A1A2E] font-mono">{{ { fr: 'Français', en: 'Anglais', autre: 'Autre' }[doc.language] ?? doc.language }}</span>
+                <span class="text-[#6B7280]">Langue :</span>
+                <span class="text-[#1A1A2E]">{{ LANGUAGE_LABELS[doc.language] ?? doc.language }}</span>
               </div>
               <div v-if="doc.document_type" class="flex items-center gap-2">
-                <span class="text-[#6B7280]">Type:</span>
-                <span class="bg-[#F1F0EC] px-3 py-1 rounded-full text-sm text-[#1B2A4A] capitalize">{{ doc.document_type }}</span>
+                <span class="text-[#6B7280]">Type :</span>
+                <span class="bg-[#F1F0EC] px-3 py-1 rounded-full text-sm text-[#1B2A4A] capitalize">
+                  {{ doc.document_type }}
+                </span>
               </div>
               <div v-if="doc.category" class="flex items-center gap-2">
-                <span class="text-[#6B7280]">Catégorie:</span>
-                <span class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm">{{ doc.category.name }}</span>
+                <span class="text-[#6B7280]">Catégorie :</span>
+                <span class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm">
+                  {{ doc.category.name ?? doc.category }}
+                </span>
               </div>
               <div v-if="doc.pages" class="flex items-center gap-2">
-                <span class="text-[#6B7280]">Pages:</span>
+                <span class="text-[#6B7280]">Pages :</span>
                 <span class="text-[#1A1A2E] font-mono">{{ doc.pages }}</span>
               </div>
             </div>
 
-            <!-- Keywords -->
+            <!-- Mots-clés -->
             <div v-if="doc.keywords?.length" class="flex flex-wrap gap-2 mb-6">
-              <span v-for="kw in doc.keywords" :key="kw.id" class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30">
-                {{ kw.keyword }}
+              <span
+                v-for="kw in doc.keywords"
+                :key="kw.id ?? kw"
+                class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-sm border border-[#0D9488]/30"
+              >
+                {{ kw.keyword ?? kw }}
               </span>
             </div>
 
-            <!-- Abstract -->
+            <!-- Résumé -->
             <div v-if="doc.abstract" class="bg-[#F1F0EC] rounded-xl p-6 mb-6">
               <h2 class="font-semibold text-[#1B2A4A] mb-3">Résumé</h2>
               <p class="text-[#1A1A2E] leading-relaxed">{{ doc.abstract }}</p>
             </div>
 
-            <!-- Action Buttons -->
+            <!-- Boutons d'action -->
             <div class="flex flex-col sm:flex-row gap-4 mb-10">
-              <button disabled class="flex-1 flex items-center justify-center gap-2 bg-[#E5E7EB] text-[#9CA3AF] px-6 py-3 rounded-xl font-medium cursor-not-allowed">
-                <Lock class="w-5 h-5" />
-                Lire en ligne
-              </button>
-              <button disabled class="flex-1 flex items-center justify-center gap-2 bg-[#E5E7EB] text-[#9CA3AF] px-6 py-3 rounded-xl font-medium cursor-not-allowed">
-                <Lock class="w-5 h-5" />
-                Télécharger
-              </button>
+              <!-- Lire en ligne -->
+              <template v-if="auth.isAuthenticated && fileUrl">
+                <a
+                  :href="fileUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex-1 flex items-center justify-center gap-2 bg-[#1B2A4A] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#0F1322] transition-colors"
+                >
+                  <Eye class="w-5 h-5" />
+                  Lire en ligne
+                </a>
+                <a
+                  :href="fileUrl"
+                  download
+                  class="flex-1 flex items-center justify-center gap-2 bg-[#0D9488] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#0F766E] transition-colors"
+                >
+                  <Download class="w-5 h-5" />
+                  Télécharger
+                </a>
+              </template>
+              <!-- Pas connecté ou pas de fichier -->
+              <template v-else>
+                <button
+                  disabled
+                  class="flex-1 flex items-center justify-center gap-2 bg-[#E5E7EB] text-[#9CA3AF] px-6 py-3 rounded-xl font-medium cursor-not-allowed"
+                >
+                  <Lock class="w-5 h-5" />
+                  Lire en ligne
+                </button>
+                <button
+                  disabled
+                  class="flex-1 flex items-center justify-center gap-2 bg-[#E5E7EB] text-[#9CA3AF] px-6 py-3 rounded-xl font-medium cursor-not-allowed"
+                >
+                  <Lock class="w-5 h-5" />
+                  Télécharger
+                </button>
+              </template>
             </div>
 
-            <!-- Similar Documents -->
+            <!-- Documents similaires -->
             <section v-if="similarDocs.length" class="border-t border-[#E5E7EB] pt-10">
-              <h2 class="text-2xl font-bold text-[#1B2A4A] mb-6" style="font-family: 'Playfair Display', serif">
+              <h2
+                class="text-2xl font-bold text-[#1B2A4A] mb-6"
+                style="font-family: 'Playfair Display', serif"
+              >
                 Documents similaires
               </h2>
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -200,6 +322,28 @@ onMounted(async () => {
           </main>
         </div>
       </div>
+
+      <!-- Lightbox couverture -->
+      <Teleport to="body">
+        <div
+          v-if="showCoverLightbox"
+          class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          @click.self="showCoverLightbox = false"
+        >
+          <button
+            @click="showCoverLightbox = false"
+            class="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+            aria-label="Fermer"
+          >
+            <X class="w-8 h-8" />
+          </button>
+          <img
+            :src="coverImageUrl"
+            :alt="`Couverture de ${doc.title}`"
+            class="max-h-[90vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+          />
+        </div>
+      </Teleport>
     </template>
   </PublicLayout>
 </template>

@@ -27,7 +27,7 @@ class StoreReferenceRequest extends FormRequest
             'cover_image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'file_path' => 'nullable|file|mimes:pdf,epub,docx|max:10240',
             'status' => 'required|in:draft,published,archived',
-            'authors' => 'nullable|array',
+            'authors' => 'nullable|array|max:50',
             'authors.*' => 'integer|exists:authors,id',
             'keywords' => 'nullable|array',
             'keywords.*' => 'string|max:100',

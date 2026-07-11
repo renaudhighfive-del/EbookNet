@@ -19,7 +19,7 @@ class UpdateReferenceRequest extends FormRequest
             'title' => 'sometimes|required|string|max:500',
             'subtitle' => 'nullable|string|max:500',
             'abstract' => 'nullable|string|max:5000',
-            'isbn' => 'nullable|string|max:50|unique:references,isbn,' . $referenceId,
+            'isbn' => 'nullable|string|max:50|unique:references,isbn,'.$referenceId,
             'publication_year' => 'nullable|integer|min:1000|max:9999',
             'language' => 'sometimes|required|in:fr,en,autre',
             'document_type' => 'sometimes|required|in:livre,memoire,these,article,revue,rapport,guide,autre',

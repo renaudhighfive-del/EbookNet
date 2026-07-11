@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useDepositsStore } from '@/stores/deposits'
 import { useToastStore } from '@/stores/toast'
+import { adminService } from '@/services/api/admin.service'
 import {
   ArrowLeft,
   Clock,
@@ -22,6 +23,7 @@ import {
   FileText,
   Download,
   Loader2,
+  X,
 } from '@lucide/vue'
 
 const route = useRoute()
@@ -63,6 +65,7 @@ const VARIANT_CLASSES = {
 const showConfirmDialog = ref(false)
 const confirmDef = ref(null) // { key, label, variant, requiresComment, minLength }
 const actionComment = ref('')
+const showZoomModal = ref(false)
 
 // Dialogue d'assignation / réassignation
 const showAssignDialog = ref(false)
@@ -70,6 +73,16 @@ const assignManagerId = ref('')
 const availableManagers = computed(() => store.getAvailableManagers(deposit.value?.assignedManagerId || null))
 
 const steps = computed(() => store.getStepsForStatus(deposit.value?.status))
+
+const fileUrl = computed(() => {
+  if (!deposit.value?.id) return null
+  return adminService.getDepositFileUrl(deposit.value.id)
+})
+
+const fileUrlInline = computed(() => {
+  if (!deposit.value?.id) return null
+  return adminService.getDepositFileUrl(deposit.value.id, true)
+})
 
 const commentValid = computed(() => {
   if (!confirmDef.value?.requiresComment) return true
@@ -235,6 +248,7 @@ function showResultBanner(type, message) {
 
 onMounted(async () => {
   try {
+    store.fetchManagers()
     await refresh()
   } catch (err) {
     error.value = err.message || 'Impossible de charger la demande.'
@@ -329,7 +343,7 @@ onMounted(async () => {
               </div>
             </div>
 
-            <div v-if="deposit.fileUrl" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
+            <div v-if="fileUrl" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
               <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2">
                 <FileText class="w-4 h-4" /> Fichier
               </h2>
@@ -341,30 +355,30 @@ onMounted(async () => {
                       {{ (deposit.file || '').split('/').pop() || 'Document joint' }}
                     </p>
                     <p class="text-xs text-gray-500">
-                      {{ getFileExtension(deposit.fileUrl) | upper }} ·
-                      {{ formatFileSize(deposit.file_size) }}
+                       {{ (getFileExtension(fileUrl) || '').toUpperCase() }} ·
+                      {{ formatFileSize(deposit.fileSize) }}
                     </p>
                   </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                  <a :href="deposit.fileUrl" target="_blank" rel="noopener noreferrer"
+                  <a :href="fileUrl" target="_blank" rel="noopener noreferrer"
                     class="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition-colors">
                     <Download class="w-4 h-4" /> Télécharger
                   </a>
-                  <a :href="getViewerUrl(deposit.fileUrl)" target="_blank" rel="noopener noreferrer"
+                  <a :href="getViewerUrl(fileUrlInline)" target="_blank" rel="noopener noreferrer"
                     class="inline-flex items-center gap-2 px-4 py-2 bg-navy-800 text-white rounded-xl text-sm font-medium hover:bg-navy-900 transition-colors">
                     <Eye class="w-4 h-4" /> Voir en ligne
                   </a>
                 </div>
-                <div v-if="isPdf(deposit.fileUrl)" class="mt-4">
-                  <iframe :src="getPdfViewerUrl(deposit.fileUrl)"
+                <div v-if="isPdf(fileUrl)" class="mt-4">
+                  <iframe :src="fileUrlInline"
                     class="w-full h-96 rounded-xl border border-gray-200" title="Aperçu PDF"></iframe>
                 </div>
-                <div v-else-if="isViewableFile(deposit.fileUrl)" class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div v-else-if="isViewableFile(fileUrl)" class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                   <p class="text-sm text-amber-800">
                     <Eye class="w-4 h-4 inline mr-1" />
                     Ce format de fichier ne peut pas être prévisualisé directement. 
-                    <a :href="getViewerUrl(deposit.fileUrl)" target="_blank" rel="noopener noreferrer" class="underline hover:text-amber-600">
+                    <a :href="getViewerUrl(fileUrlInline)" target="_blank" rel="noopener noreferrer" class="underline hover:text-amber-600">
                       Cliquez ici pour l'ouvrir
                     </a>
                   </p>
@@ -444,7 +458,7 @@ onMounted(async () => {
               <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2">
                 <Image class="w-4 h-4" /> Couverture
               </h2>
-              <img :src="deposit.cover_image" alt="Couverture" class="w-full rounded-xl object-cover border border-gray-200 max-h-48" />
+              <img :src="deposit.cover_image" alt="Couverture" @click="showZoomModal = true" class="cursor-zoom-in w-full rounded-xl object-cover border border-gray-200 max-h-48" />
             </div>
 
             <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
@@ -489,6 +503,24 @@ onMounted(async () => {
                 <p class="text-sm font-medium text-navy-800">{{ getAssignee()?.first_name }} {{ getAssignee()?.last_name }}</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Zoom Image Modal -->
+        <div v-if="showZoomModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 transition-opacity duration-300" @click="showZoomModal = false">
+          <div class="relative max-w-4xl max-h-[90vh]" @click.stop>
+            <img
+              :src="deposit.cover_image || deposit.cover_image_preview"
+              alt="Couverture agrandie"
+              class="max-w-full max-h-[85vh] rounded-xl object-contain border border-white/10 shadow-2xl"
+            />
+            <button
+              class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors cursor-pointer"
+              @click="showZoomModal = false"
+              title="Fermer"
+            >
+              <X class="w-6 h-6" />
+            </button>
           </div>
         </div>
 

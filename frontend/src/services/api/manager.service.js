@@ -17,6 +17,17 @@ export const managerService = {
   },
 
   /**
+   * Récupère l'URL du fichier d'un dépôt.
+   * @param {number|string} id - Identifiant du dépôt.
+   * @param {boolean} [inline=false - Si true, renvoie l'URL pour prévisualisation inline.
+   * @returns {string} URL du fichier.
+   */
+  getDepositFileUrl(id, inline = false) {
+    const url = `${import.meta.env.VITE_API_URL}/manager/deposits/${id}/file`
+    return inline ? `${url}?inline=1` : url
+  },
+
+  /**
    * Récupère un dépôt par son identifiant.
    * @param {number|string} id - Identifiant du dépôt.
    * @returns {Promise<Object>} Détails du dépôt.

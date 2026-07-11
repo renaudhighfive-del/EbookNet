@@ -14,9 +14,9 @@ class StoreCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => 'required|string|max:255|unique:categories,name',
+            'name' => 'required|string|max:255|unique:categories,name',
             'description' => 'nullable|string|max:1000',
-            'status'      => 'sometimes|in:active,inactive',
+            'status' => 'sometimes|in:active,inactive',
         ];
     }
 
@@ -24,8 +24,8 @@ class StoreCategoryRequest extends FormRequest
     {
         return [
             'name.required' => 'Le nom de la catégorie est requis.',
-            'name.unique'   => 'Ce nom de catégorie existe déjà.',
-            'status.in'     => 'Le statut doit être actif ou inactif.',
+            'name.unique' => 'Ce nom de catégorie existe déjà.',
+            'status.in' => 'Le statut doit être actif ou inactif.',
         ];
     }
 }

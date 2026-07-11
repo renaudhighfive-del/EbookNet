@@ -69,7 +69,7 @@ const STATUS_ACTIONS = {
   assigned:           ['remind', 'reassign'],
   manager_approved:   ['approve_publish'],
   manager_rejected:   ['confirm_reject', 'override_publish', 'second_opinion_req'],
-  second_opinion:     [],
+  second_opinion:     ['reassign'],
   approved_published: ['unpublish'],
   rejected:           [],
 }

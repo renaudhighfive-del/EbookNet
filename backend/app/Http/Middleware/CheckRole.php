@@ -10,9 +10,9 @@ class CheckRole
 {
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        if (!$request->user() || !in_array($request->user()->role, $roles)) {
+        if (! $request->user() || ! in_array($request->user()->role, $roles)) {
             return response()->json([
-                'message' => 'Accès non autorisé. Vous n\'avez pas les permissions nécessaires.'
+                'message' => 'Accès non autorisé. Vous n\'avez pas les permissions nécessaires.',
             ], Response::HTTP_FORBIDDEN);
         }
 

@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\GoogleCalendarToken;
 use App\Models\Appointment;
+use App\Models\GoogleCalendarToken;
 use Illuminate\Support\Facades\Http;
 
 class GoogleCalendarService
@@ -47,16 +47,16 @@ class GoogleCalendarService
             'summary' => $appointment->subject ?: 'Rendez-vous',
             'description' => sprintf('Rendez-vous avec %s %s (%s)', $appointment->first_name, $appointment->last_name, $appointment->email),
             'start' => [
-                'dateTime' => $appointment->date->format('Y-m-d') . 'T' . substr($appointment->start_time, 0, 5) . ':00',
+                'dateTime' => $appointment->date->format('Y-m-d').'T'.substr($appointment->start_time, 0, 5).':00',
                 'timeZone' => config('app.timezone'),
             ],
             'end' => [
-                'dateTime' => $appointment->date->format('Y-m-d') . 'T' . substr($appointment->end_time, 0, 5) . ':00',
+                'dateTime' => $appointment->date->format('Y-m-d').'T'.substr($appointment->end_time, 0, 5).':00',
                 'timeZone' => config('app.timezone'),
             ],
             'attendees' => [[
                 'email' => $appointment->email,
-                'displayName' => $appointment->first_name . ' ' . $appointment->last_name,
+                'displayName' => $appointment->first_name.' '.$appointment->last_name,
             ]],
             'organizer' => [
                 'email' => $organizerEmail,
@@ -68,7 +68,7 @@ class GoogleCalendarService
             ->post("https://www.googleapis.com/calendar/v3/calendars/{$this->token->calendar_id}/events", $body);
 
         if ($response->failed()) {
-            throw new \Exception('Google Calendar event creation failed: ' . $response->body());
+            throw new \Exception('Google Calendar event creation failed: '.$response->body());
         }
 
         return $response->json();
@@ -80,7 +80,7 @@ class GoogleCalendarService
             ->delete("https://www.googleapis.com/calendar/v3/calendars/{$this->token->calendar_id}/events/{$eventId}");
 
         if ($response->failed() && $response->status() !== 404) {
-            throw new \Exception('Google Calendar event deletion failed: ' . $response->body());
+            throw new \Exception('Google Calendar event deletion failed: '.$response->body());
         }
     }
 }

@@ -12,6 +12,7 @@ class AppointmentStatusChanged extends Mailable
     use Queueable, SerializesModels;
 
     public Appointment $appointment;
+
     public string $status;
 
     public function __construct(Appointment $appointment, string $status)

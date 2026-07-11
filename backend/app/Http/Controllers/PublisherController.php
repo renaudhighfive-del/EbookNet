@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Publisher;
 use App\Http\Requests\Publisher\StorePublisherRequest;
 use App\Http\Requests\Publisher\UpdatePublisherRequest;
+use App\Models\Publisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,9 +19,9 @@ class PublisherController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(fn($q) => $q
-                ->where('name', 'like', '%' . $search . '%')
-                ->orWhere('country', 'like', '%' . $search . '%')
+            $query->where(fn ($q) => $q
+                ->where('name', 'like', '%'.$search.'%')
+                ->orWhere('country', 'like', '%'.$search.'%')
             );
         }
 
@@ -51,6 +51,7 @@ class PublisherController extends Controller
     {
         $publisher = Publisher::withCount('references')->findOrFail($id);
         $this->authorize('view', $publisher);
+
         return response()->json(['publisher' => $publisher]);
     }
 
@@ -83,7 +84,7 @@ class PublisherController extends Controller
         if ($publisher->references()->count() > 0) {
             return response()->json([
                 'message' => 'Impossible de supprimer cet éditeur car il est associé à des références.',
-                'references_count' => $publisher->references()->count()
+                'references_count' => $publisher->references()->count(),
             ], 400);
         }
 

@@ -22,7 +22,7 @@ class AssignDepositRequest extends FormRequest
     {
         return [
             'assigned_manager_id.required' => 'Le responsable est requis.',
-            'assigned_manager_id.exists'   => 'Le responsable sélectionné n\'existe pas.',
+            'assigned_manager_id.exists' => 'Le responsable sélectionné n\'existe pas.',
         ];
     }
 }

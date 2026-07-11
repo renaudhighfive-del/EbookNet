@@ -21,7 +21,7 @@ return new class extends Migration
             $table->foreignId('category_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('publisher_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('cover_image', 500)->nullable();
+            $table->longText('cover_image')->nullable();
             $table->string('file_path', 500)->nullable();
             $table->integer('download_count')->unsigned()->default(0);
             $table->integer('view_count')->unsigned()->default(0);

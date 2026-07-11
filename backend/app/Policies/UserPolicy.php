@@ -27,7 +27,7 @@ class UserPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role, ['admin','responsable_rh']);
+        return in_array($user->role, ['admin', 'responsable_rh']);
     }
 
     public function update(User $user, User $model): bool

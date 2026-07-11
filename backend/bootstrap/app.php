@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\CheckRole;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
         $middleware->alias([
-            'role' => \App\Http\Middleware\CheckRole::class,
+            'role' => CheckRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -26,7 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Retourner 401 JSON au lieu de rediriger vers Route[login]
         $exceptions->render(function (
-            \Illuminate\Auth\AuthenticationException $e,
+            AuthenticationException $e,
             Request $request
         ) {
             if ($request->is('api/*') || $request->expectsJson()) {

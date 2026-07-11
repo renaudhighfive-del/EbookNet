@@ -375,6 +375,7 @@ watch([selectedStatuses, selectedManagerId, selectedCategoryId, selectedType, da
 
 onMounted(async () => {
   try { await store.fetchDeposits() } catch { toast.error('Erreur lors du chargement des demandes.') }
+  store.fetchManagers()
 })
 </script>
 

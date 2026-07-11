@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Author;
 use App\Http\Requests\Author\StoreAuthorRequest;
 use App\Http\Requests\Author\UpdateAuthorRequest;
+use App\Models\Author;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,10 +19,10 @@ class AuthorController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(fn($q) => $q
-                ->where('first_name', 'like', '%' . $search . '%')
-                ->orWhere('last_name', 'like', '%' . $search . '%')
-                ->orWhere('nationality', 'like', '%' . $search . '%')
+            $query->where(fn ($q) => $q
+                ->where('first_name', 'like', '%'.$search.'%')
+                ->orWhere('last_name', 'like', '%'.$search.'%')
+                ->orWhere('nationality', 'like', '%'.$search.'%')
             );
         }
 
@@ -53,6 +53,7 @@ class AuthorController extends Controller
     {
         $author = Author::withCount('references')->findOrFail($id);
         $this->authorize('view', $author);
+
         return response()->json(['author' => $author]);
     }
 
@@ -86,7 +87,7 @@ class AuthorController extends Controller
         if ($author->references()->count() > 0) {
             return response()->json([
                 'message' => 'Impossible de supprimer cet auteur car il est associé à des références.',
-                'references_count' => $author->references()->count()
+                'references_count' => $author->references()->count(),
             ], 400);
         }
 

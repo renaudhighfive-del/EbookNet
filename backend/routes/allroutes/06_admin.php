@@ -82,6 +82,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         Route::get('/managers',                 [DepositRequestController::class, 'availableManagers']);
         Route::get('/',                         [DepositRequestController::class, 'index']);
         Route::get('/{id}',                     [DepositRequestController::class, 'show']);
+        Route::get('/{id}/file',                [DepositRequestController::class, 'serveFile']);
         Route::patch('/{id}/assign',            [DepositRequestController::class, 'assign']);
         Route::patch('/{id}/unassign',          [DepositRequestController::class, 'unassign']);
         Route::patch('/{id}/remind',            [DepositRequestController::class, 'remind']);

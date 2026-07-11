@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\User;
 
 class GoogleCalendarToken extends Model
 {
@@ -23,6 +22,8 @@ class GoogleCalendarToken extends Model
     protected $casts = [
         'expiry' => 'datetime',
         'connected_at' => 'datetime',
+        'access_token' => 'encrypted',
+        'refresh_token' => 'encrypted',
     ];
 
     public function teacher(): BelongsTo

@@ -20,12 +20,12 @@ return new class extends Migration
             $table->date('date');
             $table->time('start_time');
             $table->time('end_time');
-            $table->enum('status', ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'])->default('pending');
+            $table->enum('status', ['pending', 'confirmed', 'cancelled', 'completed', 'no_show', 'refused'])->default('pending');
             $table->string('google_event_id')->nullable();
             $table->string('cancel_reason')->nullable();
+            $table->text('admin_message')->nullable();
             $table->timestamps();
-            
-            // Contrainte unique pour éviter le double booking
+
             $table->unique(['teacher_id', 'date', 'start_time']);
         });
     }

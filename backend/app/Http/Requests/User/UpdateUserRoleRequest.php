@@ -23,7 +23,7 @@ class UpdateUserRoleRequest extends FormRequest
     {
         return [
             'role.required' => 'Le rôle est requis.',
-            'role.in'       => 'Le rôle sélectionné n\'est pas valide.',
+            'role.in' => 'Le rôle sélectionné n\'est pas valide.',
         ];
     }
 }

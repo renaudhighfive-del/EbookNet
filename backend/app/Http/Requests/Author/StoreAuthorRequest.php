@@ -15,8 +15,8 @@ class StoreAuthorRequest extends FormRequest
     {
         return [
             'first_name' => 'required|string|max:255',
-            'last_name'  => 'required|string|max:255',
-            'biography'  => 'nullable|string|max:5000',
+            'last_name' => 'required|string|max:255',
+            'biography' => 'nullable|string|max:5000',
             'nationality' => 'nullable|string|max:100',
             'birth_date' => 'nullable|date',
             'death_date' => 'nullable|date|after:birth_date',
@@ -27,8 +27,8 @@ class StoreAuthorRequest extends FormRequest
     {
         return [
             'first_name.required' => 'Le prénom est requis.',
-            'last_name.required'  => 'Le nom est requis.',
-            'death_date.after'    => 'La date de décès doit être postérieure à la date de naissance.',
+            'last_name.required' => 'Le nom est requis.',
+            'death_date.after' => 'La date de décès doit être postérieure à la date de naissance.',
         ];
     }
 }
