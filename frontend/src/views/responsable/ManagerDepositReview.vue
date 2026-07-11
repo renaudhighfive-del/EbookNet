@@ -143,6 +143,14 @@ const handleSubmit = async () => {
         </p>
       </div>
 
+      <!-- Admin Override Banner -->
+      <div v-if="deposit.adminOverride" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-center gap-3">
+        <span class="text-2xl">⚠️</span>
+        <p class="text-amber-800 font-medium">
+          Cette demande a été approuvée par passage outre administratif.
+        </p>
+      </div>
+
       <!-- Warning Banner -->
       <div v-if="store.getAgingDays(deposit.submittedAt) >= 3 && !isReadOnly" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center gap-3">
         <span class="text-2xl">⚠️</span>
@@ -231,6 +239,13 @@ const handleSubmit = async () => {
                 <p class="text-gray-700 leading-relaxed mt-1 whitespace-pre-line">
                   {{ deposit.summary || 'Aucun résumé ou description fourni.' }}
                 </p>
+              </div>
+
+              <div v-if="deposit.adminDecisionComment" class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <h4 class="text-sm font-bold text-amber-800 uppercase tracking-wide mb-2 flex items-center gap-2">
+                  💬 Justificatif de l'administrateur
+                </h4>
+                <p class="text-amber-700">{{ deposit.adminDecisionComment }}</p>
               </div>
               <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
                 <div>
