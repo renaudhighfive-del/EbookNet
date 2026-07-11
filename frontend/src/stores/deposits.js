@@ -67,7 +67,7 @@ const ACTION_REGISTRY = {
 const STATUS_ACTIONS = {
   pending:            ['assign', 'reject_direct'],
   assigned:           ['remind', 'reassign'],
-  manager_approved:   ['approve_publish', 'second_opinion_req', 'reject_definitive'],
+  manager_approved:   ['approve_publish'],
   manager_rejected:   ['confirm_reject', 'override_publish', 'second_opinion_req'],
   second_opinion:     [],
   approved_published: ['unpublish'],
@@ -160,6 +160,7 @@ function normalizeApiDeposit(item) {
     keywords: item.keywords || [],
     file: item.proposed_file || null,
     fileUrl: item.proposed_file_url || null,
+    fileSize: item.file_size || null,
     cover_image: item.cover_image || null,
     submittedBy: item.applicant
       ? { id: item.applicant.id, first_name: item.applicant.first_name, last_name: item.applicant.last_name, email: item.applicant.email }
@@ -171,8 +172,8 @@ function normalizeApiDeposit(item) {
     history: item.history || [],
     managerComment: item.rejection_reason || item.managerComment || null,
     adminDecisionComment: item.adminDecisionComment || null,
-    referenceId: item.reference_id || item.referenceId || null,
-    adminOverride: item.adminOverride || false,
+    referenceId: item.reference_id ?? item.referenceId ?? null,
+    adminOverride: item.admin_override ?? item.adminOverride ?? false,
     _created_at: item.created_at,
     _updated_at: item.updated_at,
   }
@@ -186,6 +187,7 @@ export const useDepositsStore = defineStore('deposits', () => {
   const error = ref(null)
   const activityLogs = ref([])
   const pagination = ref(null)
+  const managers = ref([])
 
   const pendingCount = computed(() => deposits.value.filter(d => d.status === 'pending' || d.status === 'assigned').length)
 
@@ -276,7 +278,18 @@ export const useDepositsStore = defineStore('deposits', () => {
    * @param {number|null} currentManagerId - Toujours inclus même s'il est occupé (pour permettre de le garder lors d'une réassignation).
    * @returns {Array} Liste des responsables disponibles.
    */
+  async function fetchManagers() {
+    try {
+      const data = await adminService.getManagers()
+      managers.value = data.managers || data.data || data || []
+    } catch {
+      managers.value = MOCK_MANAGERS
+    }
+    return managers.value
+  }
+
   function getAvailableManagers(currentManagerId = null) {
+    const source = managers.value.length ? managers.value : MOCK_MANAGERS
     const managerBusyCounts = {}
     deposits.value.forEach(d => {
       if (d.assignedManagerId && MANAGER_BUSY_STATUSES.includes(d.status)) {
@@ -284,24 +297,30 @@ export const useDepositsStore = defineStore('deposits', () => {
       }
     })
 
-    return MOCK_MANAGERS
+    return source
       .filter(m => m.status === 'active' && m.role === 'responsable_demande')
       .filter(m => m.id === currentManagerId || !managerBusyCounts[m.id])
       .map(m => ({ ...m, open_deposits: managerBusyCounts[m.id] || 0 }))
       .sort((a, b) => a.open_deposits - b.open_deposits)
   }
 
-  function getActiveManagers() { return MOCK_MANAGERS.filter(m => m.status === 'active' && m.role === 'responsable_demande') }
-  function getManagerById(id) { return MOCK_MANAGERS.find(m => m.id === id) || null }
+  function getActiveManagers() {
+    const source = managers.value.length ? managers.value : MOCK_MANAGERS
+    return source.filter(m => m.status === 'active' && m.role === 'responsable_demande')
+  }
+
+  function getManagerById(id) {
+    const source = managers.value.length ? managers.value : MOCK_MANAGERS
+    return source.find(m => m.id === id) || null
+  }
   function getUserById(id) { return MOCK_USERS.find(u => u.id === id) || null }
 
   async function fetchDeposits(params = {}) {
     isLoading.value = true
     error.value = null
     try {
-      const authStore = useAuthStore()
-      const isManager = authStore.userRole === 'responsable_demande'
-      const service = isManager ? managerService : adminService
+      const auth = useAuthStore()
+      const service = auth.userRole === 'responsable_demande' ? managerService : adminService
       const data = await service.getDeposits(params)
       const list = data.data || data || []
       deposits.value = list.map(normalizeApiDeposit)
@@ -323,9 +342,8 @@ export const useDepositsStore = defineStore('deposits', () => {
     isLoading.value = true
     error.value = null
     try {
-      const authStore = useAuthStore()
-      const isManager = authStore.userRole === 'responsable_demande'
-      const service = isManager ? managerService : adminService
+      const auth = useAuthStore()
+      const service = auth.userRole === 'responsable_demande' ? managerService : adminService
       const data = await service.getDeposit(id)
       const item = data.deposit_request || data
       currentDeposit.value = normalizeApiDeposit(item)
@@ -393,7 +411,7 @@ export const useDepositsStore = defineStore('deposits', () => {
   async function approveAndPublish(id, meta = {}) {
     isSubmitting.value = true
     try {
-      const result = await adminService.publishDeposit(id)
+      const result = await adminService.publishDeposit(id, meta)
       const updated = normalizeApiDeposit(result.deposit_request || result)
       const patch = { ...updated, status: 'approved_published', referenceId: result.reference?.id || updated.referenceId }
       if (meta.adminOverride) patch.adminOverride = true
@@ -463,6 +481,12 @@ export const useDepositsStore = defineStore('deposits', () => {
         useToastStore().warning('Mise à jour enregistrée en mode hors-ligne (non persistée en base).')
       }
 
+      const actionLabels = {
+        pending: 'Dépublication', assigned: 'Assignation', manager_approved: 'Approbation responsable',
+        manager_rejected: 'Rejet responsable', second_opinion: 'Demande de second avis',
+        rejected: 'Rejet définitif',
+      }
+
       if (updatedFromApi) {
         _updateInStore(id, updatedFromApi)
       } else {
@@ -472,11 +496,6 @@ export const useDepositsStore = defineStore('deposits', () => {
         const authStore = useAuthStore()
         const actor = authStore.user ? `${authStore.user.first_name} ${authStore.user.last_name}` : 'Admin System'
         const role = authStore.userRole === 'responsable_demande' ? 'Responsable' : 'Administrateur'
-        const actionLabels = {
-          pending: 'Dépublication', assigned: 'Assignation', manager_approved: 'Approbation responsable',
-          manager_rejected: 'Rejet responsable', second_opinion: 'Demande de second avis',
-          rejected: 'Rejet définitif',
-        }
         _addHistory(deposit, actor, role, actionLabels[nextStatus] || nextStatus, meta.comment || null)
         _updateInStore(id, deposit)
       }
@@ -513,17 +532,29 @@ export const useDepositsStore = defineStore('deposits', () => {
       useToastStore().error('Annulation impossible pour ce statut.')
       return
     }
-    deposit.assignedManagerId = null
-    deposit.assignedAt = null
-    deposit.status = 'pending'
-    _addHistory(deposit, 'Admin System', 'Administrateur', 'Annulation assignation', 'Assignation annulée.')
-    _updateInStore(id, deposit)
+    try {
+      const res = await adminService.unassignDeposit(id)
+      const updated = normalizeApiDeposit(res.deposit_request || res)
+      _updateInStore(id, updated)
+    } catch {
+      // Fallback local si API indisponible
+      deposit.assignedManagerId = null
+      deposit.assignedAt = null
+      deposit.status = 'pending'
+      _addHistory(deposit, 'Admin System', 'Administrateur', 'Annulation assignation', 'Assignation annulée.')
+      _updateInStore(id, deposit)
+    }
     useToastStore().info('Assignation annulée.')
   }
 
   async function remindManager(id) {
     const deposit = deposits.value.find(d => String(d.id) === String(id))
     if (!deposit) return
+    try {
+      await adminService.remindDeposit(id)
+    } catch {
+      // La relance envoie juste un email — on trace localement même en cas d'échec API
+    }
     _addHistory(deposit, 'Admin System', 'Administrateur', 'Relance responsable', 'Relance envoyée.')
     _updateInStore(id, deposit)
     useToastStore().success('Relance envoyée au responsable.')
@@ -543,11 +574,11 @@ export const useDepositsStore = defineStore('deposits', () => {
   }
 
   return {
-    deposits, currentDeposit, isLoading, isSubmitting, error, activityLogs, pagination, pendingCount,
+    deposits, currentDeposit, isLoading, isSubmitting, error, activityLogs, pagination, pendingCount, managers,
     getStatusConfig, getTypeLabel, getLanguageLabel, getUserInitials, formatDate, formatDateTime,
     getTimeAgo, getAgingDays, getAgingBadge, getAvailableManagers, getActiveManagers,
     getManagerById, getUserById, canTransition, getActionsForStatus,
-    fetchDeposits, fetchDeposit, updateDepositStatus, assignManager, reassignManager,
+    fetchDeposits, fetchDeposit, fetchManagers, updateDepositStatus, assignManager, reassignManager,
     unassignManager, remindManager, approveAndPublish, getCurrentStep, getStepsForStatus,
     STEPS, STATUS_LABELS, ISO_LANGUAGES, DOCUMENT_TYPE_LABELS, STATUS_TRANSITIONS, ACTION_REGISTRY,
   }

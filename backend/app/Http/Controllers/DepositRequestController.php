@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DepositRequest;
-use App\Models\Reference;
-use App\Models\Author;
-use App\Models\ActivityLog;
-use App\Models\User;
 use App\Http\Requests\Deposit\AssignDepositRequest;
 use App\Http\Requests\Deposit\RejectDepositRequest;
+use App\Models\ActivityLog;
+use App\Models\Author;
+use App\Models\DepositRequest;
+use App\Models\Reference;
+use App\Models\ReferenceKeyword;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class DepositRequestController extends Controller
 {
@@ -22,18 +24,18 @@ class DepositRequestController extends Controller
     // Libellés d'action affichés dans l'historique (doivent rester alignés avec
     // ce qu'attend le front, qui les affiche tels quels sans reformattage).
     private const ACTION_LABELS = [
-        'submitted'                 => 'Soumission',
-        'assigned'                  => 'Assignation',
-        'reassigned'                => 'Réassignation',
-        'unassigned'                => 'Annulation assignation',
-        'reminder_sent'             => 'Relance responsable',
-        'approved'                  => 'Approbation responsable',
-        'rejected_by_manager'       => 'Rejet responsable',
-        'second_opinion_requested'  => 'Demande de second avis',
-        'published'                 => 'Approbation et publication',
-        'published_override'       => 'Passer outre et publier',
-        'unpublished'               => 'Dépublication',
-        'rejected_definitive'       => 'Rejet définitif',
+        'submitted' => 'Soumission',
+        'assigned' => 'Assignation',
+        'reassigned' => 'Réassignation',
+        'unassigned' => 'Annulation assignation',
+        'reminder_sent' => 'Relance responsable',
+        'approved' => 'Approbation responsable',
+        'rejected_by_manager' => 'Rejet responsable',
+        'second_opinion_requested' => 'Demande de second avis',
+        'published' => 'Approbation et publication',
+        'published_override' => 'Passer outre et publier',
+        'unpublished' => 'Dépublication',
+        'rejected_definitive' => 'Rejet définitif',
     ];
 
     /**
@@ -42,13 +44,13 @@ class DepositRequestController extends Controller
     private function logActivity(Request $request, int $depositId, string $actionKey, ?string $comment = null): void
     {
         ActivityLog::create([
-            'user_id'      => $request->user()->id,
-            'action'       => $actionKey,
-            'comment'      => $comment,
+            'user_id' => $request->user()->id,
+            'action' => $actionKey,
+            'comment' => $comment,
             'target_table' => 'deposit_requests',
-            'target_id'    => $depositId,
-            'ip_address'   => $request->ip(),
-            'user_agent'   => $request->userAgent(),
+            'target_id' => $depositId,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
         ]);
     }
 
@@ -64,11 +66,11 @@ class DepositRequestController extends Controller
             ->get()
             ->map(function (ActivityLog $log) {
                 return [
-                    'actor'   => $log->user ? trim("{$log->user->first_name} {$log->user->last_name}") : 'Système',
-                    'role'    => $this->roleLabel($log->user->role ?? null),
-                    'action'  => self::ACTION_LABELS[$log->action] ?? $log->action,
+                    'actor' => $log->user ? trim("{$log->user->first_name} {$log->user->last_name}") : 'Système',
+                    'role' => $this->roleLabel($log->user->role ?? null),
+                    'action' => self::ACTION_LABELS[$log->action] ?? $log->action,
                     'comment' => $log->comment,
-                    'at'      => $log->created_at?->toIso8601String(),
+                    'at' => $log->created_at?->toIso8601String(),
                 ];
             })
             ->all();
@@ -77,9 +79,9 @@ class DepositRequestController extends Controller
     private function roleLabel(?string $role): string
     {
         return match ($role) {
-            'admin'               => 'Administrateur',
+            'admin' => 'Administrateur',
             'responsable_demande' => 'Responsable',
-            default               => 'Utilisateur',
+            default => 'Utilisateur',
         };
     }
 
@@ -128,22 +130,22 @@ class DepositRequestController extends Controller
         $this->authorize('create', DepositRequest::class);
 
         $rules = [
-            'title'            => 'required|string|max:500',
-            'description'      => 'nullable|string|max:5000',
-            'author'           => 'nullable|string|max:500',
+            'title' => 'required|string|max:500',
+            'description' => 'nullable|string|max:5000',
+            'author' => 'nullable|string|max:500',
             'publication_year' => 'nullable|integer|min:1000|max:9999',
-            'category_id'      => 'nullable|exists:categories,id',
-            'publisher'        => 'nullable|string|max:500',
-            'isbn'             => 'nullable|string|max:20',
-            'language'         => 'nullable|string|max:10',
-            'type'             => 'nullable|string|max:50',
-            'keywords'         => 'nullable|array',
-            'keywords.*'       => 'string|max:100',
-            'cover_image'      => 'nullable|string',
+            'category_id' => 'nullable|exists:categories,id',
+            'publisher' => 'nullable|string|max:500',
+            'isbn' => 'nullable|string|max:20',
+            'language' => 'nullable|string|max:10',
+            'type' => 'nullable|string|max:50',
+            'keywords' => 'nullable|array',
+            'keywords.*' => 'string|max:100',
+            'cover_image' => 'nullable|string|max:10000000',
         ];
 
         if ($request->hasFile('proposed_file')) {
-            $rules['proposed_file'] = 'nullable|file|mimes:pdf,epub,docx,doc|max:102400';
+            $rules['proposed_file'] = 'nullable|file|mimes:pdf,epub,docx,doc|max:20480';
         } else {
             $rules['proposed_file'] = 'nullable|string|max:500';
         }
@@ -156,13 +158,13 @@ class DepositRequestController extends Controller
 
         $deposit = DepositRequest::create(array_merge($validated, [
             'applicant_id' => $request->user()->id,
-            'status'       => 'pending',
+            'status' => 'pending',
         ]));
 
         $this->logActivity($request, $deposit->id, 'submitted');
 
         return response()->json([
-            'message'         => 'Demande de dépôt créée avec succès.',
+            'message' => 'Demande de dépôt créée avec succès.',
             'deposit_request' => $deposit->load(['applicant', 'category']),
         ], 201);
     }
@@ -186,8 +188,8 @@ class DepositRequestController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhereHas('applicant', fn ($q) => $q->where('first_name', 'like', "%{$search}%")
-                                                    ->orWhere('last_name', 'like', "%{$search}%"));
+                    ->orWhereHas('applicant', fn ($q) => $q->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%"));
             });
         }
 
@@ -217,7 +219,7 @@ class DepositRequestController extends Controller
         $deposit = DepositRequest::findOrFail($id);
         $this->authorize('assign', $deposit);
 
-        if (!in_array($deposit->status, ['pending', 'assigned'], true)) {
+        if (! in_array($deposit->status, ['pending', 'assigned'], true)) {
             return response()->json(['message' => 'Cette demande ne peut plus être assignée dans son état actuel.'], 400);
         }
 
@@ -227,7 +229,7 @@ class DepositRequestController extends Controller
             ->where('status', 'active')
             ->first();
 
-        if (!$targetManager) {
+        if (! $targetManager) {
             return response()->json(['message' => 'L\'utilisateur sélectionné n\'est pas un responsable actif.'], 400);
         }
 
@@ -246,13 +248,13 @@ class DepositRequestController extends Controller
 
         $deposit->update([
             'assigned_manager_id' => $request->assigned_manager_id,
-            'status'              => 'assigned',
+            'status' => 'assigned',
         ]);
 
         $this->logActivity($request, $id, $isReassignment ? 'reassigned' : 'assigned', $request->input('comment'));
 
         return response()->json([
-            'message'         => 'Demande assignée avec succès.',
+            'message' => 'Demande assignée avec succès.',
             'deposit_request' => $deposit->load('assignedManager'),
         ]);
     }
@@ -279,7 +281,7 @@ class DepositRequestController extends Controller
         $deposit = DepositRequest::findOrFail($id);
         $this->authorize('assign', $deposit);
 
-        if ($deposit->status !== 'assigned' || !$deposit->assigned_manager_id) {
+        if ($deposit->status !== 'assigned' || ! $deposit->assigned_manager_id) {
             return response()->json(['message' => 'Aucun responsable à relancer pour cette demande.'], 400);
         }
 
@@ -299,7 +301,7 @@ class DepositRequestController extends Controller
 
         // Accepte aussi 'second_review' : un responsable peut revalider après
         // qu'un second avis a été demandé (sinon aucun retour en arrière possible).
-        if (!in_array($deposit->status, ['assigned', 'second_review'], true)) {
+        if (! in_array($deposit->status, ['assigned', 'second_review'], true)) {
             return response()->json(['message' => 'Cette demande doit être assignée avant d\'être approuvée.'], 400);
         }
 
@@ -309,7 +311,7 @@ class DepositRequestController extends Controller
         $this->logActivity($request, $id, 'approved', $comment);
 
         return response()->json([
-            'message'         => 'Demande approuvée par le manager.',
+            'message' => 'Demande approuvée par le manager.',
             'deposit_request' => $deposit,
         ]);
     }
@@ -320,19 +322,19 @@ class DepositRequestController extends Controller
         $deposit = DepositRequest::findOrFail($id);
         $this->authorize('review', $deposit);
 
-        if (!in_array($deposit->status, ['assigned', 'second_review'], true)) {
+        if (! in_array($deposit->status, ['assigned', 'second_review'], true)) {
             return response()->json(['message' => 'Cette demande doit être assignée avant d\'être rejetée.'], 400);
         }
 
         $deposit->update([
-            'status'           => 'rejected_by_manager',
+            'status' => 'rejected_by_manager',
             'rejection_reason' => $request->justification,
         ]);
 
         $this->logActivity($request, $id, 'rejected_by_manager', $request->justification);
 
         return response()->json([
-            'message'         => 'Demande rejetée par le manager.',
+            'message' => 'Demande rejetée par le manager.',
             'deposit_request' => $deposit,
         ]);
     }
@@ -343,7 +345,7 @@ class DepositRequestController extends Controller
         $deposit = DepositRequest::findOrFail($id);
         $this->authorize('review', $deposit);
 
-        if (!in_array($deposit->status, ['approved_by_manager', 'rejected_by_manager'], true)) {
+        if (! in_array($deposit->status, ['approved_by_manager', 'rejected_by_manager'], true)) {
             return response()->json(['message' => 'Un second avis ne peut être demandé qu\'après une décision du responsable.'], 400);
         }
 
@@ -363,7 +365,7 @@ class DepositRequestController extends Controller
 
         // Couvre les 3 cas front : rejet direct (pending), rejet définitif
         // (approved_by_manager), confirmation de rejet (rejected_by_manager).
-        if (!in_array($deposit->status, ['pending', 'approved_by_manager', 'rejected_by_manager', 'second_review'], true)) {
+        if (! in_array($deposit->status, ['pending', 'approved_by_manager', 'rejected_by_manager', 'second_review'], true)) {
             return response()->json(['message' => 'Cette demande ne peut pas être rejetée définitivement dans son état actuel.'], 400);
         }
 
@@ -384,7 +386,7 @@ class DepositRequestController extends Controller
 
         // 'second_review' (et non 'second_opinion', qui n'est qu'un nom côté
         // front) : l'admin peut publier directement après un second avis.
-        if (!in_array($deposit->status, ['approved_by_manager', 'rejected_by_manager', 'second_review'], true)) {
+        if (! in_array($deposit->status, ['approved_by_manager', 'rejected_by_manager', 'second_review'], true)) {
             return response()->json(['message' => 'Cette demande n\'est pas dans un état publiable.'], 400);
         }
 
@@ -397,47 +399,58 @@ class DepositRequestController extends Controller
         }
 
         $reference = Reference::create([
-            'title'            => $deposit->title,
-            'abstract'         => $deposit->description,
+            'title' => $deposit->title,
+            'abstract' => $deposit->description,
             'publication_year' => $deposit->publication_year,
-            'category_id'      => $deposit->category_id,
-            'file_path'        => $deposit->proposed_file,
-            'status'           => 'published',
-            'uploaded_by'      => $deposit->applicant_id,
-            'isbn'             => $deposit->isbn,
-            'language'         => $deposit->language,
-            'document_type'    => $deposit->type,
-            'cover_image'      => $deposit->cover_image,
+            'category_id' => $deposit->category_id,
+            'file_path' => $deposit->proposed_file,
+            'status' => 'published',
+            'uploaded_by' => $deposit->applicant_id,
+            'isbn' => $deposit->isbn,
+            'language' => $deposit->language,
+            'document_type' => $deposit->type,
+            'cover_image' => $deposit->cover_image,
         ]);
 
-        if (!empty($deposit->author)) {
+        if (! empty($deposit->keywords)) {
+            foreach ($deposit->keywords as $keyword) {
+                ReferenceKeyword::create([
+                    'reference_id' => $reference->id,
+                    'keyword' => $keyword,
+                ]);
+            }
+        }
+
+        if (! empty($deposit->author)) {
             $authorNames = array_map('trim', explode(',', $deposit->author));
             $authorIds = [];
             foreach ($authorNames as $name) {
-                if (empty($name)) continue;
+                if (empty($name)) {
+                    continue;
+                }
                 $parts = explode(' ', $name, 2);
                 $author = Author::firstOrCreate([
                     'first_name' => $parts[0] ?? '',
-                    'last_name'  => $parts[1] ?? '',
+                    'last_name' => $parts[1] ?? '',
                 ]);
                 $authorIds[] = $author->id;
             }
-            if (!empty($authorIds)) {
+            if (! empty($authorIds)) {
                 $reference->authors()->attach($authorIds);
             }
         }
 
         $deposit->update([
-            'status'         => 'published',
-            'reference_id'   => $reference->id,
+            'status' => 'published',
+            'reference_id' => $reference->id,
             'admin_override' => $isOverride,
         ]);
 
         $this->logActivity($request, $id, $isOverride ? 'published_override' : 'published', $overrideComment);
 
         return response()->json([
-            'message'         => 'Référence publiée avec succès.',
-            'reference'       => $reference->load('category'),
+            'message' => 'Référence publiée avec succès.',
+            'reference' => $reference->load('category'),
             'deposit_request' => $deposit,
         ]);
     }
@@ -462,5 +475,33 @@ class DepositRequestController extends Controller
         $this->logActivity($request, $id, 'unpublished', $validated['comment']);
 
         return response()->json(['message' => 'Demande dépubliée.', 'deposit_request' => $deposit]);
+    }
+
+    /** GET /user/deposits/{id}/file — Servir le fichier proposé */
+    public function serveFile(Request $request, int $id)
+    {
+        $deposit = DepositRequest::findOrFail($id);
+        $this->authorize('view', $deposit);
+
+        if (! $deposit->proposed_file || ! Storage::disk('public')->exists($deposit->proposed_file)) {
+            abort(404, 'Fichier introuvable.');
+        }
+
+        $filePath = $deposit->proposed_file;
+        $disk = Storage::disk('public');
+        $mimeType = $disk->mimeType($filePath);
+        $fileName = basename($filePath);
+
+        if ($request->query('inline')) {
+            return response()->file(
+                $disk->path($filePath),
+                [
+                    'Content-Type' => $mimeType,
+                    'Content-Disposition' => "inline; filename=\"{$fileName}\"",
+                ]
+            );
+        }
+
+        return $disk->download($filePath);
     }
 }
