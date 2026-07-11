@@ -1,0 +1,10 @@
+{
+  "name": "Mon Projet Laravel & Vite",
+  "image": "://microsoft.com",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
+  },
+  "postCreateCommand": "cd frontend && npm install && cd ../backend && composer install"
+}
