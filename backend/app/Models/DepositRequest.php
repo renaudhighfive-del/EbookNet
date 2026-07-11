@@ -26,6 +26,10 @@ class DepositRequest extends Model
         'cover_image',
     ];
 
+    protected $appends = [
+        'proposed_file_url',
+    ];
+
     protected function casts(): array
     {
         return [

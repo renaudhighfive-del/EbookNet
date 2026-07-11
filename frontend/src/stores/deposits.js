@@ -5,6 +5,7 @@ import { ref, computed } from 'vue'
 import { useToastStore } from './toast'
 import { useAuthStore } from './auth'
 import { adminService } from '@/services/api/admin.service'
+import { managerService } from '@/services/api/manager.service'
 
 // Mapping des codes ISO de langue vers leur libellé français
 const ISO_LANGUAGES = {
@@ -298,7 +299,10 @@ export const useDepositsStore = defineStore('deposits', () => {
     isLoading.value = true
     error.value = null
     try {
-      const data = await adminService.getDeposits(params)
+      const authStore = useAuthStore()
+      const isManager = authStore.userRole === 'responsable_demande'
+      const service = isManager ? managerService : adminService
+      const data = await service.getDeposits(params)
       const list = data.data || data || []
       deposits.value = list.map(normalizeApiDeposit)
       pagination.value = data.data ? { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total } : null
@@ -319,7 +323,10 @@ export const useDepositsStore = defineStore('deposits', () => {
     isLoading.value = true
     error.value = null
     try {
-      const data = await adminService.getDeposit(id)
+      const authStore = useAuthStore()
+      const isManager = authStore.userRole === 'responsable_demande'
+      const service = isManager ? managerService : adminService
+      const data = await service.getDeposit(id)
       const item = data.deposit_request || data
       currentDeposit.value = normalizeApiDeposit(item)
       return currentDeposit.value
@@ -440,27 +447,39 @@ export const useDepositsStore = defineStore('deposits', () => {
         throw new Error(`Transition non autorisée : ${deposit.status} → ${nextStatus}.`)
       }
 
+      let updatedFromApi = null
       try {
         if (nextStatus === 'rejected' && adminService.rejectDeposit) {
-          await adminService.rejectDeposit(id, meta.comment || '')
+          const res = await adminService.rejectDeposit(id, meta.comment || '')
+          updatedFromApi = normalizeApiDeposit(res.deposit_request || res)
+        } else if (nextStatus === 'second_opinion' && adminService.requestSecondOpinion) {
+          const res = await adminService.requestSecondOpinion(id, meta.comment || '')
+          updatedFromApi = normalizeApiDeposit(res.deposit_request || res)
+        } else if (nextStatus === 'pending' && adminService.unpublishDeposit) {
+          const res = await adminService.unpublishDeposit(id, meta.comment || '')
+          updatedFromApi = normalizeApiDeposit(res.deposit_request || res)
         }
-      } catch {
+      } catch (err) {
         useToastStore().warning('Mise à jour enregistrée en mode hors-ligne (non persistée en base).')
       }
 
-      deposit.status = nextStatus
-      if (meta.comment) deposit.adminDecisionComment = meta.comment
+      if (updatedFromApi) {
+        _updateInStore(id, updatedFromApi)
+      } else {
+        deposit.status = nextStatus
+        if (meta.comment) deposit.adminDecisionComment = meta.comment
 
-      const authStore = useAuthStore()
-      const actor = authStore.user ? `${authStore.user.first_name} ${authStore.user.last_name}` : 'Admin System'
-      const role = authStore.userRole === 'responsable_demande' ? 'Responsable' : 'Administrateur'
-      const actionLabels = {
-        pending: 'Dépublication', assigned: 'Assignation', manager_approved: 'Approbation responsable',
-        manager_rejected: 'Rejet responsable', second_opinion: 'Demande de second avis',
-        rejected: 'Rejet définitif',
+        const authStore = useAuthStore()
+        const actor = authStore.user ? `${authStore.user.first_name} ${authStore.user.last_name}` : 'Admin System'
+        const role = authStore.userRole === 'responsable_demande' ? 'Responsable' : 'Administrateur'
+        const actionLabels = {
+          pending: 'Dépublication', assigned: 'Assignation', manager_approved: 'Approbation responsable',
+          manager_rejected: 'Rejet responsable', second_opinion: 'Demande de second avis',
+          rejected: 'Rejet définitif',
+        }
+        _addHistory(deposit, actor, role, actionLabels[nextStatus] || nextStatus, meta.comment || null)
+        _updateInStore(id, deposit)
       }
-      _addHistory(deposit, actor, role, actionLabels[nextStatus] || nextStatus, meta.comment || null)
-      _updateInStore(id, deposit)
 
       const toast = useToastStore()
       if (nextStatus === 'rejected') {

@@ -174,6 +174,10 @@ class DepositRequestController extends Controller
 
         $query = DepositRequest::with(['applicant', 'assignedManager', 'category']);
 
+        if ($request->user()->role === 'responsable_demande') {
+            $query->where('assigned_manager_id', $request->user()->id);
+        }
+
         if ($request->filled('status')) {
             $query->whereIn('status', explode(',', $request->status));
         }
@@ -217,7 +221,17 @@ class DepositRequestController extends Controller
             return response()->json(['message' => 'Cette demande ne peut plus être assignée dans son état actuel.'], 400);
         }
 
-        // Vérification serveur (et non plus seulement côté front) que le
+        // Vérification que le responsable ciblé a bien le rôle requis et est actif
+        $targetManager = User::where('id', $request->assigned_manager_id)
+            ->where('role', 'responsable_demande')
+            ->where('status', 'active')
+            ->first();
+
+        if (!$targetManager) {
+            return response()->json(['message' => 'L\'utilisateur sélectionné n\'est pas un responsable actif.'], 400);
+        }
+
+        //
         // responsable ciblé n'a pas déjà un dossier ouvert en cours d'examen.
         $alreadyBusy = DepositRequest::where('assigned_manager_id', $request->assigned_manager_id)
             ->whereIn('status', self::MANAGER_BUSY_STATUSES)

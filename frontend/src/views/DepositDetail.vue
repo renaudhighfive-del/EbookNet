@@ -26,6 +26,7 @@ import {
   BookMarked,
   Image,
   Download,
+  X,
 } from '@lucide/vue'
 
 const route = useRoute()
@@ -35,6 +36,7 @@ const depositsStore = useDepositsStore()
 const deposit = ref(null)
 const isLoading = ref(true)
 const error = ref(null)
+const showZoomModal = ref(false)
 const isAdmin = ref(false)
 
 const statusConfig = {
@@ -329,7 +331,8 @@ onMounted(async () => {
               <img
                 :src="deposit.cover_image || deposit.cover_image_preview"
                 alt="Couverture du document"
-                class="w-full rounded-xl object-cover border border-gray-200 max-h-60"
+                class="w-full rounded-xl object-cover border border-gray-200 max-h-60 cursor-zoom-in hover:opacity-90 transition-opacity"
+                @click="showZoomModal = true"
               />
             </div>
 
@@ -439,6 +442,24 @@ onMounted(async () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Zoom Image Modal -->
+        <div v-if="showZoomModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 transition-opacity duration-300" @click="showZoomModal = false">
+          <div class="relative max-w-4xl max-h-[90vh]" @click.stop>
+            <img
+              :src="deposit.cover_image || deposit.cover_image_preview"
+              alt="Couverture agrandie"
+              class="max-w-full max-h-[85vh] rounded-xl object-contain border border-white/10 shadow-2xl"
+            />
+            <button
+              class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors cursor-pointer"
+              @click="showZoomModal = false"
+              title="Fermer"
+            >
+              <X class="w-6 h-6" />
+            </button>
           </div>
         </div>
       </template>

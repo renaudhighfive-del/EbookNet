@@ -420,13 +420,35 @@ export const adminService = {
   },
 
   /**
-   * Rejette un dépôt avec une justification.
+   * Rejette définitivement un dépôt.
    * @param {number|string} id - Identifiant du dépôt.
-   * @param {string} justification - Raison du rejet.
+   * @param {string} comment - Motif de rejet définitif.
    * @returns {Promise<Object>} Dépôt rejeté.
    */
-  async rejectDeposit(id, justification) {
-    const response = await api.patch(`/admin/deposits/${id}/reject`, { justification })
+  async rejectDeposit(id, comment) {
+    const response = await api.patch(`/admin/deposits/${id}/reject-definitive`, { comment })
+    return response.data
+  },
+
+  /**
+   * Demande un second avis pour un dépôt.
+   * @param {number|string} id - Identifiant du dépôt.
+   * @param {string} comment - Motif de la demande de second avis.
+   * @returns {Promise<Object>} Dépôt mis à jour.
+   */
+  async requestSecondOpinion(id, comment) {
+    const response = await api.patch(`/admin/deposits/${id}/second-opinion`, { comment })
+    return response.data
+  },
+
+  /**
+   * Dépublie un dépôt.
+   * @param {number|string} id - Identifiant du dépôt.
+   * @param {string} comment - Motif de la dépublication.
+   * @returns {Promise<Object>} Dépôt dépublié.
+   */
+  async unpublishDeposit(id, comment) {
+    const response = await api.patch(`/admin/deposits/${id}/unpublish`, { comment })
     return response.data
   },
 

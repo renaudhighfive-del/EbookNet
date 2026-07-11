@@ -51,6 +51,7 @@ class DepositRequestPolicy
 
     public function review(User $user, DepositRequest $depositRequest): bool
     {
-        return $user->role === 'admin' || $user->role === 'responsable_demande';
+        return $user->role === 'admin'
+            || ($user->role === 'responsable_demande' && $user->id === $depositRequest->assigned_manager_id);
     }
 }
