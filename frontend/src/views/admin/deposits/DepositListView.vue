@@ -82,6 +82,8 @@ const showAssignDialog = ref(false)
 const assignTargetId = ref(null)
 const assignManagerId = ref('')
 const isAssignSubmitting = ref(false)
+const isSecondOpinion = ref(false)
+const secondOpinionComment = ref('')
 
 // Dialogue de confirmation générique pour les actions du panneau accordéon
 const showActionDialog = ref(false)
@@ -221,18 +223,28 @@ function toggleExpand(id) {
 function isExpanded(id) { return expandedId.value === id }
 
 // --- Dialogue d'assignation (ligne unique) ---
-function openAssignDialog(depositId) {
+function openAssignDialog(depositId, forSecondOpinion = false) {
   assignTargetId.value = depositId
   assignManagerId.value = ''
+  isSecondOpinion.value = forSecondOpinion
+  secondOpinionComment.value = ''
   showAssignDialog.value = true
 }
 
 async function confirmAssign() {
   if (!assignManagerId.value) { toast.error('Veuillez sélectionner un responsable.'); return }
+  if (isSecondOpinion.value && secondOpinionComment.value.length < 20) {
+    toast.error('La justification doit contenir au moins 20 caractères.')
+    return
+  }
   isAssignSubmitting.value = true
   try {
     await store.assignManager(assignTargetId.value, parseInt(assignManagerId.value))
+    if (isSecondOpinion.value) {
+      await store.updateDepositStatus(assignTargetId.value, 'second_opinion', { comment: secondOpinionComment.value })
+    }
     showAssignDialog.value = false
+    expandedId.value = null
   } catch {
     toast.error("Erreur lors de l'assignation.")
   } finally {
@@ -282,6 +294,7 @@ async function confirmActionDialog() {
 // sélecteur de responsable, soit le dialogue de confirmation générique.
 function runAction(deposit, def) {
   if (def.key === 'assign' || def.key === 'reassign') openAssignDialog(deposit.id)
+  else if (def.key === 'second_opinion_req') openAssignDialog(deposit.id, true)
   else openActionDialog(deposit.id, def)
 }
 
@@ -678,7 +691,7 @@ onMounted(async () => {
         <div v-if="showAssignDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" @click.self="showAssignDialog = false">
           <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-semibold text-navy-800">Assigner à un responsable</h3>
+              <h3 class="text-lg font-semibold text-navy-800">{{ isSecondOpinion ? 'Demander un 2ème avis' : 'Assigner à un responsable' }}</h3>
               <button @click="showAssignDialog = false" class="text-gray-400 hover:text-gray-600"><X class="w-5 h-5" /></button>
             </div>
             <p class="text-sm text-gray-500 mb-4">Sélectionnez un responsable disponible (sans demande en cours d'examen).</p>
@@ -686,6 +699,19 @@ onMounted(async () => {
               <option value="">Sélectionnez un responsable</option>
               <option v-for="m in availableManagers" :key="m.id" :value="m.id">{{ m.first_name }} {{ m.last_name }} ({{ m.open_deposits }} demande(s) ouverte(s))</option>
             </select>
+            <div v-if="isSecondOpinion" class="space-y-3 mb-4">
+              <label class="block text-sm font-medium text-navy-800">Justification <span class="text-red-600">*</span></label>
+              <textarea
+                v-model="secondOpinionComment"
+                rows="4"
+                class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500"
+                placeholder="Justification (minimum 20 caractères)..."
+              ></textarea>
+              <div class="flex items-center justify-between text-sm">
+                <span :class="secondOpinionComment.length < 20 ? 'text-red-600' : 'text-green-600'">{{ secondOpinionComment.length }} / 20</span>
+                <span v-if="secondOpinionComment.length < 20" class="text-red-600 text-xs">Minimum 20 caractères requis</span>
+              </div>
+            </div>
             <div v-if="availableManagers.length === 0" class="text-sm text-amber-600 mb-4 flex items-center gap-2">
               <AlertCircle class="w-4 h-4" /> Aucun responsable disponible pour le moment.
             </div>
@@ -693,11 +719,12 @@ onMounted(async () => {
               <button @click="showAssignDialog = false" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Annuler</button>
               <button
                 @click="confirmAssign"
-                :disabled="isAssignSubmitting || !assignManagerId || availableManagers.length === 0"
-                class="px-4 py-2.5 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors inline-flex items-center gap-2"
+                :disabled="isAssignSubmitting || !assignManagerId || availableManagers.length === 0 || (isSecondOpinion && secondOpinionComment.length < 20)"
+                class="px-4 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-colors inline-flex items-center gap-2"
+                :class="isSecondOpinion ? 'bg-purple-600' : 'bg-green-600'"
               >
                 <Loader2 v-if="isAssignSubmitting" class="w-4 h-4 animate-spin" />
-                {{ isAssignSubmitting ? 'Assignation...' : 'Assigner' }}
+                {{ isAssignSubmitting ? 'Traitement...' : (isSecondOpinion ? 'Demander' : 'Assigner') }}
               </button>
             </div>
           </div>

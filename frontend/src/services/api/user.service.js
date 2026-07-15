@@ -47,7 +47,7 @@ export const userService = {
   /**
    * Récupère l'URL du fichier d'un dépôt.
    * @param {number|string} id - Identifiant du dépôt.
-   * @param {boolean} [inline=false - Si true, renvoie l'URL pour prévisualisation inline.
+   * @param {boolean} [inline=false - Si true, renvoie l'URL pour prévisualisation inl...
    * @returns {string} URL du fichier.
    */
   getDepositFileUrl(id, inline = false) {

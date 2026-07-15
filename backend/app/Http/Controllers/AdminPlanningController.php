@@ -87,7 +87,9 @@ class AdminPlanningController extends Controller
 
     // --- Appointments ---
 
-    /** GET /admin/planning/appointments/calendar — Rendez-vous pour une période (calendrier) */
+    /**
+     * GET /admin/planning/appointments/calendar — Rendez-vous pour une période (calendar)
+     */
     public function getCalendarAppointments(Request $request): JsonResponse
     {
         $request->validate([

@@ -1,4 +1,4 @@
-// Store Pinia pour la gestion des utilisateurs (CRUD, statuts, rôles, archivage, suspension)
+// Store Pinia des utilisateurs
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { hrService } from '@/services/api/hr.service'
@@ -192,7 +192,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /**
-   * Approuve un utilisateur (le rend actif). Délègue au service approprié selon le rôle.
+   * Approuve un utilisateur (le rend actif). Délègue au service approprié selon le ...
    * @param {number|string} id - Identifiant de l'utilisateur.
    * @returns {Promise<Object>} Résultat de l'approbation.
    */

@@ -1,10 +1,10 @@
-// Store Pinia pour l'authentification (connexion, déconnexion, inscription, récupération utilisateur)
+// Store Pinia d'authentification
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import { authService } from '@/services/api/auth.service'
 
-// Origine pour le cookie CSRF Sanctum (déduite de VITE_API_URL si VITE_SANCTUM_URL non défini)
+// Origine pour le cookie CSRF Sanctum (déduite de VITE_API_URL si VITE_SANCTUM_URL no...
 const SANCTUM_ORIGIN = import.meta.env.VITE_SANCTUM_URL ?? (() => {
   const u = new URL(import.meta.env.VITE_API_URL)
   return u.origin

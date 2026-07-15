@@ -1,4 +1,4 @@
-// Store Pinia pour la gestion administrative du planning (règles, rendez-vous, Google Calendar, paramètres)
+// Store Pinia de planning admin
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { adminPlanningService } from '../services/api/admin-planning.service'

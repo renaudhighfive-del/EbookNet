@@ -39,7 +39,7 @@ const profileOpen = ref(false)
 const profileRef = ref(null)
 const logoutModalOpen = ref(false)
 
-// ── Fermer dropdown si clic extérieur ────────────────────────────────────────
+// ── Fermer dropdown si clic extérieur ──────────────...
 function onClickOutside(e) {
   if (profileRef.value && !profileRef.value.contains(e.target)) {
     profileOpen.value = false
@@ -48,7 +48,7 @@ function onClickOutside(e) {
 onMounted(() => document.addEventListener('click', onClickOutside))
 onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 
-// ── Utilisateur ───────────────────────────────────────────────────────────────
+// ── Utilisateur ─────────────────────�...
 const userRole = computed(() => authStore.user?.role ?? 'user')
 const fullName = computed(() => {
   const u = authStore.user
@@ -64,7 +64,7 @@ const initials = computed(() => {
   return u ? `${u.first_name?.[0] ?? ''}${u.last_name?.[0] ?? ''}`.toUpperCase() : '?'
 })
 
-// ── Avatar gradient par rôle ──────────────────────────────────────────────────
+// ── Avatar gradient par rôle ─────────────────...
 const avatarGradient = computed(
   () =>
     ({
@@ -75,7 +75,7 @@ const avatarGradient = computed(
     })[userRole.value] ?? 'linear-gradient(135deg,#4B5563,#6B7280)',
 )
 
-// ── Badge sidebar ─────────────────────────────────────────────────────────────
+// ── Badge sidebar ─────────────────────...
 const roleBadgeClass = computed(
   () =>
     ({
@@ -86,7 +86,7 @@ const roleBadgeClass = computed(
     })[userRole.value] ?? 'bg-white/[.08] text-white/50',
 )
 
-// ── Badge topbar ──────────────────────────────────────────────────────────────
+// ── Badge topbar ─────────────────────�...
 const roleBadgeClassLight = computed(
   () =>
     ({
@@ -107,7 +107,7 @@ const roleLabel = computed(
     })[userRole.value] ?? userRole.value,
 )
 
-// ── Item actif (couleur accent par rôle) ─────────────────────────────────────
+// ── Item actif (couleur accent par rôle) ─────────────...
 const activeItemBg = computed(
   () =>
     ({
@@ -128,7 +128,7 @@ const homePath = computed(
     })[userRole.value] ?? '/',
 )
 
-// ── Lien profil selon rôle ────────────────────────────────────────────────────
+// ── Lien profil selon rôle ─────────────────�...
 const profilePath = computed(
   () =>
     ({
@@ -139,7 +139,7 @@ const profilePath = computed(
     })[userRole.value] ?? '/profile',
 )
 
-// ── Navigation selon rôle ─────────────────────────────────────────────────────
+// ── Navigation selon rôle ──────────────────...
 const navItems = computed(() => {
   if (userRole.value === 'admin')
     return [
@@ -191,7 +191,7 @@ const navItems = computed(() => {
   ]
 })
 
-// ── Titre automatique ─────────────────────────────────────────────────────────
+// ── Titre automatique ───────────────────�...
 const pageTitle = computed(() => {
   const p = route.path
   const map = {

@@ -17,7 +17,7 @@ import { useAuthorStore } from '../../stores/author'
 
 const authorStore = useAuthorStore()
 
-// ─── State ──────────────────────────────────────────────────────────────────
+// ─── State ──────────────────────�...
 
 const searchQuery = ref('')
 const filterNationality = ref('')
@@ -34,7 +34,7 @@ const modal = ref({
 const deleteModal = ref({ visible: false, author: null })
 const detailsModal = ref({ visible: false, author: null })
 
-// ─── Filtrage frontend ─────────────────────────────────────────────────────────
+// ─── Filtrage frontend ──────────────────�...
 
 const filteredAuthors = computed(() => {
   if (!authorStore.authors) return []
@@ -58,7 +58,7 @@ const filteredAuthors = computed(() => {
   return filtered
 })
 
-// ─── Pagination locale ───────────────────────────────────────────────────────
+// ─── Pagination locale ──────────────────�...
 
 const currentPage = ref(1)
 
@@ -88,20 +88,20 @@ const visiblePages = computed(() => {
   return pages
 })
 
-// ─── Fetch ──────────────────────────────────────────────────────────────────
+// ─── Fetch ──────────────────────�...
 
 const fetchAuthorsWithParams = () => {
   // Charger tous les auteurs sans pagination ni filtre (filtrage frontend)
   authorStore.fetchAuthors({ per_page: 1000 }).catch(() => showToast('Erreur lors du chargement.', 'error'))
 }
 
-// ─── Watchers ───────────────────────────────────────────────────────────────
+// ─── Watchers ─────────────────────�...
 
 const resetPage = () => {
   currentPage.value = 1
 }
 
-// ─── Actions ───────────────────────────────────────────────────────────────
+// ─── Actions ──────────────────────...
 
 const openCreateModal = () => {
   modal.value = {
@@ -183,7 +183,7 @@ const showToast = (message, type) => {
   setTimeout(() => (toast.value.message = ''), 3000)
 }
 
-// ─── Lifecycle ─────────────────────────────────────────────────────────────
+// ─── Lifecycle ─────────────────────�...
 
 onMounted(() => {
   fetchAuthorsWithParams()

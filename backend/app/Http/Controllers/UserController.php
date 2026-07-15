@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    // ─── Helper pour logs d'activité ─────────────────────────────────────────────
+    // ─── Helper pour logs d'activité ─────────────�...
     private function logActivity(Request $request, string $action, ?int $targetId = null): void
     {
         ActivityLog::create([
@@ -33,7 +33,7 @@ class UserController extends Controller
         ]);
     }
 
-    // ─── RH + Admin ───────────────────────────────────────────────────────────
+    // ─── RH + Admin ───────────────────�...
 
     /** GET /hr/users — Liste paginée (filtre : role, status, search) */
     public function index(Request $request): JsonResponse
@@ -186,7 +186,7 @@ class UserController extends Controller
     }
 
     /** DELETE /hr/users/:id — Archivage du compte (soft-delete)
-     *  Passe le statut à 'archived' — le compte est conservé en BDD mais inaccessible.
+     *  Passe le statut à 'archived' — le compte est conservé en BDD mais inaccessi...
      */
     public function archive(Request $request, int $id): JsonResponse
     {
@@ -211,7 +211,7 @@ class UserController extends Controller
         return response()->json(['message' => 'Demande de suspension soumise à l\'admin.', 'user' => $user]);
     }
 
-    // ─── Admin uniquement ─────────────────────────────────────────────────────
+    // ─── Admin uniquement ─────────────────�...
 
     /** PATCH /admin/users/:id/suspend — Suspendre un compte directement (admin) */
     public function suspend(Request $request, int $id): JsonResponse
@@ -247,7 +247,7 @@ class UserController extends Controller
         return response()->json(['message' => 'Compte restauré.', 'user' => $user]);
     }
 
-    /** PATCH /admin/users/:id/approve — Approuver un compte inactif (nouvelles inscriptions)
+    /** PATCH /admin/users/:id/approve — Approuver un compte inactif (nouvelles inscr...
      *  Active le compte → l'utilisateur peut se connecter
      */
     public function approve(Request $request, int $id): JsonResponse
@@ -260,7 +260,7 @@ class UserController extends Controller
         return response()->json(['message' => 'Compte approuvé et activé.', 'user' => $user]);
     }
 
-    /** PATCH /admin/users/:id/validate-suspend — Valider la suspension proposée par le RH */
+    /** PATCH /admin/users/:id/validate-suspend — Valider la suspension proposée par...
     public function validateSuspend(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);

@@ -1,4 +1,4 @@
-// Store Pinia pour la gestion du planning côté utilisateur (créneaux, disponibilités, réservation)
+// Store Pinia du planning utilisateur
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { planningService } from '../services/api/planning.service'

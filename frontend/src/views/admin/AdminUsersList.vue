@@ -30,7 +30,7 @@ const authStore = useAuthStore()
 const currentUserId = computed(() => authStore.user?.id)
 const isCurrentUser = (userId) => currentUserId.value === userId
 
-// ── State ──────────────────────────────────────────────────────────────────
+// ── State ───────────────────────�...
 
 const searchQuery   = ref('')
 const searchTimeout = ref(null)
@@ -53,7 +53,7 @@ const userModal = ref({
 })
 const detailModal = ref({ visible: false, user: null })
 
-// ── Tabs ───────────────────────────────────────────────────────────────────
+// ── Tabs ────────────────────────...
 
 const tabs = computed(() => [
   { key: '',                    label: 'Tous',           count: userStore.users?.length ?? 0 },
@@ -69,11 +69,11 @@ const selectTab = (key) => {
   currentPage.value = 1
 }
 
-// ── Pagination ─────────────────────────────────────────────────────────────
+// ── Pagination ──────────────────────...
 
 const perPageOptions = [10, 25, 50, 100]
 
-// ── Client-side filtering ─────────────────────────────────────────────────
+// ── Client-side filtering ──────────────────�...
 
 const filteredUsers = computed(() => {
   if (!userStore.users) return []
@@ -126,7 +126,7 @@ const visiblePages = computed(() => {
   return pages
 })
 
-// ── Fetch ──────────────────────────────────────────────────────────────────
+// ── Fetch ───────────────────────�...
 
 const fetchUsers = () => {
   userStore.fetchUsers({ per_page: 9999 }).catch(() => showToast('Erreur lors du chargement.', 'error'))
@@ -139,7 +139,7 @@ const onSearchInput = () => {
   }, 400)
 }
 
-// ── Modals ─────────────────────────────────────────────────────────────────
+// ── Modals ───────────────────────�...
 
 const openCreateModal = () => {
   userModal.value = {
@@ -207,7 +207,7 @@ const handleUserSubmit = async () => {
   }
 }
 
-// ── Actions avec confirmation ───────────────────────────────────────────────
+// ── Actions avec confirmation ─────────────────...
 
 const confirmAction = ({ type, user }) => {
   const name = `${user.first_name} ${user.last_name}`
@@ -245,7 +245,7 @@ const applyRoleChange = async () => {
   }
 }
 
-// ── Toast ──────────────────────────────────────────────────────────────────
+// ── Toast ───────────────────────�...
 
 const showToast = (message, type = 'success') => {
   toast.value = { message, type }

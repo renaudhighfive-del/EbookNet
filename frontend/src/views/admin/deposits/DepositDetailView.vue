@@ -70,6 +70,8 @@ const showZoomModal = ref(false)
 // Dialogue d'assignation / réassignation
 const showAssignDialog = ref(false)
 const assignManagerId = ref('')
+const isSecondOpinion = ref(false)
+const secondOpinionComment = ref('')
 const availableManagers = computed(() => store.getAvailableManagers(deposit.value?.assignedManagerId || null))
 
 const steps = computed(() => store.getStepsForStatus(deposit.value?.status))
@@ -163,7 +165,9 @@ const statusInfoBanner = computed(() => {
   return null
 })
 
-function openAssignDialog() {
+function openAssignDialog(forSecondOpinion = false) {
+  isSecondOpinion.value = forSecondOpinion
+  secondOpinionComment.value = ''
   assignManagerId.value = deposit.value.assignedManagerId || ''
   showAssignDialog.value = true
 }
@@ -173,6 +177,10 @@ async function confirmAssign() {
   isSubmitting.value = true
   try {
     await store.assignManager(deposit.value.id, parseInt(assignManagerId.value))
+    if (isSecondOpinion.value) {
+      await store.updateDepositStatus(deposit.value.id, 'second_opinion', { comment: secondOpinionComment.value })
+      showResultBanner('info', 'Second avis demandé.')
+    }
     await refresh()
     showAssignDialog.value = false
   } catch {
@@ -191,6 +199,7 @@ function openConfirmDialog(def) {
 // Point d'entrée unique des boutons d'action du panneau
 function runAction(def) {
   if (def.key === 'assign' || def.key === 'reassign') openAssignDialog()
+  else if (def.key === 'second_opinion_req') openAssignDialog(true)
   else openConfirmDialog(def)
 }
 
@@ -428,19 +437,19 @@ onMounted(async () => {
                   <span class="text-navy-800">{{ getTypeLabel(deposit.type) }}</span>
                 </div>
                 <div v-if="deposit.category">
-                  <span class="text-gray-500 block text-xs">Catégorie</span>
+                  <span class="text-gray-500 text-xs">Catégorie</span>
                   <span class="text-navy-800">{{ deposit.category.name }}</span>
                 </div>
                 <div v-if="deposit.publisher">
-                  <span class="text-gray-500 block text-xs flex items-center gap-1"><Building class="w-3 h-3" /> Éditeur</span>
+                  <span class="text-gray-500 text-xs flex items-center gap-1"><Building class="w-3 h-3" /> Éditeur</span>
                   <span class="text-navy-800">{{ deposit.publisher }}</span>
                 </div>
                 <div v-if="deposit.isbn">
-                  <span class="text-gray-500 block text-xs flex items-center gap-1"><Hash class="w-3 h-3" /> ISBN</span>
+                  <span class="text-gray-500 text-xs flex items-center gap-1"><Hash class="w-3 h-3" /> ISBN</span>
                   <span class="text-navy-800 font-mono">{{ deposit.isbn }}</span>
                 </div>
                 <div v-if="deposit.language">
-                  <span class="text-gray-500 block text-xs flex items-center gap-1"><Globe class="w-3 h-3" /> Langue</span>
+                  <span class="text-gray-500 text-xs flex items-center gap-1"><Globe class="w-3 h-3" /> Langue</span>
                   <span class="text-navy-800">{{ getLanguageLabel(deposit.language) }}</span>
                 </div>
                 <div v-if="deposit.year">
@@ -586,13 +595,26 @@ onMounted(async () => {
 
           <div v-if="showAssignDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showAssignDialog = false">
             <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
-              <h3 class="text-lg font-semibold text-navy-800 mb-4">{{ deposit.assignedManagerId ? 'Réassigner' : 'Assigner' }} à un responsable</h3>
+              <h3 class="text-lg font-semibold text-navy-800 mb-4">{{ isSecondOpinion ? 'Demander un 2ème avis' : (deposit.assignedManagerId ? 'Réassigner' : 'Assigner') }} à un responsable</h3>
               <select v-model="assignManagerId" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 mb-4">
                 <option value="">Sélectionnez un responsable</option>
                 <option v-for="m in availableManagers" :key="m.id" :value="m.id" :disabled="m.id === deposit.assignedManagerId">
                   {{ m.first_name }} {{ m.last_name }} ({{ m.open_deposits }} demande(s) ouverte(s))
                 </option>
               </select>
+              <div v-if="isSecondOpinion" class="space-y-3 mb-4">
+                <label class="block text-sm font-medium text-navy-800">Justification <span class="text-red-600">*</span></label>
+                <textarea
+                  v-model="secondOpinionComment"
+                  rows="4"
+                  class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500"
+                  placeholder="Justification (minimum 20 caractères)..."
+                ></textarea>
+                <div class="flex items-center justify-between text-sm">
+                  <span :class="secondOpinionComment.length < 20 ? 'text-red-600' : 'text-green-600'">{{ secondOpinionComment.length }} / 20</span>
+                  <span v-if="secondOpinionComment.length < 20" class="text-red-600 text-xs">Minimum 20 caractères requis</span>
+                </div>
+              </div>
               <div v-if="availableManagers.length === 0" class="text-sm text-amber-600 mb-4 flex items-center gap-2">
                 <AlertCircle class="w-4 h-4" /> Aucun responsable disponible (tous ont des demandes en cours).
               </div>
@@ -600,11 +622,12 @@ onMounted(async () => {
                 <button @click="showAssignDialog = false" :disabled="isSubmitting" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Annuler</button>
                 <button
                   @click="confirmAssign"
-                  :disabled="isSubmitting || !assignManagerId || availableManagers.length === 0"
-                  class="px-4 py-2.5 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 inline-flex items-center gap-2"
+                  :disabled="isSubmitting || !assignManagerId || availableManagers.length === 0 || (isSecondOpinion && secondOpinionComment.length < 20)"
+                  class="px-4 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-2"
+                  :class="isSecondOpinion ? 'bg-purple-600' : 'bg-green-600'"
                 >
                   <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
-                  {{ isSubmitting ? 'Assignation...' : 'Assigner' }}
+                  {{ isSubmitting ? 'Traitement...' : (isSecondOpinion ? 'Demander' : 'Assigner') }}
                 </button>
               </div>
             </div>

@@ -18,8 +18,10 @@ class DepositRequest extends Model
         'status',
         'reference_id',
         'rejection_reason',
+        'admin_override',
 
         'publisher',
+        'pages',
         'isbn',
         'language',
         'type',
