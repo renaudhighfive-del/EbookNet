@@ -31,6 +31,7 @@ class DepositRequest extends Model
 
     protected $appends = [
         'proposed_file_url',
+        'cover_image_url',
     ];
 
     protected function casts(): array
@@ -45,6 +46,19 @@ class DepositRequest extends Model
         return $this->proposed_file
             ? url('storage/'.$this->proposed_file)
             : null;
+    }
+
+    public function getCoverImageUrlAttribute()
+    {
+        if (!$this->cover_image) {
+            return null;
+        }
+        // If it's a base64 image, return as is
+        if (str_starts_with($this->cover_image, 'data:image')) {
+            return $this->cover_image;
+        }
+        // Otherwise, it's a file path, add storage prefix
+        return url('storage/'.$this->cover_image);
     }
 
     public function applicant()

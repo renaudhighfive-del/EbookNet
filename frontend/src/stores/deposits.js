@@ -141,7 +141,7 @@ function normalizeApiDeposit(item) {
     file: item.proposed_file || null,
     fileUrl: item.proposed_file_url || null,
     fileSize: item.file_size || null,
-    cover_image: item.cover_image || null,
+    cover_image: item.cover_image_url || item.cover_image || null,
     submittedBy: item.applicant
       ? { id: item.applicant.id, first_name: item.applicant.first_name, last_name: item.applicant.last_name, email: item.applicant.email }
       : null,

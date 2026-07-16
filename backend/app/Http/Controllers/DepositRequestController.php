@@ -7,6 +7,7 @@ use App\Http\Requests\Deposit\RejectDepositRequest;
 use App\Models\ActivityLog;
 use App\Models\Author;
 use App\Models\DepositRequest;
+use App\Models\Publisher;
 use App\Models\Reference;
 use App\Models\ReferenceKeyword;
 use App\Models\User;
@@ -407,7 +408,7 @@ class DepositRequestController extends Controller
             $overrideComment = $validated['comment'];
         }
 
-        $reference = Reference::create([
+        $referenceData = [
             'title' => $deposit->title,
             'abstract' => $deposit->description,
             'publication_year' => $deposit->publication_year,
@@ -419,7 +420,15 @@ class DepositRequestController extends Controller
             'language' => $deposit->language,
             'document_type' => $deposit->type,
             'cover_image' => $deposit->cover_image,
-        ]);
+            'pages' => $deposit->pages,
+        ];
+
+        if (! empty($deposit->publisher)) {
+            $publisher = Publisher::firstOrCreate(['name' => $deposit->publisher]);
+            $referenceData['publisher_id'] = $publisher->id;
+        }
+
+        $reference = Reference::create($referenceData);
 
         if (! empty($deposit->keywords)) {
             foreach ($deposit->keywords as $keyword) {
