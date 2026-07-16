@@ -293,7 +293,7 @@ Chart.register(
   Tooltip, Legend
 )
 
-// ─── REFS ─────────────────────────────────────────────────────────────────────
+// ─── REFS ───────────────────────...
 
 const isLoading     = ref(true)
 const hasError      = ref(false)
@@ -315,11 +315,11 @@ const referencesByCategory = ref([])
 const pendingDeposits      = ref([])
 const activityLogs         = ref([])
 
-// ─── COULEURS ─────────────────────────────────────────────────────────────────
+// ─── COULEURS ─────────────────────�...
 
 const donutColors = ['#1B2A4A', '#0D9488', '#DC2626', '#E8A020', '#8B5CF6', '#9CA3AF']
 
-// ─── COMPUTED ─────────────────────────────────────────────────────────────────
+// ─── COMPUTED ─────────────────────�...
 
 const totalReferenceCount = computed(() =>
   referencesByCategory.value.reduce((s, c) => s + c.references_count, 0)
@@ -330,7 +330,7 @@ const getCategoryPercentage = (count) => {
   return t ? Math.round((count / t) * 100) : 0
 }
 
-// ─── CHART.JS : BAR CHART ────────────────────────────────────────────────────
+// ─── CHART.JS : BAR CHART ─────────────────�...
 
 const buildBarChart = () => {
   if (!barChartRef.value || !depositsByMonth.value.length) return
@@ -403,7 +403,7 @@ const buildBarChart = () => {
   })
 }
 
-// ─── CHART.JS : DONUT CHART ──────────────────────────────────────────────────
+// ─── CHART.JS : DONUT CHART ─────────────────...
 
 const buildDonutChart = () => {
   if (!donutChartRef.value || !referencesByCategory.value.length) return
@@ -455,7 +455,7 @@ const buildDonutChart = () => {
   })
 }
 
-// ─── WATCH : reconstruire les charts quand les données arrivent ───────────────
+// ─── WATCH : reconstruire les charts quand les données arrivent ────�...
 
 watch(depositsByMonth, async () => {
   await nextTick()
@@ -467,7 +467,7 @@ watch(referencesByCategory, async () => {
   buildDonutChart()
 })
 
-// ─── STATUTS ─────────────────────────────────────────────────────────────────
+// ─── STATUTS ──────────────────────...
 
 const statusConfig = {
   pending             : { label: 'En attente',      cls: 'bg-gray-100 text-gray-600' },
@@ -482,7 +482,7 @@ const statusConfig = {
 const getStatusLabel = (s) => statusConfig[s]?.label ?? s
 const getStatusClass = (s) => statusConfig[s]?.cls   ?? 'bg-gray-100 text-gray-500'
 
-// ─── ICÔNES LOGS ─────────────────────────────────────────────────────────────
+// ─── ICÔNES LOGS ────────────────────�...
 
 const getLogIcon = (action) => {
   if (!action) return Activity
@@ -503,7 +503,7 @@ const getLogIconClass = (action) => {
   return 'bg-gray-100 text-gray-400'
 }
 
-// ─── UTILS ───────────────────────────────────────────────────────────────────
+// ─── UTILS ──────────────────────�...
 
 const formatNumber = (n) => Number(n ?? 0).toLocaleString('fr-FR')
 
@@ -527,7 +527,7 @@ const formatRelativeDate = (d) => {
   return `il y a ${Math.floor(diff / 1440)} j`
 }
 
-// ─── API ─────────────────────────────────────────────────────────────────────
+// ─── API ───────────────────────�...
 
 async function loadDashboard() {
   hasError.value = false

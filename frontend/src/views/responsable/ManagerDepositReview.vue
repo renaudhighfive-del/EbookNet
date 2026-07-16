@@ -24,6 +24,12 @@ const justification = ref('')
 const fetchDetails = async () => {
   try {
     deposit.value = await store.fetchDeposit(route.params.id)
+    // Normalisation locale : assurer la présence de `publisher` et `pages`
+    if (deposit.value) {
+      deposit.value.publisher = deposit.value.publisher || deposit.value.editor || deposit.value.publisher_name || (deposit.value.reference && (deposit.value.reference.publisher || deposit.value.reference.publisher_name)) || null
+      deposit.value.pages = deposit.value.pages ?? deposit.value.page_count ?? deposit.value.number_of_pages ?? null
+      deposit.value.submittedAt = deposit.value.submitted_at || deposit.value.created_at || deposit.value.submittedAt || null
+    }
     // S'assurer que le statut de départ est cohérent pour l'examen
     if (deposit.value && !['assigned', 'second_opinion'].includes(deposit.value.status)) {
       decision.value = deposit.value.status === 'manager_approved' ? 'approve' : 'reject'
@@ -69,11 +75,6 @@ function getFileExtension(file) {
 
 function isPdf(file) {
   return getFileExtension(file) === 'pdf'
-}
-
-function getPdfViewerUrl(url) {
-  if (!url) return '#'
-  return `${url}#toolbar=1&navpanes=1&scrollbar&view=FitH`
 }
 
 function getViewerUrl(url) {
@@ -175,7 +176,7 @@ const handleSubmit = async () => {
             </div>
             <div
               v-else
-              class="bg-gradient-to-br from-navy-100 to-navy-200 rounded-xl w-full h-56 flex items-center justify-center mb-6"
+              class="bg-linear-to-br from-navy-100 to-navy-200 rounded-xl w-full h-56 flex items-center justify-center mb-6"
             >
               <span class="text-6xl text-navy-600/60">📗</span>
             </div>
@@ -202,17 +203,17 @@ const handleSubmit = async () => {
                 <span class="text-gray-500 block text-xs">Auteurs</span>
                 <span class="text-navy-800 font-medium">{{ deposit.authors?.join(', ') || '—' }}</span>
               </div>
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <span class="text-gray-500 block text-xs">Éditeur</span>
-                  <span class="text-gray-700">{{ deposit.publisher || '—' }}</span>
+                  <span class="text-gray-700 wrap-break-word">{{ deposit.publisher || '—' }}</span>
                 </div>
                 <div>
                   <span class="text-gray-500 block text-xs">Année</span>
                   <span class="text-gray-700 font-mono font-medium">{{ deposit.year || '—' }}</span>
                 </div>
               </div>
-              <div class="grid grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div>
                   <span class="text-gray-500 block text-xs">Langue</span>
                   <span class="text-gray-700">{{ store.getLanguageLabel(deposit.language) }}</span>
@@ -303,9 +304,9 @@ const handleSubmit = async () => {
               Ouvrir dans un nouvel onglet
             </a>
           </div>
-          <div class="p-6 bg-gray-50 flex-1 min-h-[450px] flex items-center justify-center">
+          <div class="p-6 bg-gray-50 flex-1 min-h-112.5 flex items-center justify-center">
             <iframe v-if="fileUrlInline && isPdf(deposit.file)" :src="fileUrlInline"
-              class="w-full h-full min-h-[500px] rounded-xl border border-gray-200" title="Aperçu PDF"></iframe>
+              class="w-full h-full min-h-125 rounded-xl border border-gray-200" title="Aperçu PDF"></iframe>
             <div v-else class="text-center text-gray-500 p-8">
               <div class="text-6xl mb-3">📄</div>
               <p class="text-sm font-medium">Prévisualisation du document</p>
@@ -316,7 +317,7 @@ const handleSubmit = async () => {
       </div>
 
       <!-- Decision Section -->
-      <div class="bg-white rounded-2xl shadow-soft border-t-4 border-teal-600 p-8 border border-gray-100">
+      <div class="bg-white rounded-2xl shadow-soft border border-gray-100 border-t-4 border-t-teal-600 p-8">
         <div class="mb-6">
           <h3 class="text-xl font-bold text-navy-800 font-serif mb-2">⚖️ Votre décision</h3>
           <p class="text-gray-600 text-sm">

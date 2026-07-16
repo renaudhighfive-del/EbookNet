@@ -1,4 +1,4 @@
-// Store Pinia pour la gestion des dépôts côté utilisateur (soumission, liste de mes dépôts)
+// Store Pinia des dépôts utilisateur
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { userService } from '@/services/api/user.service'

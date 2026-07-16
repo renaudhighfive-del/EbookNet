@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class ActivityLogController extends Controller
 {
-    /** GET /hr/activity-logs — Logs d'activité pour RH (gestion utilisateurs uniquement) */
+    /** GET /hr/activity-logs — Logs d'activité pour RH (gestion utilisateurs unique...
     public function indexForRH(Request $request): JsonResponse
     {
         $query = ActivityLog::with(['user' => function ($q) {

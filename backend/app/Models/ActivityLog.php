@@ -24,7 +24,7 @@ class ActivityLog extends Model
 
     /**
      * Filtre les logs pour une cible précise (ex: un DepositRequest donné).
-     * Usage : ActivityLog::forTarget('deposit_requests', $id)->orderBy('created_at')->get()
+     * Usage : ActivityLog::forTarget('deposit_requests', $id)->orderBy('created_at')->...
      */
     public function scopeForTarget(Builder $query, string $table, int $id): Builder
     {

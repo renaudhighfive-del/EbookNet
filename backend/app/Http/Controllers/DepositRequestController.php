@@ -7,6 +7,7 @@ use App\Http\Requests\Deposit\RejectDepositRequest;
 use App\Models\ActivityLog;
 use App\Models\Author;
 use App\Models\DepositRequest;
+use App\Models\Publisher;
 use App\Models\Reference;
 use App\Models\ReferenceKeyword;
 use App\Models\User;
@@ -86,7 +87,7 @@ class DepositRequestController extends Controller
     }
 
     /**
-     * GET /admin/deposits/managers — Liste dynamique des responsables avec leur charge de travail
+     * GET /admin/deposits/managers — Liste dynamique des responsables avec leur char...
      */
     public function availableManagers(Request $request): JsonResponse
     {
@@ -120,6 +121,10 @@ class DepositRequestController extends Controller
 
         $payload = $deposit->toArray();
         $payload['history'] = $this->buildHistory($deposit->id);
+        $payload['applicant_name'] = $deposit->applicant ? trim("{$deposit->applicant->first_name} {$deposit->applicant->last_name}") : null;
+        $payload['assigned_manager_name'] = $deposit->assignedManager ? trim("{$deposit->assignedManager->first_name} {$deposit->assignedManager->last_name}") : null;
+        $payload['submitted_at'] = $deposit->created_at?->toIso8601String();
+        $payload['updated_at'] = $deposit->updated_at?->toIso8601String();
 
         return response()->json(['deposit_request' => $payload]);
     }
@@ -136,6 +141,7 @@ class DepositRequestController extends Controller
             'publication_year' => 'nullable|integer|min:1000|max:9999',
             'category_id' => 'nullable|exists:categories,id',
             'publisher' => 'nullable|string|max:500',
+            'pages' => 'nullable|integer|min:1|max:99999',
             'isbn' => 'nullable|string|max:20',
             'language' => 'nullable|string|max:10',
             'type' => 'nullable|string|max:50',
@@ -209,6 +215,10 @@ class DepositRequestController extends Controller
 
         $payload = $deposit->toArray();
         $payload['history'] = $this->buildHistory($deposit->id);
+        $payload['applicant_name'] = $deposit->applicant ? trim("{$deposit->applicant->first_name} {$deposit->applicant->last_name}") : null;
+        $payload['assigned_manager_name'] = $deposit->assignedManager ? trim("{$deposit->assignedManager->first_name} {$deposit->assignedManager->last_name}") : null;
+        $payload['submitted_at'] = $deposit->created_at?->toIso8601String();
+        $payload['updated_at'] = $deposit->updated_at?->toIso8601String();
 
         return response()->json(['deposit_request' => $payload]);
     }
@@ -219,7 +229,7 @@ class DepositRequestController extends Controller
         $deposit = DepositRequest::findOrFail($id);
         $this->authorize('assign', $deposit);
 
-        if (! in_array($deposit->status, ['pending', 'assigned'], true)) {
+        if (! in_array($deposit->status, ['pending', 'assigned', 'approved_by_manager', 'rejected_by_manager', 'second_review'], true)) {
             return response()->json(['message' => 'Cette demande ne peut plus être assignée dans son état actuel.'], 400);
         }
 
@@ -345,7 +355,7 @@ class DepositRequestController extends Controller
         $deposit = DepositRequest::findOrFail($id);
         $this->authorize('review', $deposit);
 
-        if (! in_array($deposit->status, ['approved_by_manager', 'rejected_by_manager'], true)) {
+        if (! in_array($deposit->status, ['approved_by_manager', 'rejected_by_manager', 'assigned'], true)) {
             return response()->json(['message' => 'Un second avis ne peut être demandé qu\'après une décision du responsable.'], 400);
         }
 
@@ -378,7 +388,7 @@ class DepositRequestController extends Controller
         return response()->json(['message' => 'Demande rejetée définitivement.', 'deposit_request' => $deposit]);
     }
 
-    /** PATCH /admin/deposits/{id}/publish — Publication définitive dans le catalogue (Admin final) */
+    /** PATCH /admin/deposits/{id}/publish — Publication définitive dans le catalogue */
     public function publish(Request $request, int $id): JsonResponse
     {
         $deposit = DepositRequest::with('category')->findOrFail($id);
@@ -398,7 +408,7 @@ class DepositRequestController extends Controller
             $overrideComment = $validated['comment'];
         }
 
-        $reference = Reference::create([
+        $referenceData = [
             'title' => $deposit->title,
             'abstract' => $deposit->description,
             'publication_year' => $deposit->publication_year,
@@ -410,7 +420,15 @@ class DepositRequestController extends Controller
             'language' => $deposit->language,
             'document_type' => $deposit->type,
             'cover_image' => $deposit->cover_image,
-        ]);
+            'pages' => $deposit->pages,
+        ];
+
+        if (! empty($deposit->publisher)) {
+            $publisher = Publisher::firstOrCreate(['name' => $deposit->publisher]);
+            $referenceData['publisher_id'] = $publisher->id;
+        }
+
+        $reference = Reference::create($referenceData);
 
         if (! empty($deposit->keywords)) {
             foreach ($deposit->keywords as $keyword) {
@@ -488,6 +506,7 @@ class DepositRequestController extends Controller
         }
 
         $filePath = $deposit->proposed_file;
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
         $disk = Storage::disk('public');
         $mimeType = $disk->mimeType($filePath);
         $fileName = basename($filePath);
@@ -502,6 +521,6 @@ class DepositRequestController extends Controller
             );
         }
 
-        return $disk->download($filePath);
+        return response()->download($disk->path($filePath), $fileName, ['Content-Type' => $mimeType]);
     }
 }

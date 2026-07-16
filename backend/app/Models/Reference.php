@@ -29,14 +29,32 @@ class Reference extends Model
     protected function coverImage(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => $value ? url('storage/'.$value) : null,
+            get: function ($value) {
+                if (!$value) {
+                    return null;
+                }
+                // If it's a base64 image, return as is
+                if (str_starts_with($value, 'data:image')) {
+                    return $value;
+                }
+                // Otherwise, it's a file path, add storage prefix
+                return url('storage/'.$value);
+            }
         );
     }
 
     protected function filePath(): Attribute
     {
         return Attribute::make(
-            get: fn ($value) => $value ? url('storage/'.$value) : null,
+            get: function ($value) {
+                if (!$value) {
+                    return null;
+                }
+                if (str_starts_with($value, 'data:')) {
+                    return $value;
+                }
+                return url('storage/'.$value);
+            }
         );
     }
 

@@ -12,7 +12,7 @@ const categoryStore = useCategoryStore()
 const publisherStore = usePublisherStore()
 const authorStore = useAuthorStore()
 
-// ─── State ──────────────────────────────────────────────────────────────
+// ─── State ──────────────────────�...
 
 const searchQuery = ref('')
 const filterStatus = ref('')
@@ -99,7 +99,7 @@ const detailsModal = ref({
   reference: null,
 })
 
-// ─── Computed ────────────────────────────────────────────────────────────
+// ─── Computed ─────────────────────�...
 
 const filteredReferences = computed(() => {
   if (!referenceStore.references) return []
@@ -155,7 +155,7 @@ const visiblePages = computed(() => {
   return pages
 })
 
-// ─── Actions ─────────────────────────────────────────────────────────────
+// ─── Actions ──────────────────────...
 
 const fetchAllReferences = () => {
   referenceStore.fetchReferences({ per_page: 9999 }).catch(() => showToast('Erreur lors du chargement.', 'error'))
@@ -181,7 +181,7 @@ const showToast = (message, type = 'success') => {
   setTimeout(() => (toast.value = { message: '', type: 'success' }), 3500)
 }
 
-// ─── Modals ─────────────────────────────────────────────────────────────
+// ─── Modals ──────────────────────�...
 
 const openCreateModal = () => {
   referenceModal.value = {
@@ -356,7 +356,7 @@ const submitReferenceForm = async () => {
   }
 }
 
-// ─── Lifecycle ───────────────────────────────────────────────────────────
+// ─── Lifecycle ─────────────────────�...
 
 onMounted(async () => {
   try {

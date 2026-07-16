@@ -31,10 +31,30 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([
-            'first_name' => 'Marie',
-            'last_name' => 'Kouassi',
-            'email' => 'marie@example.com',
+            'first_name' => 'Responsable',
+            'last_name' => 'Demande 1',
+            'email' => 'demande1@example.com',
             'phone' => '+22955555555',
+            'password' => Hash::make('password123'),
+            'role' => 'responsable_demande',
+            'status' => 'active',
+        ]);
+
+        User::create([
+            'first_name' => 'Responsable',
+            'last_name' => 'Demande 2',
+            'email' => 'demande2@example.com',
+            'phone' => '+22933333333',
+            'password' => Hash::make('password123'),
+            'role' => 'responsable_demande',
+            'status' => 'active',
+        ]);
+
+        User::create([
+            'first_name' => 'Responsable',
+            'last_name' => 'Demande 3',
+            'email' => 'demande3@example.com',
+            'phone' => '+22922222222',
             'password' => Hash::make('password123'),
             'role' => 'responsable_demande',
             'status' => 'active',
@@ -44,6 +64,26 @@ class UserSeeder extends Seeder
             'first_name' => 'Paul',
             'last_name' => 'Adjovi',
             'email' => 'paul@example.com',
+            'phone' => '+22944444444',
+            'password' => Hash::make('password123'),
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        User::create([
+            'first_name' => 'Beiber',
+            'last_name' => 'Smith',
+            'email' => 'beiber@example.com',
+            'phone' => '+22944444444',
+            'password' => Hash::make('password123'),
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+        
+        User::create([
+            'first_name' => 'Bauer',
+            'last_name' => 'Jack',
+            'email' => 'bauer@example.com',
             'phone' => '+22944444444',
             'password' => Hash::make('password123'),
             'role' => 'user',

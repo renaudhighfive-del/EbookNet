@@ -79,6 +79,8 @@ onMounted(async () => {
   } catch {
     publishers.value = []
   }
+  // Initialize publisher search with form value
+  publisherSearch.value = form.value.publisher
 })
 
 function handleCoverFileChange(event) {
@@ -121,6 +123,7 @@ function selectPublisher(name) {
 }
 
 function onPublisherInput() {
+  form.value.publisher = publisherSearch.value
   showPublisherDropdown.value = true
 }
 
@@ -133,7 +136,7 @@ function onPublisherInput() {
 //       const c = cleaned[i]
 //       if (i < 9 && !/\d/.test(c)) return 'Format ISBN-10 invalide.'
 //       if (i === 9 && c !== 'X' && !/\d/.test(c)) return 'Format ISBN-10 invalide.'
-//       sum += (i === 9 && c === 'X') ? 10 : (i === 9 ? parseInt(c) : (i + 1) * parseInt(c))
+//       sum += (i === 9 && c === 'X') ? 10 : (i === 9 ? parseInt(c) : (i + 1) * parseI...
 //     }
 //     if (sum % 11 !== 0) return 'ISBN-10 invalide (somme de contrôle).'
 //     return ''

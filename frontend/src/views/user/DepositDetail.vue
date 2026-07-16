@@ -20,11 +20,11 @@ import {
   Calendar,
   BookOpen,
   Tag,
-  MessageSquare,
+
   Globe,
   Hash,
   Building,
-  BookMarked,
+
   Image,
   Download,
   X,
@@ -71,13 +71,6 @@ function getLanguageLabel(lang) {
   return labels[lang] || lang || 'Non spécifié'
 }
 
-function formatDate(d) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('fr-FR', {
-    day: '2-digit', month: 'long', year: 'numeric',
-  })
-}
-
 function formatDateTime(d) {
   if (!d) return '—'
   return new Date(d).toLocaleString('fr-FR', {
@@ -115,18 +108,10 @@ function isViewableFile(url) {
 function getViewerUrl(url) {
   if (!url) return '#'
   const ext = getFileExtension(url)
-  // For office documents, use Google Docs Viewer
-  if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp'].includes(getFileExtension(url))) {
+  if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp'].includes(ext)) {
     return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`
   }
-  // For other files, direct link
   return url
-}
-
-function getPdfViewerUrl(url) {
-  if (!url) return '#'
-  // Use browser's built-in PDF viewer with a nice UI
-  return `${url}#toolbar=1&navpanes=1&scrollbar&view=FitH`
 }
 
 function formatFileSize(bytes) {
@@ -165,6 +150,13 @@ onMounted(async () => {
     } else {
       const data = await userService.getDepositById(route.params.id)
       deposit.value = data.deposit_request
+    }
+    // Normalisation locale : certains endpoints peuvent renvoyer des clés différentes
+    if (deposit.value) {
+      deposit.value.publisher = deposit.value.publisher || deposit.value.editor || deposit.value.publisher_name || (deposit.value.reference && (deposit.value.reference.publisher || deposit.value.reference.publisher_name)) || null
+      deposit.value.pages = deposit.value.pages ?? deposit.value.page_count ?? deposit.value.number_of_pages ?? null
+      deposit.value.submittedAt = deposit.value.submitted_at || deposit.value.created_at || deposit.value.submittedAt || null
+      deposit.value.file_size = deposit.value.file_size || deposit.value.fileSize || null
     }
   } catch (err) {
     error.value = err.response?.data?.message || err.message || 'Impossible de charger les détails de la demande.'
@@ -311,21 +303,21 @@ onMounted(async () => {
                   </span>
                 </div>
                 <div v-if="deposit.publisher">
-                  <span class="text-gray-500 block text-xs flex items-center gap-1">
+                  <span class="text-gray-500 text-xs flex items-center gap-1">
                     <Building class="w-3 h-3" />
                     Éditeur
                   </span>
                   <span class="text-navy-800">{{ deposit.publisher }}</span>
                 </div>
                 <div v-if="deposit.isbn">
-                  <span class="text-gray-500 block text-xs flex items-center gap-1">
+                  <span class="text-gray-500 text-xs flex items-center gap-1">
                     <Hash class="w-3 h-3" />
                     ISBN
                   </span>
                   <span class="text-navy-800 font-mono">{{ deposit.isbn }}</span>
                 </div>
                 <div v-if="deposit.language">
-                  <span class="text-gray-500 block text-xs flex items-center gap-1">
+                  <span class="text-gray-500 text-xs flex items-center gap-1">
                     <Globe class="w-3 h-3" />
                     Langue
                   </span>
@@ -368,7 +360,7 @@ onMounted(async () => {
                       {{ (deposit.proposed_file || deposit.file || '').split('/').pop() || 'Document joint' }}
                     </p>
                     <p class="text-xs text-gray-500">
-                      {{ getFileExtension(fileUrl || '') | upper }} ·
+                      {{ getFileExtension(fileUrl || '').toUpperCase() }} ·
                       {{ formatFileSize(deposit.file_size) }}
                     </p>
                   </div>

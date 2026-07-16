@@ -120,15 +120,14 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
 // ════════════════════════════════════════════════════════════════════════════
 //  ESPACE RESPONSABLE — Rôle : responsable_demande
-//  PROPOSITION : à fusionner avec un groupe existant si vous en avez déjà un
-//  (ex: liste des dossiers qui lui sont assignés). Ce bloc ne fait que
-//  raccorder les méthodes approve()/reject() du contrôleur, qui existaient
-//  déjà mais n'étaient routées nulle part.
 // ════════════════════════════════════════════════════════════════════════════
 
 Route::middleware(['auth:sanctum', 'role:responsable_demande'])->prefix('responsable')->group(function () {
     Route::prefix('deposits')->group(function () {
-        Route::patch('/{id}/approve', [DepositRequestController::class, 'approve']);
-        Route::patch('/{id}/reject',  [DepositRequestController::class, 'reject']);
+        Route::get('/',                 [DepositRequestController::class, 'index']);
+        Route::get('/{id}',             [DepositRequestController::class, 'show']);
+        Route::get('/{id}/file',        [DepositRequestController::class, 'serveFile']);
+        Route::patch('/{id}/approve',   [DepositRequestController::class, 'approve']);
+        Route::patch('/{id}/reject',    [DepositRequestController::class, 'reject']);
     });
 });

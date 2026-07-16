@@ -7,7 +7,7 @@ export const useToastStore = defineStore('toast', () => {
   const toasts = ref([])
 
   /**
-   * Ajoute un toast avec un message et un type, puis le retire après la durée spécifiée.
+   * Ajoute un toast avec un message et un type, puis le retire après la durée spéci...
    * @param {string} message - Texte du toast.
    * @param {string} [type='success'] - Type (success, error, info).
    * @param {number} [duration=4000] - Durée d'affichage en ms.

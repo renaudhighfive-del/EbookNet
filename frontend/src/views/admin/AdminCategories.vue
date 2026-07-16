@@ -19,7 +19,7 @@ import { useCategoryStore } from '../../stores/category'
 
 const categoryStore = useCategoryStore()
 
-// ─── State ──────────────────────────────────────────────────────────────────
+// ─── State ──────────────────────�...
 
 const searchQuery = ref('')
 const searchTimeout = ref(null)
@@ -37,7 +37,7 @@ const modal = ref({
 const deleteModal = ref({ visible: false, category: null })
 const detailsModal = ref({ visible: false, category: null, references: [] })
 
-// ─── Filtrage frontend ─────────────────────────────────────────────────────────
+// ─── Filtrage frontend ──────────────────�...
 
 const filteredCategories = computed(() => {
   if (!categoryStore.categories) return []
@@ -60,7 +60,7 @@ const filteredCategories = computed(() => {
   return filtered
 })
 
-// ─── Pagination locale ───────────────────────────────────────────────────────
+// ─── Pagination locale ──────────────────�...
 
 const currentPage = ref(1)
 
@@ -90,21 +90,21 @@ const visiblePages = computed(() => {
   return pages
 })
 
-// ─── Fetch ──────────────────────────────────────────────────────────────────
+// ─── Fetch ──────────────────────�...
 
 const fetchCategoriesWithParams = () => {
   // Charger toutes les catégories sans pagination ni filtre (filtrage frontend)
   categoryStore.fetchCategories({ per_page: 1000 }).catch(() => showToast('Erreur lors du chargement.', 'error'))
 }
 
-// ─── Watchers ───────────────────────────────────────────────────────────────
+// ─── Watchers ─────────────────────�...
 
 // Réinitialiser la page lors du changement de filtre ou recherche
 const resetPage = () => {
   currentPage.value = 1
 }
 
-// ─── Actions ───────────────────────────────────────────────────────────────
+// ─── Actions ──────────────────────...
 
 const openCreateModal = () => {
   modal.value = {
@@ -188,7 +188,7 @@ const showToast = (message, type) => {
   setTimeout(() => (toast.value.message = ''), 3000)
 }
 
-// ─── Lifecycle ─────────────────────────────────────────────────────────────
+// ─── Lifecycle ─────────────────────�...
 
 onMounted(() => {
   fetchCategoriesWithParams()

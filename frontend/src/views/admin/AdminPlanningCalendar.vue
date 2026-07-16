@@ -344,7 +344,7 @@ const currentWeekDisplay = computed(() => {
   const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
   // On réutilise directement dayNumber/monthIndex déjà calculés en local
-  // (on évite de reparser start.date/end.date, ce qui repasserait par UTC et redécalerait la date)
+  // (on évite de reparser start.date/end.date, ce qui repasserait par UTC et redécal...
   if (start.monthIndex === end.monthIndex) {
     return `${start.dayNumber} — ${end.dayNumber} ${monthNames[end.monthIndex]}`
   }
@@ -352,7 +352,7 @@ const currentWeekDisplay = computed(() => {
 })
 
 // Formate une date en YYYY-MM-DD à partir de ses composants LOCAUX
-// (ne jamais utiliser toISOString() ici : ça convertit en UTC et peut décaler d'un jour)
+// (ne jamais utiliser toISOString() ici : ça convertit en UTC et peut décaler d'un j...
 function toLocalISODate(date) {
   const y = date.getFullYear()
   const m = (date.getMonth() + 1).toString().padStart(2, '0')

@@ -1,11 +1,11 @@
-// Store Pinia pour la gestion des demandes de dépôt côté administration et responsable
+// Store Pinia pour la gestion des demandes de dépôt côté administration et respons...
 // (workflow complet, assignation, publication)
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useToastStore } from './toast'
 import { useAuthStore } from './auth'
 import { adminService } from '@/services/api/admin.service'
-import { managerService } from '@/services/api/manager.service'
+import api from '@/services/api'
 
 // Mapping des codes ISO de langue vers leur libellé français
 const ISO_LANGUAGES = {
@@ -67,31 +67,15 @@ const ACTION_REGISTRY = {
 const STATUS_ACTIONS = {
   pending:            ['assign', 'reject_direct'],
   assigned:           ['remind', 'reassign'],
-  manager_approved:   ['approve_publish'],
+  manager_approved:   ['approve_publish', 'reject_definitive'],
   manager_rejected:   ['confirm_reject', 'override_publish', 'second_opinion_req'],
-  second_opinion:     ['reassign'],
+  second_opinion:     [],
   approved_published: ['unpublish'],
   rejected:           [],
 }
 
-// Données factices pour les responsables (utilisées en fallback si l'API échoue)
-const MOCK_MANAGERS = [
-  { id: 1, first_name: 'Kofi', last_name: 'Anan', email: 'kofi.anan@lectoria.bj', role: 'responsable_demande', status: 'active', open_deposits: 3 },
-  { id: 2, first_name: 'Awa', last_name: 'Diallo', email: 'awa.diallo@lectoria.bj', role: 'responsable_demande', status: 'active', open_deposits: 1 },
-  { id: 3, first_name: 'Jean', last_name: 'Kouamé', email: 'jean.kouame@lectoria.bj', role: 'responsable_demande', status: 'active', open_deposits: 5 },
-  { id: 4, first_name: 'Fatima', last_name: 'Ouedraogo', email: 'fatima.ouedraogo@lectoria.bj', role: 'responsable_demande', status: 'active', open_deposits: 0 },
-]
-
 // Statuts qui indiquent qu'un responsable a une demande en cours d'examen
 const MANAGER_BUSY_STATUSES = ['assigned', 'manager_approved', 'manager_rejected', 'second_opinion']
-
-// Données factices pour les utilisateurs (fallback)
-const MOCK_USERS = [
-  { id: 1, first_name: 'Marie', last_name: 'Zannou', email: 'marie.zannou@email.bj' },
-  { id: 2, first_name: 'Amadou', last_name: 'Touré', email: 'amadou.toure@email.bj' },
-  { id: 3, first_name: 'Safia', last_name: 'Mohamed', email: 'safia.mohamed@email.bj' },
-  { id: 4, first_name: 'David', last_name: 'Hounkpè', email: 'david.hounkpe@email.bj' },
-]
 
 // Étapes du workflow pour l'affichage du stepper
 const STEPS = [
@@ -100,30 +84,6 @@ const STEPS = [
   { key: 'manager_approved', label: 'Validation Responsable', step: 2 },
   { key: 'approved_published', label: 'Publiée', step: 4 },
 ]
-
-// Compteur d'ID pour les dépôts factices. Démarre à 9000 pour ne jamais
-// entrer en collision avec de vrais ID numériques renvoyés par l'API
-// (le fallback mock ne doit servir qu'en démo / hors-ligne, jamais mélangé
-// avec des données réelles).
-let mockIdCounter = 9000
-
-/**
- * Génère un jeu de données factices pour les demandes de dépôt (démo uniquement).
- * @returns {Array} Liste de dépôts mockés.
- */
-function buildMockDeposits() {
-  const d = (n) => { const x = new Date(); x.setDate(x.getDate() - n); return x.toISOString() }
-  const h = (n) => { const x = new Date(); x.setHours(x.getHours() - n); return x.toISOString() }
-  return [
-    { id: ++mockIdCounter, title: 'Étude sur le Commerce Transfrontalier au Bénin', type: 'memoire', category: { id: 1, name: 'Économie' }, year: 2024, language: 'fr', pages: 187, isbn: '978-2-1234-5680-1', publisher: 'Éditions Universitaires du Bénin', authors: ['Marie Zannou'], summary: 'Cette étude examine les dynamiques du commerce transfrontalier.', keywords: ['commerce', 'Bénin'], file: 'etude.pdf', submittedBy: MOCK_USERS[0], submittedAt: d(1), assignedManagerId: 1, assignedAt: h(12), status: 'assigned', history: [{ actor: 'Marie Zannou', role: 'Utilisateur', action: 'Soumission', comment: null, at: d(1) }, { actor: 'Admin', role: 'Administrateur', action: 'Assignation', comment: 'Assigné à Kofi Anan', at: h(12) }], managerComment: null, adminDecisionComment: null, referenceId: null, adminOverride: false },
-    { id: ++mockIdCounter, title: 'Impact du Numérique sur l\'Éducation', type: 'article', category: { id: 2, name: 'Éducation' }, year: 2025, language: 'fr', pages: 45, isbn: null, publisher: null, authors: ['Amadou Touré'], summary: 'Analyse des technologies numériques.', keywords: ['numérique', 'éducation'], file: 'numerique.pdf', submittedBy: MOCK_USERS[1], submittedAt: d(5), assignedManagerId: 2, assignedAt: d(4), status: 'manager_approved', history: [{ actor: 'Amadou Touré', role: 'Utilisateur', action: 'Soumission', comment: null, at: d(5) }, { actor: 'Admin', role: 'Administrateur', action: 'Assignation', comment: 'Assigné à Awa Diallo', at: d(4) }, { actor: 'Awa Diallo', role: 'Responsable', action: 'Approbation', comment: 'Bien structuré.', at: d(1) }], managerComment: 'Bien structuré.', adminDecisionComment: null, referenceId: null, adminOverride: false },
-    { id: ++mockIdCounter, title: 'Changements Climatiques et Agriculture', type: 'these', category: { id: 3, name: 'Environnement' }, year: 2024, language: 'fr', pages: 320, isbn: '978-2-3456-7890-1', publisher: 'Presses Universitaires', authors: ['Safia Mohamed'], summary: 'Thèse sur les changements climatiques.', keywords: ['climat', 'agriculture'], file: 'climat.pdf', submittedBy: MOCK_USERS[2], submittedAt: d(3), assignedManagerId: null, assignedAt: null, status: 'pending', history: [{ actor: 'Safia Mohamed', role: 'Utilisateur', action: 'Soumission', comment: null, at: d(3) }], managerComment: null, adminDecisionComment: null, referenceId: null, adminOverride: false },
-    { id: ++mockIdCounter, title: 'Architecture Traditionnelle au Bénin', type: 'livre', category: { id: 4, name: 'Architecture' }, year: 2023, language: 'fr', pages: 250, isbn: '978-1-2345-6789-0', publisher: 'Éditions Patrimoine', authors: ['David Hounkpè'], summary: 'Ouvrage sur l\'architecture traditionnelle.', keywords: ['architecture', 'Bénin'], file: 'architecture.pdf', submittedBy: MOCK_USERS[3], submittedAt: d(10), assignedManagerId: 1, assignedAt: d(9), status: 'second_opinion', history: [{ actor: 'David Hounkpè', role: 'Utilisateur', action: 'Soumission', comment: null, at: d(10) }, { actor: 'Admin', role: 'Administrateur', action: 'Assignation', comment: 'Assigné à Kofi Anan', at: d(9) }, { actor: 'Kofi Anan', role: 'Responsable', action: 'Approbation', comment: 'Travail remarquable.', at: d(6) }, { actor: 'Admin', role: 'Administrateur', action: 'Second avis', comment: 'Avis requis.', at: d(4) }], managerComment: 'Travail remarquable.', adminDecisionComment: 'Avis requis.', referenceId: null, adminOverride: false },
-    { id: ++mockIdCounter, title: 'Guide du Jardinage Urbain', type: 'guide', category: { id: 5, name: 'Agriculture' }, year: 2025, language: 'fr', pages: 120, isbn: null, publisher: null, authors: ['Marie Zannou'], summary: 'Guide pour le jardinage urbain.', keywords: ['jardinage'], file: 'jardinage.pdf', submittedBy: MOCK_USERS[0], submittedAt: d(15), assignedManagerId: 2, assignedAt: d(14), status: 'manager_rejected', history: [{ actor: 'Marie Zannou', role: 'Utilisateur', action: 'Soumission', comment: null, at: d(15) }, { actor: 'Admin', role: 'Administrateur', action: 'Assignation', comment: 'Assigné à Awa Diallo', at: d(14) }, { actor: 'Awa Diallo', role: 'Responsable', action: 'Rejet', comment: 'Manque de références.', at: d(10) }], managerComment: 'Manque de références.', adminDecisionComment: null, referenceId: null, adminOverride: false },
-    { id: ++mockIdCounter, title: 'IA au Service de la Santé', type: 'rapport', category: { id: 6, name: 'Technologie' }, year: 2025, language: 'en', pages: 85, isbn: null, publisher: 'WHO Press', authors: ['Amadou Touré'], summary: 'Rapport sur l\'IA dans la santé.', keywords: ['IA', 'santé'], file: 'ia.pdf', submittedBy: MOCK_USERS[1], submittedAt: d(30), assignedManagerId: 1, assignedAt: d(29), status: 'approved_published', history: [{ actor: 'Amadou Touré', role: 'Utilisateur', action: 'Soumission', comment: null, at: d(30) }, { actor: 'Admin', role: 'Administrateur', action: 'Assignation', comment: 'Assigné à Kofi Anan', at: d(29) }, { actor: 'Kofi Anan', role: 'Responsable', action: 'Approbation', comment: 'Excellent.', at: d(25) }, { actor: 'Admin', role: 'Administrateur', action: 'Publication', comment: 'Publiée.', at: d(20) }], managerComment: 'Excellent.', adminDecisionComment: 'Publiée.', referenceId: 42, adminOverride: false },
-    { id: ++mockIdCounter, title: 'Poésie Contemporaine Béninoise', type: 'livre', category: { id: 7, name: 'Littérature' }, year: 2024, language: 'fr', pages: 200, isbn: null, publisher: null, authors: ['David Hounkpè'], summary: 'Recueil de poésie.', keywords: ['poésie'], file: 'poesie.pdf', submittedBy: MOCK_USERS[3], submittedAt: d(45), assignedManagerId: 3, assignedAt: d(44), status: 'rejected', history: [{ actor: 'David Hounkpè', role: 'Utilisateur', action: 'Soumission', comment: null, at: d(45) }, { actor: 'Admin', role: 'Administrateur', action: 'Assignation', comment: 'Assigné à Jean Kouamé', at: d(44) }, { actor: 'Jean Kouamé', role: 'Responsable', action: 'Rejet', comment: 'Pas conforme.', at: d(40) }, { actor: 'Admin', role: 'Administrateur', action: 'Rejet définitif', comment: 'Confirmé.', at: d(35) }], managerComment: 'Pas conforme.', adminDecisionComment: 'Confirmé.', referenceId: null, adminOverride: false },
-  ]
-}
 
 /**
  * Normalise un objet dépôt provenant de l'API vers le format interne du store.
@@ -134,9 +94,27 @@ function buildMockDeposits() {
  * @returns {Object} Dépôt normalisé.
  */
 function normalizeApiDeposit(item) {
-  const authorNames = item.author
-    ? item.author.split(',').map(s => s.trim()).filter(Boolean)
-    : []
+  // Auteurs : table relationnelle si présent, sinon texte séparé par des virgules.
+  const authorNames = (() => {
+    if (Array.isArray(item.authors) && item.authors.length) {
+      return item.authors.map(a =>
+        typeof a === 'string' ? a : `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim()
+      ).filter(Boolean)
+    }
+    if (item.author && typeof item.author === 'string') {
+      return item.author.split(',').map(s => s.trim()).filter(Boolean)
+    }
+    return []
+  })()
+
+  // Mots-clés : normaliser en tableau de strings.
+  // L'API peut renvoyer [{keyword: "..."}, ...] (relation ReferenceKeyword)
+  // ou ["...", ...] (champ JSON sur DepositRequest) selon le contexte.
+  const keywords = (() => {
+    if (!Array.isArray(item.keywords)) return []
+    return item.keywords.map(k => (typeof k === 'string' ? k : k.keyword ?? '')).filter(Boolean)
+  })()
+
   const mappedStatus = ({
     approved_by_manager: 'manager_approved',
     rejected_by_manager: 'manager_rejected',
@@ -150,18 +128,20 @@ function normalizeApiDeposit(item) {
     title: item.title,
     type: item.type || null,
     category: item.category || null,
-    year: item.publication_year || null,
+    year: item.publication_year || item.year || null,
     language: item.language || 'fr',
-    pages: item.pages || null,
+    // Pages : plusieurs noms de champs possibles selon les endpoints
+    pages: item.pages ?? item.page_count ?? item.number_of_pages ?? null,
     isbn: item.isbn || null,
-    publisher: item.publisher || null,
+    // Éditeur : plusieurs noms possibles (champ texte libre sur DepositRequest)
+    publisher: item.publisher || item.publisher_name || item.editor || null,
     authors: authorNames,
     summary: item.description || item.summary || null,
-    keywords: item.keywords || [],
+    keywords,
     file: item.proposed_file || null,
     fileUrl: item.proposed_file_url || null,
     fileSize: item.file_size || null,
-    cover_image: item.cover_image || null,
+    cover_image: item.cover_image_url || item.cover_image || null,
     submittedBy: item.applicant
       ? { id: item.applicant.id, first_name: item.applicant.first_name, last_name: item.applicant.last_name, email: item.applicant.email }
       : null,
@@ -171,9 +151,11 @@ function normalizeApiDeposit(item) {
     status: mappedStatus,
     history: item.history || [],
     managerComment: item.rejection_reason || item.managerComment || null,
-    adminDecisionComment: item.adminDecisionComment || null,
+    adminDecisionComment: item.admin_decision_comment || item.adminDecisionComment || null,
     referenceId: item.reference_id ?? item.referenceId ?? null,
+    // admin_override : Laravel renvoie en snake_case, le store utilise camelCase
     adminOverride: item.admin_override ?? item.adminOverride ?? false,
+    reference: item.reference || null,
     _created_at: item.created_at,
     _updated_at: item.updated_at,
   }
@@ -197,10 +179,6 @@ export const useDepositsStore = defineStore('deposits', () => {
 
   function _addActivityLog(action, depositId, color = 'orange') {
     activityLogs.value.unshift({ id: Date.now(), type: 'Workflow', action, deposit_id: depositId, color, created_at: new Date().toISOString() })
-  }
-
-  function _notify(message) {
-    useToastStore().info(message)
   }
 
   function _updateInStore(id, updated) {
@@ -266,30 +244,19 @@ export const useDepositsStore = defineStore('deposits', () => {
    * consommée par la liste ET la fiche détaillée : plus aucun risque de
    * divergence entre les deux écrans.
    * @param {string} status
-   * @returns {Array<{key:string,label:string,variant:string,requiresComment:boolean,minLength:number}>}
+   * @returns {Array<{key:string,label:string,variant:string,requiresComment:boolean,mi...
    */
   function getActionsForStatus(status) {
     return (STATUS_ACTIONS[status] || []).map(key => ({ key, ...ACTION_REGISTRY[key] }))
   }
 
   /**
-   * Retourne la liste des responsables disponibles (triés par charge de travail croissante).
+   * Retourne la liste des responsables disponibles (triés par charge de travail crois...
    * Exclut les responsables qui ont déjà une demande en cours d'examen.
-   * @param {number|null} currentManagerId - Toujours inclus même s'il est occupé (pour permettre de le garder lors d'une réassignation).
+   * @param {number|null} currentManagerId - Toujours inclus même s'il est occupé (po...
    * @returns {Array} Liste des responsables disponibles.
    */
-  async function fetchManagers() {
-    try {
-      const data = await adminService.getManagers()
-      managers.value = data.managers || data.data || data || []
-    } catch {
-      managers.value = MOCK_MANAGERS
-    }
-    return managers.value
-  }
-
   function getAvailableManagers(currentManagerId = null) {
-    const source = managers.value.length ? managers.value : MOCK_MANAGERS
     const managerBusyCounts = {}
     deposits.value.forEach(d => {
       if (d.assignedManagerId && MANAGER_BUSY_STATUSES.includes(d.status)) {
@@ -297,7 +264,7 @@ export const useDepositsStore = defineStore('deposits', () => {
       }
     })
 
-    return source
+    return managers.value
       .filter(m => m.status === 'active' && m.role === 'responsable_demande')
       .filter(m => m.id === currentManagerId || !managerBusyCounts[m.id])
       .map(m => ({ ...m, open_deposits: managerBusyCounts[m.id] || 0 }))
@@ -305,32 +272,41 @@ export const useDepositsStore = defineStore('deposits', () => {
   }
 
   function getActiveManagers() {
-    const source = managers.value.length ? managers.value : MOCK_MANAGERS
-    return source.filter(m => m.status === 'active' && m.role === 'responsable_demande')
+    return managers.value.filter(m => m.status === 'active' && m.role === 'responsable_demande')
   }
 
   function getManagerById(id) {
-    const source = managers.value.length ? managers.value : MOCK_MANAGERS
-    return source.find(m => m.id === id) || null
+    return managers.value.find(m => m.id === id) || null
   }
-  function getUserById(id) { return MOCK_USERS.find(u => u.id === id) || null }
+
+  async function fetchManagers() {
+    try {
+      const data = await adminService.getManagers()
+      managers.value = data.managers || data.data || data || []
+      return managers.value
+    } catch (err) {
+      managers.value = []
+      useToastStore().warning('Impossible de charger la liste des responsables.')
+      return managers.value
+    }
+  }
 
   async function fetchDeposits(params = {}) {
     isLoading.value = true
     error.value = null
     try {
-      const auth = useAuthStore()
-      const service = auth.userRole === 'responsable_demande' ? managerService : adminService
-      const data = await service.getDeposits(params)
+      const authStore = useAuthStore()
+      const isResponsable = authStore.user?.role === 'responsable_demande'
+      const endpoint = isResponsable ? '/responsable/deposits' : '/admin/deposits'
+      
+      const response = await api.get(endpoint, { params })
+      const data = response.data
       const list = data.data || data || []
       deposits.value = list.map(normalizeApiDeposit)
       pagination.value = data.data ? { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total } : null
       return deposits.value
     } catch (err) {
-      if (!deposits.value.length) {
-        deposits.value = buildMockDeposits()
-        useToastStore().warning('API indisponible : données de démonstration affichées.')
-      }
+      deposits.value = []
       error.value = err.response?.data?.message || null
       return deposits.value
     } finally {
@@ -342,9 +318,12 @@ export const useDepositsStore = defineStore('deposits', () => {
     isLoading.value = true
     error.value = null
     try {
-      const auth = useAuthStore()
-      const service = auth.userRole === 'responsable_demande' ? managerService : adminService
-      const data = await service.getDeposit(id)
+      const authStore = useAuthStore()
+      const isResponsable = authStore.user?.role === 'responsable_demande'
+      const endpoint = isResponsable ? `/responsable/deposits/${id}` : `/admin/deposits/${id}`
+      
+      const response = await api.get(endpoint)
+      const data = response.data
       const item = data.deposit_request || data
       currentDeposit.value = normalizeApiDeposit(item)
       return currentDeposit.value
@@ -369,7 +348,7 @@ export const useDepositsStore = defineStore('deposits', () => {
     isSubmitting.value = true
     try {
       const deposit = deposits.value.find(d => String(d.id) === String(id))
-      const allowedFrom = ['pending', 'assigned']
+      const allowedFrom = ['pending', 'assigned', 'manager_approved', 'manager_rejected', 'second_opinion']
       if (deposit && !allowedFrom.includes(deposit.status)) {
         throw new Error('Transition de statut non autorisée.')
       }
@@ -377,21 +356,12 @@ export const useDepositsStore = defineStore('deposits', () => {
       const updated = normalizeApiDeposit(result.deposit_request || result)
       _updateInStore(id, updated)
       useToastStore().success('Demande assignée avec succès.')
-      _notify(`La demande ${id} a été assignée.`)
       return updated
     } catch (err) {
       const msg = err.response?.data?.message || err.message || "Erreur lors de l'assignation."
       const deposit = deposits.value.find(d => String(d.id) === String(id))
       if (deposit && !err.response) {
-        const wasAssigned = deposit.status === 'assigned'
-        deposit.status = 'assigned'
-        deposit.assignedManagerId = managerId
-        deposit.assignedAt = new Date().toISOString()
-        _addHistory(deposit, 'Admin System', 'Administrateur', wasAssigned ? 'Réassignation' : 'Assignation', `Assigné au responsable #${managerId}`)
-        _updateInStore(id, deposit)
-        useToastStore().warning('Assignation enregistrée en mode hors-ligne (non persistée en base).')
-        _notify(`La demande ${id} a été assignée.`)
-        return deposit
+        useToastStore().error('Impossible d\'assigner le responsable. Veuillez réessayer.')
       }
       useToastStore().error(msg)
       throw err
@@ -418,24 +388,8 @@ export const useDepositsStore = defineStore('deposits', () => {
       if (meta.comment) patch.adminDecisionComment = meta.comment
       _updateInStore(id, patch)
       useToastStore().success('Demande approuvée et publiée avec succès.')
-      _addActivityLog(`Publication de la demande ${id}`, id, 'green')
-      _notify(`La demande ${id} a été publiée.`)
-      return updated
+      return patch
     } catch (err) {
-      const deposit = deposits.value.find(d => String(d.id) === String(id))
-      if (deposit) {
-        deposit.status = 'approved_published'
-        deposit.referenceId = Math.floor(Math.random() * 1000) + 100
-        if (meta.adminOverride) deposit.adminOverride = true
-        if (meta.comment) deposit.adminDecisionComment = meta.comment
-        const label = meta.adminOverride ? 'Passer outre et publier' : 'Approbation et publication'
-        _addHistory(deposit, 'Admin System', 'Administrateur', label, meta.comment || 'Publiée dans le catalogue.')
-        _updateInStore(id, deposit)
-        useToastStore().success('Demande approuvée et publiée (mode démonstration).')
-        _addActivityLog(`Publication simulée de ${id}`, id, 'green')
-        _notify(`La demande ${id} a été publiée.`)
-        return deposit
-      }
       useToastStore().error(err.response?.data?.message || 'Erreur lors de la publication.')
       throw err
     } finally {
@@ -478,7 +432,7 @@ export const useDepositsStore = defineStore('deposits', () => {
           updatedFromApi = normalizeApiDeposit(res.deposit_request || res)
         }
       } catch (err) {
-        useToastStore().warning('Mise à jour enregistrée en mode hors-ligne (non persistée en base).')
+        throw err
       }
 
       const actionLabels = {
@@ -511,7 +465,6 @@ export const useDepositsStore = defineStore('deposits', () => {
         toast.success(actionLabels[nextStatus] || 'Statut mis à jour.')
         _addActivityLog(`${actionLabels[nextStatus] || nextStatus} - ${id}`, id)
       }
-      _notify(`La demande ${id} a changé de statut.`)
       return deposit
     } catch (err) {
       useToastStore().error(err.message || 'Erreur lors de la mise à jour.')
@@ -553,12 +506,11 @@ export const useDepositsStore = defineStore('deposits', () => {
     try {
       await adminService.remindDeposit(id)
     } catch {
-      // La relance envoie juste un email — on trace localement même en cas d'échec API
+      // La relance envoie juste un email — on trace localement même en cas d'échec...
     }
     _addHistory(deposit, 'Admin System', 'Administrateur', 'Relance responsable', 'Relance envoyée.')
     _updateInStore(id, deposit)
     useToastStore().success('Relance envoyée au responsable.')
-    _notify(`Rappel : la demande ${id} est en attente.`)
   }
 
   function getCurrentStep(status) {
@@ -574,10 +526,10 @@ export const useDepositsStore = defineStore('deposits', () => {
   }
 
   return {
-    deposits, currentDeposit, isLoading, isSubmitting, error, activityLogs, pagination, pendingCount, managers,
+    deposits, currentDeposit, isLoading, isSubmitting, error, activityLogs, pagination, pendingCount,
     getStatusConfig, getTypeLabel, getLanguageLabel, getUserInitials, formatDate, formatDateTime,
     getTimeAgo, getAgingDays, getAgingBadge, getAvailableManagers, getActiveManagers,
-    getManagerById, getUserById, canTransition, getActionsForStatus,
+    getManagerById, canTransition, getActionsForStatus,
     fetchDeposits, fetchDeposit, fetchManagers, updateDepositStatus, assignManager, reassignManager,
     unassignManager, remindManager, approveAndPublish, getCurrentStep, getStepsForStatus,
     STEPS, STATUS_LABELS, ISO_LANGUAGES, DOCUMENT_TYPE_LABELS, STATUS_TRANSITIONS, ACTION_REGISTRY,
