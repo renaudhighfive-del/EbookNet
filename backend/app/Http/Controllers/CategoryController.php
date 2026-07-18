@@ -29,7 +29,7 @@ class CategoryController extends Controller
             $query->where('status', $request->status);
         }
 
-        $perPage = min((int) $request->get('per_page', 10), 100);
+        $perPage = min((int) $request->input('per_page', 10), 100);
         $paginator = $query->orderBy('name', 'asc')->paginate($perPage);
 
         return response()->json($paginator);

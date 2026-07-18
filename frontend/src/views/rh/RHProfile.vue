@@ -2,29 +2,11 @@
   <RHLayout>
     <template #title>Mon profil</template>
 
-    <!-- Toast -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 translate-y-1"
-        leave-active-class="transition duration-150 ease-in"
-        leave-to-class="opacity-0 translate-y-1"
-      >
-        <div
-          v-if="toast.message"
-          class="fixed bottom-6 right-6 z-[60] px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium flex items-center gap-2"
-          :class="toast.type === 'success' ? 'bg-[#0D9488]' : 'bg-red-600'"
-        >
-          <component
-            :is="toast.type === 'success' ? CheckCircle : XCircle"
-            class="w-4 h-4 shrink-0"
-          />
-          {{ toast.message }}
-        </div>
-      </Transition>
-    </Teleport>
+    <div v-if="isLoading" class="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400">
+      Chargement...
+    </div>
 
-    <div class="max-w-2xl mx-auto space-y-5">
+    <div v-else class="max-w-2xl mx-auto space-y-5">
       <!-- Carte avatar + infos rapides -->
       <div class="bg-white rounded-2xl border border-gray-100 p-6 flex items-center gap-5">
         <div
@@ -42,7 +24,7 @@
             <span class="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full"
               >Responsable RH</span
             >
-            <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full"
+            <span v-if="authStore.user?.status" class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full"
               >Actif</span
             >
           </div>
@@ -91,20 +73,14 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5"
-              >Adresse e-mail</label
+              >Adresse e-mail *</label
             >
-            <div class="relative">
-              <input
-                :value="authStore.user?.email"
-                type="email"
-                disabled
-                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-400 cursor-not-allowed"
-              />
-              <Lock class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-            </div>
-            <p class="text-xs text-gray-400 mt-1">
-              L'adresse e-mail ne peut pas être modifiée ici.
-            </p>
+            <input
+              v-model="form.email"
+              type="email"
+              required
+              class="w-full bg-[#F8F7F4] border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#1B2A4A] focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
+            />
           </div>
           <div>
             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5"
@@ -121,9 +97,10 @@
             <button
               type="submit"
               :disabled="profileLoading"
-              class="flex items-center gap-2 bg-[#0D9488] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#0a7a6f] transition-colors disabled:opacity-50"
+              class="inline-flex items-center gap-2 bg-[#0D9488] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#0a7a6f] transition-colors disabled:opacity-50"
             >
-              <Save class="w-4 h-4" />
+              <span v-if="profileLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <Save v-else class="w-4 h-4" />
               {{ profileLoading ? 'Enregistrement...' : 'Enregistrer' }}
             </button>
           </div>
@@ -206,9 +183,10 @@
             <button
               type="submit"
               :disabled="pwdLoading || (pwdForm.confirm && pwdForm.new !== pwdForm.confirm)"
-              class="flex items-center gap-2 bg-[#1B2A4A] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#162040] transition-colors disabled:opacity-50"
+              class="inline-flex items-center gap-2 bg-[#1B2A4A] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#162040] transition-colors disabled:opacity-50"
             >
-              <KeyRound class="w-4 h-4" />
+              <span v-if="pwdLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <KeyRound v-else class="w-4 h-4" />
               {{ pwdLoading ? 'Mise à jour...' : 'Mettre à jour' }}
             </button>
           </div>
@@ -267,36 +245,40 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import RHLayout from '@/layouts/RHLayout.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
-import { LogOut, Save, KeyRound, Lock, CheckCircle, XCircle } from '@lucide/vue'
+import api from '@/services/api'
+import { useToastStore } from '@/stores/toast'
+import { LogOut, Save, KeyRound } from '@lucide/vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const userStore = useUserStore()
+const toast = useToastStore()
 
 const { formatDate, timeAgo } = userStore
 
+const isLoading = ref(true)
 const confirmLogout = ref(false)
-const toast = ref({ message: '', type: 'success' })
 const profileLoading = ref(false)
 const pwdLoading = ref(false)
+
+const form = ref({
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone: '',
+})
+
+const pwdForm = ref({ current: '', new: '', confirm: '' })
 
 const initials = computed(() => {
   const u = authStore.user
   return u ? `${u.first_name?.[0] ?? ''}${u.last_name?.[0] ?? ''}`.toUpperCase() : '?'
 })
-
-const form = ref({
-  first_name: authStore.user?.first_name ?? '',
-  last_name: authStore.user?.last_name ?? '',
-  phone: authStore.user?.phone ?? '',
-})
-
-const pwdForm = ref({ current: '', new: '', confirm: '' })
 
 const pwdStrength = computed(() => {
   const p = pwdForm.value.new
@@ -307,23 +289,48 @@ const pwdStrength = computed(() => {
   return s
 })
 
+async function fetchProfile() {
+  isLoading.value = true
+  try {
+    const response = await api.get('/profile')
+    form.value = {
+      first_name: response.data.user.first_name || '',
+      last_name: response.data.user.last_name || '',
+      email: response.data.user.email || '',
+      phone: response.data.user.phone || '',
+    }
+    authStore.user = response.data.user
+  } catch (err) {
+    toast.error('Impossible de charger le profil')
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const saveProfile = async () => {
   profileLoading.value = true
   try {
-    await userStore.updateUser(authStore.user.id, {
+    const response = await api.put('/profile', {
       first_name: form.value.first_name,
       last_name: form.value.last_name,
+      email: form.value.email,
       phone: form.value.phone,
     })
-    // Mettre à jour localement le store auth
     if (authStore.user) {
-      authStore.user.first_name = form.value.first_name
-      authStore.user.last_name = form.value.last_name
-      authStore.user.phone = form.value.phone
+      authStore.user.first_name = response.data.user.first_name
+      authStore.user.last_name = response.data.user.last_name
+      authStore.user.email = response.data.user.email
+      authStore.user.phone = response.data.user.phone
     }
-    showToast('Profil mis à jour avec succès.', 'success')
+    form.value = {
+      first_name: response.data.user.first_name || '',
+      last_name: response.data.user.last_name || '',
+      email: response.data.user.email || '',
+      phone: response.data.user.phone || '',
+    }
+    toast.success('Profil mis à jour avec succès.')
   } catch (err) {
-    showToast(err.response?.data?.message ?? 'Erreur lors de la mise à jour.', 'error')
+    toast.error(err.response?.data?.message ?? 'Erreur lors de la mise à jour.')
   } finally {
     profileLoading.value = false
   }
@@ -331,13 +338,21 @@ const saveProfile = async () => {
 
 const savePassword = async () => {
   if (pwdForm.value.new !== pwdForm.value.confirm) return
+  if (!pwdForm.value.current) {
+    toast.error('Le mot de passe actuel est obligatoire.')
+    return
+  }
   pwdLoading.value = true
   try {
-    await userStore.updateUser(authStore.user.id, { password: pwdForm.value.new })
+    await api.patch('/password', {
+      current_password: pwdForm.value.current,
+      password: pwdForm.value.new,
+      password_confirmation: pwdForm.value.confirm,
+    })
     pwdForm.value = { current: '', new: '', confirm: '' }
-    showToast('Mot de passe mis à jour.', 'success')
+    toast.success('Mot de passe mis à jour.')
   } catch (err) {
-    showToast(err.response?.data?.message ?? 'Erreur lors de la mise à jour.', 'error')
+    toast.error(err.response?.data?.message ?? 'Erreur lors de la mise à jour.')
   } finally {
     pwdLoading.value = false
   }
@@ -349,8 +364,9 @@ const handleLogout = async () => {
   router.push('/')
 }
 
-const showToast = (message, type = 'success') => {
-  toast.value = { message, type }
-  setTimeout(() => (toast.value = { message: '', type: 'success' }), 3500)
-}
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    fetchProfile()
+  }
+})
 </script>

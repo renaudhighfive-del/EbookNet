@@ -28,12 +28,15 @@
             >Recherche</router-link>
           </nav>
 
-          <!-- Login button -->
-          <router-link to="/connexion"
-            class="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-[#1B2A4A] text-[#1B2A4A] rounded-xl font-semibold hover:bg-[#1B2A4A] hover:text-white transition-all duration-200 text-sm"
+          <!-- Login / Dashboard button -->
+          <router-link :to="authStore.isAuthenticated ? dashboardLink : '/connexion'"
+            class="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-[#1B2A4A] rounded-xl font-semibold transition-all duration-200 text-sm"
+            :class="authStore.isAuthenticated
+              ? 'bg-[#1B2A4A] text-white hover:bg-[#0D9488] hover:border-[#0D9488]'
+              : 'text-[#1B2A4A] hover:bg-[#1B2A4A] hover:text-white'"
           >
-            <LogIn class="w-4 h-4" />
-            Connexion
+            <component :is="authStore.isAuthenticated ? LayoutDashboard : LogIn" class="w-4 h-4" />
+            {{ authStore.isAuthenticated ? 'Tableau de bord' : 'Connexion' }}
           </router-link>
         </div>
       </div>
@@ -71,7 +74,12 @@
               <li><router-link to="/" class="text-slate-300 hover:text-white transition-colors">Accueil</router-link></li>
               <li><router-link to="/catalogue" class="text-slate-300 hover:text-white transition-colors">Catalogue</router-link></li>
               <li><router-link to="/recherche" class="text-slate-300 hover:text-white transition-colors">Recherche</router-link></li>
-              <li><router-link to="/connexion" class="text-slate-300 hover:text-white transition-colors">Connexion</router-link></li>
+              <li>
+                <router-link
+                  :to="authStore.isAuthenticated ? dashboardLink : '/connexion'"
+                  class="text-slate-300 hover:text-white transition-colors"
+                >{{ authStore.isAuthenticated ? 'Tableau de bord' : 'Connexion' }}</router-link>
+              </li>
             </ul>
           </div>
 
@@ -95,5 +103,20 @@
 </template>
 
 <script setup>
-import { BookOpen, LogIn, MapPin, Mail } from '@lucide/vue'
+import { computed } from 'vue'
+import { BookOpen, LogIn, LayoutDashboard, MapPin, Mail } from '@lucide/vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+
+const dashboardLink = computed(() => {
+  if (!authStore.user?.role) return '/connexion'
+  const links = {
+    user: '/dashboard',
+    responsable_rh: '/rh/dashboard',
+    responsable_demande: '/manager/dashboard',
+    admin: '/admin/dashboard',
+  }
+  return links[authStore.user.role] || '/connexion'
+})
 </script>

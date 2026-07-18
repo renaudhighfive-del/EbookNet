@@ -17,7 +17,7 @@ class UpdateUserRequest extends FormRequest
         return [
             'first_name' => 'sometimes|string|max:100',
             'last_name' => 'sometimes|string|max:100',
-            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users')->ignore($this->route('id'))],
+            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users')->ignore($this->route('id') ?? $this->user()?->id)],
             'phone' => 'nullable|string|max:50',
             'password' => 'sometimes|string|min:8',
             'role' => ['sometimes', Rule::in(['user', 'responsable_rh', 'responsable_demande', 'admin'])],

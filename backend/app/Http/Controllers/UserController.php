@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\User\StoreUserRequest;
+use App\Http\Requests\User\UpdatePasswordRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Http\Requests\User\UpdateUserRoleRequest;
 use App\Http\Requests\User\UpdateUserStatusRequest;
@@ -168,6 +169,44 @@ class UserController extends Controller
         $this->logActivity($request, "Modification utilisateur: {$user->first_name} {$user->last_name}", $user->id);
 
         return response()->json(['message' => 'Utilisateur mis à jour.', 'user' => $user]);
+    }
+
+    /** PATCH /user/password — Changer son propre mot de passe (tous les rôles)
+     * Nécessite de fournir le mot de passe actuel
+     */
+    public function updatePassword(UpdatePasswordRequest $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'Le mot de passe actuel est incorrect.'], 400);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        $this->logActivity($request, "Modification du mot de passe", $user->id);
+
+        return response()->json(['message' => 'Mot de passe mis à jour avec succès.']);
+    }
+
+    /** GET /profile — Profil de l'utilisateur connecté (tous les rôles) */
+    public function profile(Request $request): JsonResponse
+    {
+        $user = $request->user()->load(['depositRequests', 'depositRequestReviews', 'activityLogs']);
+        return response()->json(['user' => $user]);
+    }
+
+    /** PUT /profile — Mettre à jour son propre profil (tous les rôles) */
+    public function updateProfile(UpdateUserRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $validated = $request->validated();
+        unset($validated['role'], $validated['status']);
+        $user->update($validated);
+        $this->logActivity($request, "Modification du profil", $user->id);
+        return response()->json(['message' => 'Profil mis à jour.', 'user' => $user]);
     }
 
     /** PATCH /hr/users/:id/status — Changer statut active ↔ inactive (RH + Admin)

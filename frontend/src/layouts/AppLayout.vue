@@ -48,7 +48,7 @@ function onClickOutside(e) {
 onMounted(() => document.addEventListener('click', onClickOutside))
 onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 
-// ── Utilisateur ─────────────────────�...
+// ── Utilisateur ─────────────────────�...
 const userRole = computed(() => authStore.user?.role ?? 'user')
 const fullName = computed(() => {
   const u = authStore.user
@@ -86,7 +86,7 @@ const roleBadgeClass = computed(
     })[userRole.value] ?? 'bg-white/[.08] text-white/50',
 )
 
-// ── Badge topbar ─────────────────────�...
+// ── Badge topbar ─────────────────────�...
 const roleBadgeClassLight = computed(
   () =>
     ({
@@ -128,7 +128,7 @@ const homePath = computed(
     })[userRole.value] ?? '/',
 )
 
-// ── Lien profil selon rôle ─────────────────�...
+// ── Lien profil selon rôle ─────────────────�...
 const profilePath = computed(
   () =>
     ({
@@ -191,7 +191,7 @@ const navItems = computed(() => {
   ]
 })
 
-// ── Titre automatique ───────────────────�...
+// ── Titre automatique ───────────────────�...
 const pageTitle = computed(() => {
   const p = route.path
   const map = {
@@ -479,13 +479,13 @@ async function confirmLogout() {
             <div class="flex gap-3 justify-end">
               <button
                 @click="logoutModalOpen = false"
-                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 Annuler
               </button>
               <button
                 @click="confirmLogout"
-                class="px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
+                class="px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors cursor-pointer"
               >
                 Se déconnecter
               </button>

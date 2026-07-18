@@ -8,7 +8,7 @@ import Dashboard from '../views/user/Dashboard.vue'
 import MyDocuments from '../views/user/MyDocuments.vue'
 import DepositRequest from '../views/user/DepositRequest.vue'
 import DepositDetail from '../views/user/DepositDetail.vue'
-import Profile from '../views/user/Profile.vue'
+import UserProfile from '../views/user/UserProfile.vue'
 import ManagerDashboard from '../views/responsable/ManagerDashboard.vue'
 import ManagerDeposits from '../views/responsable/ManagerDeposits.vue'
 import ManagerDepositReview from '../views/responsable/ManagerDepositReview.vue'
@@ -99,7 +99,7 @@ const routes = [
   {
     path: '/profile',
     name: 'profile',
-    component: Profile,
+    component: UserProfile,
     meta: { requiresAuth: true, roles: ['user', 'responsable_rh', 'responsable_demande', 'admin'] },
   },
   {
@@ -243,7 +243,7 @@ const routes = [
   {
     path: '/admin/profile',
     name: 'admin-profile',
-    component: Profile,
+    component: UserProfile,
     meta: { requiresAuth: true, roles: ['admin'] },
   },
 ]
