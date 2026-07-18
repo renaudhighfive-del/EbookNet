@@ -2,19 +2,28 @@
 import { ref, computed, onMounted } from 'vue'
 import ResponsableLayout from '@/layouts/ResponsableLayout.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import api from '@/services/api'
 
 defineOptions({ name: 'ManagerProfile' })
 
 const authStore = useAuthStore()
+const toast = useToastStore()
+
 const isLoading = ref(true)
-const isSaving = ref(false)
-const error = ref(null)
+const isSavingProfile = ref(false)
+const isSavingPassword = ref(false)
 const form = ref({
   first_name: '',
   last_name: '',
   email: '',
   phone: '',
+})
+
+const passwordForm = ref({
+  current_password: '',
+  password: '',
+  password_confirmation: '',
 })
 
 const initials = computed(() => {
@@ -24,16 +33,9 @@ const initials = computed(() => {
 
 async function fetchProfile() {
   isLoading.value = true
-  error.value = null
-
-  if (!authStore.user?.id) {
-    error.value = 'Utilisateur non authentifié'
-    isLoading.value = false
-    return
-  }
 
   try {
-    const response = await api.get(`/hr/users/${authStore.user.id}`)
+    const response = await api.get('/profile')
     form.value = {
       first_name: response.data.user.first_name || '',
       last_name: response.data.user.last_name || '',
@@ -41,25 +43,18 @@ async function fetchProfile() {
       phone: response.data.user.phone || '',
     }
   } catch (err) {
-    error.value = 'Impossible de charger le profil'
+    toast.error('Impossible de charger le profil')
     console.error('Erreur chargement profil:', err)
   } finally {
     isLoading.value = false
   }
 }
 
-async function handleSave() {
-  isSaving.value = true
-  error.value = null
-
-  if (!authStore.user?.id) {
-    error.value = 'Utilisateur non authentifié'
-    isSaving.value = false
-    return
-  }
+async function handleSaveProfile() {
+  isSavingProfile.value = true
 
   try {
-    const response = await api.put(`/hr/users/${authStore.user.id}`, form.value)
+    const response = await api.put('/profile', form.value)
     authStore.user = response.data.user
     form.value = {
       first_name: response.data.user.first_name || '',
@@ -67,11 +62,55 @@ async function handleSave() {
       email: response.data.user.email || '',
       phone: response.data.user.phone || '',
     }
+
+    if (passwordForm.value.current_password && passwordForm.value.password) {
+      if (passwordForm.value.password !== passwordForm.value.password_confirmation) {
+        toast.error('La confirmation du mot de passe ne correspond pas.')
+        isSavingProfile.value = false
+        return
+      }
+      await api.patch('/password', {
+        current_password: passwordForm.value.current_password,
+        password: passwordForm.value.password,
+        password_confirmation: passwordForm.value.password_confirmation,
+      })
+      passwordForm.value = {
+        current_password: '',
+        password: '',
+        password_confirmation: '',
+      }
+    }
+
+    toast.success('Profil mis à jour avec succès.')
   } catch (err) {
-    error.value = err.response?.data?.message || 'Impossible d\'enregistrer les modifications'
+    toast.error(err.response?.data?.message || 'Impossible d\'enregistrer les modifications')
     console.error('Erreur sauvegarde profil:', err)
   } finally {
-    isSaving.value = false
+    isSavingProfile.value = false
+  }
+}
+
+async function handleSavePassword() {
+  if (passwordForm.value.password !== passwordForm.value.password_confirmation) {
+    toast.error('La confirmation du mot de passe ne correspond pas.')
+    return
+  }
+
+  isSavingPassword.value = true
+
+  try {
+    await api.patch('/password', passwordForm.value)
+    passwordForm.value = {
+      current_password: '',
+      password: '',
+      password_confirmation: '',
+    }
+    toast.success('Mot de passe mis à jour avec succès.')
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Impossible de mettre à jour le mot de passe')
+    console.error('Erreur sauvegarde mot de passe:', err)
+  } finally {
+    isSavingPassword.value = false
   }
 }
 
@@ -91,10 +130,6 @@ onMounted(() => {
         Chargement...
       </div>
 
-      <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
-        {{ error }}
-      </div>
-
       <div v-else class="bg-white rounded-2xl shadow-soft p-8">
         <div class="text-center mb-8">
           <div
@@ -110,7 +145,7 @@ onMounted(() => {
           </span>
         </div>
 
-        <form @submit.prevent="handleSave" class="space-y-6">
+        <form @submit.prevent="handleSaveProfile" class="space-y-6">
           <div class="border-b border-gray-200 pb-6">
             <h3 class="text-lg font-semibold text-navy-800 mb-4">Informations personnelles</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -136,13 +171,13 @@ onMounted(() => {
               </div>
             </div>
             <div class="mt-4">
-              <label for="email" class="block text-sm font-medium text-gray-500 mb-2">Adresse e-mail</label>
+              <label for="email" class="block text-sm font-medium text-navy-800 mb-2">Adresse e-mail *</label>
               <input
                 id="email"
                 v-model="form.email"
                 type="email"
-                disabled
-                class="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-gray-600"
+                required
+                class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
               />
             </div>
             <div class="mt-4">
@@ -162,16 +197,16 @@ onMounted(() => {
             <div class="space-y-4">
               <div>
                 <label for="currentPassword" class="block text-sm font-medium text-gray-600 mb-2">Mot de passe actuel</label>
-                <input id="currentPassword" type="password" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50" />
+                <input id="currentPassword" v-model="passwordForm.current_password" type="password" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50" />
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label for="newPassword" class="block text-sm font-medium text-gray-600 mb-2">Nouveau mot de passe</label>
-                  <input id="newPassword" type="password" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50" />
+                  <input id="newPassword" v-model="passwordForm.password" type="password" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50" />
                 </div>
                 <div>
                   <label for="confirmPassword" class="block text-sm font-medium text-gray-600 mb-2">Confirmer le nouveau mot de passe</label>
-                  <input id="confirmPassword" type="password" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50" />
+                  <input id="confirmPassword" v-model="passwordForm.password_confirmation" type="password" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50" />
                 </div>
               </div>
             </div>
@@ -187,18 +222,15 @@ onMounted(() => {
             </div>
           </div>
 
-          <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
-            {{ error }}
-          </div>
-
           <div class="flex items-center justify-between pt-4">
             <button type="button" class="text-gray-600 hover:text-navy-800 font-medium">Annuler</button>
             <button
               type="submit"
-              :disabled="isSaving"
-              class="bg-teal-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
+              :disabled="isSavingProfile"
+              class="inline-flex items-center gap-2 bg-teal-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
             >
-              {{ isSaving ? 'Enregistrement...' : 'Enregistrer les modifications' }}
+              <span v-if="isSavingProfile" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              {{ isSavingProfile ? 'Enregistrement...' : 'Enregistrer les modifications' }}
             </button>
           </div>
         </form>
