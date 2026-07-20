@@ -12,7 +12,7 @@ const categoryStore = useCategoryStore()
 const publisherStore = usePublisherStore()
 const authorStore = useAuthorStore()
 
-// ─── State ──────────────────────�...
+// ─── State ──────────────────────�...
 
 const searchQuery = ref('')
 const filterStatus = ref('')
@@ -99,7 +99,7 @@ const detailsModal = ref({
   reference: null,
 })
 
-// ─── Computed ─────────────────────�...
+// ─── Computed ─────────────────────�...
 
 const filteredReferences = computed(() => {
   if (!referenceStore.references) return []
@@ -181,7 +181,7 @@ const showToast = (message, type = 'success') => {
   setTimeout(() => (toast.value = { message: '', type: 'success' }), 3500)
 }
 
-// ─── Modals ──────────────────────�...
+// ─── Modals ──────────────────────�...
 
 const openCreateModal = () => {
   referenceModal.value = {
@@ -356,7 +356,7 @@ const submitReferenceForm = async () => {
   }
 }
 
-// ─── Lifecycle ─────────────────────�...
+// ─── Lifecycle ─────────────────────�...
 
 onMounted(async () => {
   try {
@@ -472,68 +472,90 @@ onMounted(async () => {
       <div class="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin"></div>
     </div>
 
-    <!-- Table -->
-    <div v-else-if="referenceStore.references && paginatedReferences.length > 0" class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
-          <tr class="border-b border-gray-100 pb-3">
-            <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Titre</th>
-            <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Type</th>
-            <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Catégorie</th>
-            <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Langue</th>
-            <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Statut</th>
-            <th class="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="reference in paginatedReferences" :key="reference.id" class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-            <td class="py-4">
-              <div class="font-semibold text-[#1B2A4A]">{{ reference.title }}</div>
-              <div v-if="reference.subtitle" class="text-sm text-gray-500">{{ reference.subtitle }}</div>
-            </td>
-            <td class="py-4">
-              <span class="text-sm text-gray-600">{{ referenceStore.getDocumentTypeLabel(reference.document_type) }}</span>
-            </td>
-            <td class="py-4">
-              <span v-if="reference.category" class="text-sm text-gray-600">{{ reference.category.name }}</span>
-              <span v-else class="text-sm text-gray-400">—</span>
-            </td>
-            <td class="py-4">
-              <span class="text-sm text-gray-600">{{ referenceStore.getLanguageLabel(reference.language) }}</span>
-            </td>
-            <td class="py-4">
-              <span :class="referenceStore.getStatusClass(reference.status)" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                {{ referenceStore.getStatusLabel(reference.status) }}
-              </span>
-            </td>
-            <td class="py-4 text-right">
-              <div class="flex items-center justify-end gap-1">
-                <button
-                  @click="openViewModal(reference)"
-                  class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-[#1B2A4A] transition-colors"
-                  title="Voir les détails"
-                >
-                  <Eye class="w-4 h-4" />
-                </button>
-                <button
-                  @click="openEditModal(reference)"
-                  class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                  title="Modifier"
-                >
-                  <Pencil class="w-4 h-4" />
-                </button>
-                <button
-                  @click="confirmDelete(reference)"
-                  class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                  title="Supprimer"
-                >
-                  <Trash2 class="w-4 h-4" />
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Cards Grid -->
+    <div v-else-if="referenceStore.references && paginatedReferences.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      <div
+        v-for="reference in paginatedReferences"
+        :key="reference.id"
+        class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all group border border-gray-100"
+      >
+        <!-- Cover -->
+        <div class="relative aspect-[2/3] bg-gradient-to-br from-[#1B2A4A] to-[#1E3368] overflow-hidden">
+          <img
+            v-if="reference.cover_image"
+            :src="reference.cover_image"
+            class="w-full h-full object-cover"
+            alt="Couverture"
+          />
+          <div v-else class="absolute inset-0 flex items-center justify-center">
+            <BookOpen class="w-16 h-16 text-white/20" />
+          </div>
+          <!-- Status Badge -->
+          <div class="absolute top-3 left-3">
+            <span
+              :class="referenceStore.getStatusClass(reference.status)"
+              class="px-2.5 py-1 rounded-full text-[10px] font-medium shadow-sm"
+            >
+              {{ referenceStore.getStatusLabel(reference.status) }}
+            </span>
+          </div>
+          <!-- Actions Overlay -->
+          <div
+            class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2"
+          >
+            <button
+              @click="openViewModal(reference)"
+              class="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center text-gray-700 hover:bg-white hover:text-[#0D9488] transition-all"
+              title="Voir les détails"
+            >
+              <Eye class="w-4 h-4" />
+            </button>
+            <button
+              @click="openEditModal(reference)"
+              class="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center text-gray-700 hover:bg-white hover:text-blue-600 transition-all"
+              title="Modifier"
+            >
+              <Pencil class="w-4 h-4" />
+            </button>
+            <button
+              @click="confirmDelete(reference)"
+              class="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center text-gray-700 hover:bg-white hover:text-red-600 transition-all"
+              title="Supprimer"
+            >
+              <Trash2 class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        <!-- Content -->
+        <div class="p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span
+              v-if="reference.category"
+              class="inline-block px-2 py-1 bg-[#ECFFFD] text-[#0D9488] rounded text-xs font-medium"
+            >
+              {{ reference.category.name }}
+            </span>
+            <span
+              v-else
+              class="inline-block px-2 py-1 bg-gray-100 text-gray-400 rounded text-xs font-medium"
+            >
+              Non catégorisé
+            </span>
+          </div>
+          <h3 class="font-semibold text-[#1B2A4A] text-sm line-clamp-2 group-hover:text-[#0D9488] transition-colors mb-1">
+            {{ reference.title }}
+          </h3>
+          <p v-if="reference.subtitle" class="text-xs text-gray-500 line-clamp-1 mb-2">
+            {{ reference.subtitle }}
+          </p>
+          <div class="flex items-center gap-2 text-xs text-gray-500 mt-2">
+            <span class="bg-[#F1F0EC] px-2 py-1 rounded">
+              {{ referenceStore.getDocumentTypeLabel(reference.document_type) }}
+            </span>
+            <span>{{ referenceStore.getLanguageLabel(reference.language) }}</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Empty -->
