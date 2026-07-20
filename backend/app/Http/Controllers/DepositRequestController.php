@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Deposit\AssignDepositRequest;
 use App\Http\Requests\Deposit\RejectDepositRequest;
+use App\Events\ActivityLogged;
 use App\Models\ActivityLog;
 use App\Models\Author;
 use App\Models\DepositRequest;
@@ -38,22 +39,6 @@ class DepositRequestController extends Controller
         'unpublished' => 'Dépublication',
         'rejected_definitive' => 'Rejet définitif',
     ];
-
-    /**
-     * Enregistre une entrée d'historique pour un dépôt donné.
-     */
-    private function logActivity(Request $request, int $depositId, string $actionKey, ?string $comment = null): void
-    {
-        ActivityLog::create([
-            'user_id' => $request->user()->id,
-            'action' => $actionKey,
-            'comment' => $comment,
-            'target_table' => 'deposit_requests',
-            'target_id' => $depositId,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
-    }
 
     /**
      * Construit le tableau d'historique au format attendu par le front
@@ -167,7 +152,12 @@ class DepositRequestController extends Controller
             'status' => 'pending',
         ]));
 
-        $this->logActivity($request, $deposit->id, 'submitted');
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'submitted',
+            targetTable: 'deposit_requests',
+            targetId: $deposit->id,
+        ));
 
         return response()->json([
             'message' => 'Demande de dépôt créée avec succès.',
@@ -261,7 +251,13 @@ class DepositRequestController extends Controller
             'status' => 'assigned',
         ]);
 
-        $this->logActivity($request, $id, $isReassignment ? 'reassigned' : 'assigned', $request->input('comment'));
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: $isReassignment ? 'reassigned' : 'assigned',
+            targetTable: 'deposit_requests',
+            targetId: $id,
+            comment: $request->input('comment'),
+        ));
 
         return response()->json([
             'message' => 'Demande assignée avec succès.',
@@ -280,7 +276,12 @@ class DepositRequestController extends Controller
         }
 
         $deposit->update(['assigned_manager_id' => null, 'status' => 'pending']);
-        $this->logActivity($request, $id, 'unassigned');
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'unassigned',
+            targetTable: 'deposit_requests',
+            targetId: $id,
+        ));
 
         return response()->json(['message' => 'Assignation annulée.', 'deposit_request' => $deposit]);
     }
@@ -298,7 +299,12 @@ class DepositRequestController extends Controller
         // TODO: envoyer une notification/email réelle au responsable assigné
         // (Mail::to($deposit->assignedManager->email)->send(...)) — non
         // implémenté ici, hors périmètre de cette correction.
-        $this->logActivity($request, $id, 'reminder_sent');
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'reminder_sent',
+            targetTable: 'deposit_requests',
+            targetId: $id,
+        ));
 
         return response()->json(['message' => 'Relance envoyée au responsable.']);
     }
@@ -318,7 +324,13 @@ class DepositRequestController extends Controller
         $comment = $request->validate(['comment' => 'nullable|string|max:2000'])['comment'] ?? null;
 
         $deposit->update(['status' => 'approved_by_manager']);
-        $this->logActivity($request, $id, 'approved', $comment);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'approved',
+            targetTable: 'deposit_requests',
+            targetId: $id,
+            comment: $comment,
+        ));
 
         return response()->json([
             'message' => 'Demande approuvée par le manager.',
@@ -341,7 +353,13 @@ class DepositRequestController extends Controller
             'rejection_reason' => $request->justification,
         ]);
 
-        $this->logActivity($request, $id, 'rejected_by_manager', $request->justification);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'rejected_by_manager',
+            targetTable: 'deposit_requests',
+            targetId: $id,
+            comment: $request->justification,
+        ));
 
         return response()->json([
             'message' => 'Demande rejetée par le manager.',
@@ -362,7 +380,13 @@ class DepositRequestController extends Controller
         $validated = $request->validate(['comment' => 'required|string|min:20|max:2000']);
 
         $deposit->update(['status' => 'second_review']);
-        $this->logActivity($request, $id, 'second_opinion_requested', $validated['comment']);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'second_opinion_requested',
+            targetTable: 'deposit_requests',
+            targetId: $id,
+            comment: $validated['comment'],
+        ));
 
         return response()->json(['message' => 'Second avis demandé.', 'deposit_request' => $deposit]);
     }
@@ -383,7 +407,13 @@ class DepositRequestController extends Controller
         $validated = $request->validate(['comment' => "required|string|min:{$minLength}|max:2000"]);
 
         $deposit->update(['status' => 'rejected']);
-        $this->logActivity($request, $id, 'rejected_definitive', $validated['comment']);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'rejected_definitive',
+            targetTable: 'deposit_requests',
+            targetId: $id,
+            comment: $validated['comment'],
+        ));
 
         return response()->json(['message' => 'Demande rejetée définitivement.', 'deposit_request' => $deposit]);
     }
@@ -464,7 +494,13 @@ class DepositRequestController extends Controller
             'admin_override' => $isOverride,
         ]);
 
-        $this->logActivity($request, $id, $isOverride ? 'published_override' : 'published', $overrideComment);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: $isOverride ? 'published_override' : 'published',
+            targetTable: 'deposit_requests',
+            targetId: $id,
+            comment: $overrideComment,
+        ));
 
         return response()->json([
             'message' => 'Référence publiée avec succès.',
@@ -490,7 +526,13 @@ class DepositRequestController extends Controller
         }
 
         $deposit->update(['status' => 'pending', 'reference_id' => null]);
-        $this->logActivity($request, $id, 'unpublished', $validated['comment']);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'unpublished',
+            targetTable: 'deposit_requests',
+            targetId: $id,
+            comment: $validated['comment'],
+        ));
 
         return response()->json(['message' => 'Demande dépubliée.', 'deposit_request' => $deposit]);
     }

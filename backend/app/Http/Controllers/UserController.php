@@ -7,7 +7,7 @@ use App\Http\Requests\User\UpdatePasswordRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Http\Requests\User\UpdateUserRoleRequest;
 use App\Http\Requests\User\UpdateUserStatusRequest;
-use App\Models\ActivityLog;
+use App\Events\ActivityLogged;
 use App\Models\Category;
 use App\Models\DepositRequest;
 use App\Models\Download;
@@ -21,19 +21,6 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    // ─── Helper pour logs d'activité ─────────────�...
-    private function logActivity(Request $request, string $action, ?int $targetId = null): void
-    {
-        ActivityLog::create([
-            'user_id' => $request->user()->id,
-            'action' => $action,
-            'target_table' => 'users',
-            'target_id' => $targetId,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
-    }
-
     // ─── RH + Admin ───────────────────�...
 
     /** GET /hr/users — Liste paginée (filtre : role, status, search) */
@@ -131,7 +118,12 @@ class UserController extends Controller
         $validated['status'] ??= 'active';
 
         $user = User::create($validated);
-        $this->logActivity($request, "Création utilisateur: {$user->first_name} {$user->last_name} ({$user->role})", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Création utilisateur: {$user->first_name} {$user->last_name} ({$user->role})",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json([
             'message' => 'Utilisateur créé avec succès.',
@@ -166,7 +158,12 @@ class UserController extends Controller
         }
 
         $user->update($validated);
-        $this->logActivity($request, "Modification utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Modification utilisateur: {$user->first_name} {$user->last_name}",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json(['message' => 'Utilisateur mis à jour.', 'user' => $user]);
     }
@@ -186,7 +183,12 @@ class UserController extends Controller
             'password' => Hash::make($request->password)
         ]);
 
-        $this->logActivity($request, "Modification du mot de passe", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Modification du mot de passe",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json(['message' => 'Mot de passe mis à jour avec succès.']);
     }
@@ -205,7 +207,12 @@ class UserController extends Controller
         $validated = $request->validated();
         unset($validated['role'], $validated['status']);
         $user->update($validated);
-        $this->logActivity($request, "Modification du profil", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Modification du profil",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
         return response()->json(['message' => 'Profil mis à jour.', 'user' => $user]);
     }
 
@@ -219,7 +226,12 @@ class UserController extends Controller
         $this->authorize('changeStatus', $user);
         $validated = $request->validated();
         $user->update($validated);
-        $this->logActivity($request, "Changement statut utilisateur: {$user->first_name} {$user->last_name} → {$validated['status']}", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Changement statut utilisateur: {$user->first_name} {$user->last_name} → {$validated['status']}",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json(['message' => 'Statut mis à jour.', 'user' => $user]);
     }
@@ -232,7 +244,12 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $this->authorize('changeStatus', $user);
         $user->update(['status' => 'archived']);
-        $this->logActivity($request, "Archivage utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Archivage utilisateur: {$user->first_name} {$user->last_name}",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json(['message' => 'Compte archivé avec succès.', 'user' => $user]);
     }
@@ -245,7 +262,12 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $this->authorize('changeStatus', $user);
         $user->update(['status' => 'pending_suspension']);
-        $this->logActivity($request, "Demande suspension utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Demande suspension utilisateur: {$user->first_name} {$user->last_name}",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json(['message' => 'Demande de suspension soumise à l\'admin.', 'user' => $user]);
     }
@@ -258,7 +280,12 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $this->authorize('changeStatus', $user);
         $user->update(['status' => 'suspended']);
-        $this->logActivity($request, "Suspension utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Suspension utilisateur: {$user->first_name} {$user->last_name}",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json(['message' => 'Compte suspendu.', 'user' => $user]);
     }
@@ -270,7 +297,12 @@ class UserController extends Controller
         $this->authorize('changeRole', $user);
         $validated = $request->validated();
         $user->update($validated);
-        $this->logActivity($request, "Changement rôle utilisateur: {$user->first_name} {$user->last_name} → {$validated['role']}", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Changement rôle utilisateur: {$user->first_name} {$user->last_name} → {$validated['role']}",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json(['message' => 'Rôle mis à jour.', 'user' => $user]);
     }
@@ -281,7 +313,12 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $this->authorize('changeStatus', $user);
         $user->update(['status' => 'active']);
-        $this->logActivity($request, "Restauration utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Restauration utilisateur: {$user->first_name} {$user->last_name}",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json(['message' => 'Compte restauré.', 'user' => $user]);
     }
@@ -294,18 +331,28 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $this->authorize('changeStatus', $user);
         $user->update(['status' => 'active']);
-        $this->logActivity($request, "Approbation utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Approbation utilisateur: {$user->first_name} {$user->last_name}",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json(['message' => 'Compte approuvé et activé.', 'user' => $user]);
     }
 
-    /** PATCH /admin/users/:id/validate-suspend — Valider la suspension proposée par...
+    /** PATCH /admin/users/:id/validate-suspend — Valider la suspension proposée par...*/
     public function validateSuspend(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
         $this->authorize('changeStatus', $user);
         $user->update(['status' => 'suspended']);
-        $this->logActivity($request, "Validation suspension utilisateur: {$user->first_name} {$user->last_name}", $user->id);
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: "Validation suspension utilisateur: {$user->first_name} {$user->last_name}",
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json(['message' => 'Suspension validée.', 'user' => $user]);
     }

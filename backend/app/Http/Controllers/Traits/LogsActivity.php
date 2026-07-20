@@ -13,7 +13,6 @@ trait LogsActivity
     protected function logActivity($request, string $action, ?int $targetId = null, ?string $targetTable = null): void
     {
         try {
-            // Vérifier si la table existe et si le modèle est disponible
             if (! class_exists(ActivityLog::class) || ! Schema::hasTable('activity_logs')) {
                 return;
             }
@@ -27,7 +26,6 @@ trait LogsActivity
                 'user_agent' => $request->userAgent(),
             ]);
         } catch (\Exception $e) {
-            // Ne pas bloquer la requête si le log échoue
             \Log::warning('Failed to log activity: '.$e->getMessage());
         }
     }
