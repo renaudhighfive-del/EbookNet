@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Traits\LogsActivity;
+use App\Events\ActivityLogged;
 use App\Http\Requests\Reference\StoreReferenceRequest;
 use App\Http\Requests\Reference\UpdateReferenceRequest;
 use App\Models\Reference;
@@ -11,8 +11,6 @@ use Illuminate\Http\Request;
 
 class ReferenceController extends Controller
 {
-    use LogsActivity;
-
     /** GET /admin/references — Liste paginée des références (Admin uniquement) */
     public function index(Request $request): JsonResponse
     {
@@ -94,7 +92,12 @@ class ReferenceController extends Controller
 
         $reference->load(['category', 'publisher', 'uploadedBy', 'authors', 'keywords']);
 
-        $this->logActivity($request, 'create_reference', $reference->id, 'references');
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'create_reference',
+            targetTable: 'references',
+            targetId: $reference->id,
+        ));
 
         return response()->json([
             'message' => 'Référence créée avec succès.',
@@ -142,7 +145,12 @@ class ReferenceController extends Controller
 
         $reference->load(['category', 'publisher', 'uploadedBy', 'authors', 'keywords']);
 
-        $this->logActivity($request, 'update_reference', $reference->id, 'references');
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'update_reference',
+            targetTable: 'references',
+            targetId: $reference->id,
+        ));
 
         return response()->json([
             'message' => 'Référence mise à jour avec succès.',
@@ -158,7 +166,12 @@ class ReferenceController extends Controller
 
         $reference->delete();
 
-        $this->logActivity($request, 'delete_reference', $id, 'references');
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'delete_reference',
+            targetTable: 'references',
+            targetId: $id,
+        ));
 
         return response()->json([
             'message' => 'Référence supprimée avec succès.',
@@ -177,7 +190,12 @@ class ReferenceController extends Controller
 
         $reference->update(['status' => $validated['status']]);
 
-        $this->logActivity($request, 'toggle_reference_status', $reference->id, 'references');
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'toggle_reference_status',
+            targetTable: 'references',
+            targetId: $reference->id,
+        ));
 
         return response()->json([
             'message' => 'Statut mis à jour avec succès.',
@@ -224,7 +242,12 @@ class ReferenceController extends Controller
 
         $reference->update(['status' => 'published']);
 
-        $this->logActivity($request, 'restore_reference', $reference->id, 'references');
+        event(new ActivityLogged(
+            user: $request->user(),
+            action: 'restore_reference',
+            targetTable: 'references',
+            targetId: $reference->id,
+        ));
 
         return response()->json([
             'message' => 'Référence restaurée avec succès.',

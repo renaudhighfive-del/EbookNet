@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Traits\LogsActivity;
+use App\Events\ActivityLogged;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
@@ -19,8 +19,6 @@ use Illuminate\Support\Facades\URL;
 
 class AuthController extends Controller
 {
-    use LogsActivity;
-
     public function login(LoginRequest $request): JsonResponse
     {
         $credentials = $request->only('email', 'password');
@@ -45,7 +43,12 @@ class AuthController extends Controller
         $user->update(['last_login_at' => now()]);
         $user->loadMissing(['depositRequests', 'notifications']);
 
-        $this->logActivity($request, 'login', $user->id, 'users');
+        event(new ActivityLogged(
+            user: $user,
+            action: 'login',
+            targetTable: 'users',
+            targetId: $user->id,
+        ));
 
         return response()->json([
             'message' => 'Connexion réussie.',
@@ -78,7 +81,12 @@ class AuthController extends Controller
         $user = auth()->user();
 
         if ($user) {
-            $this->logActivity($request, 'logout', $user->id, 'users');
+            event(new ActivityLogged(
+                user: $user,
+                action: 'logout',
+                targetTable: 'users',
+                targetId: $user->id,
+            ));
         }
 
         auth()->guard('web')->logout();
