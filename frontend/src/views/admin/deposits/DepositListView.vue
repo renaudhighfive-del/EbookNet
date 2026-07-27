@@ -511,11 +511,10 @@ onMounted(async () => {
           @click="setStatusFilter(tab.value)"
           class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors"
           :class="
-            selectedStatuses.length === 0 && tab.value === 'all'
-              ? 'bg-navy-800 text-white'
-              : selectedStatuses.length === 1 && selectedStatuses[0] === tab.value
-                ? 'bg-teal-600 text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            (selectedStatuses.length === 0 && tab.value === 'all') ||
+            (selectedStatuses.length === 1 && selectedStatuses[0] === tab.value)
+              ? 'bg-teal-600 text-white'
+              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
           "
         >
           {{ tab.label }}
@@ -622,7 +621,7 @@ onMounted(async () => {
             </button>
             <button
               @click="
-                selectedIds = []
+                selectedIds = [],
                 isSelectAll = false
               "
               class="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-xs font-medium"

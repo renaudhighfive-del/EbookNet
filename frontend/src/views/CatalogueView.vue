@@ -361,7 +361,7 @@ onMounted(loadData)
                     <X
                       class="w-3 h-3 cursor-pointer hover:text-[#0D9488]"
                       @click="
-                        searchQuery = ''
+                        searchQuery = '',
                         currentPage = 1
                       "
                     />

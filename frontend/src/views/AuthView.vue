@@ -281,8 +281,8 @@ const handleRegister = async () => {
           <button
             type="button"
             @click="
-              showForgotPassword = false
-              forgotSent = false
+              showForgotPassword = false,
+              forgotSent = false,
               forgotError = ''
             "
             class="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1B2A4A] mb-6 transition-colors"
@@ -370,7 +370,7 @@ const handleRegister = async () => {
             </p>
             <button
               @click="
-                activeTab = 'login'
+                activeTab = 'login',
                 registerSuccess = false
               "
               class="mt-5 px-5 py-2.5 bg-[#0D9488] text-white rounded-xl text-sm font-semibold hover:bg-[#0a7a6f] transition-colors"
