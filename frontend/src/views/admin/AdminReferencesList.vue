@@ -5,7 +5,19 @@ import { useCategoryStore } from '@/stores/category'
 import { usePublisherStore } from '@/stores/publisher'
 import { useAuthorStore } from '@/stores/author'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import { Search, Plus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, BookOpen, X, Upload, FileText } from '@lucide/vue'
+import {
+  Search,
+  Plus,
+  Eye,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  BookOpen,
+  X,
+  Upload,
+  FileText,
+} from '@lucide/vue'
 
 const referenceStore = useReferenceStore()
 const categoryStore = useCategoryStore()
@@ -74,7 +86,9 @@ const handleCoverImageChange = (e) => {
   if (file) {
     coverImageFile.value = file
     const reader = new FileReader()
-    reader.onload = (ev) => { coverImagePreview.value = ev.target.result }
+    reader.onload = (ev) => {
+      coverImagePreview.value = ev.target.result
+    }
     reader.readAsDataURL(file)
   }
 }
@@ -119,10 +133,11 @@ const filteredReferences = computed(() => {
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter((r) =>
-      r.title.toLowerCase().includes(query) ||
-      (r.subtitle && r.subtitle.toLowerCase().includes(query)) ||
-      (r.isbn && r.isbn.toLowerCase().includes(query))
+    filtered = filtered.filter(
+      (r) =>
+        r.title.toLowerCase().includes(query) ||
+        (r.subtitle && r.subtitle.toLowerCase().includes(query)) ||
+        (r.isbn && r.isbn.toLowerCase().includes(query)),
     )
   }
 
@@ -158,7 +173,9 @@ const visiblePages = computed(() => {
 // ─── Actions ──────────────────────...
 
 const fetchAllReferences = () => {
-  referenceStore.fetchReferences({ per_page: 9999 }).catch(() => showToast('Erreur lors du chargement.', 'error'))
+  referenceStore
+    .fetchReferences({ per_page: 9999 })
+    .catch(() => showToast('Erreur lors du chargement.', 'error'))
 }
 
 const onSearchInput = () => {
@@ -233,8 +250,8 @@ const openEditModal = async (reference) => {
         cover_image: data.cover_image || '',
         file_path: data.file_path || '',
         status: data.status,
-        authors: data.authors?.map(a => a.id) || [],
-        keywords: data.keywords?.map(k => k.keyword) || [],
+        authors: data.authors?.map((a) => a.id) || [],
+        keywords: data.keywords?.map((k) => k.keyword) || [],
       },
       newKeyword: '',
     }
@@ -295,7 +312,7 @@ const executeModal = async () => {
     modal.value.visible = false
     fetchAllReferences()
   } catch (err) {
-    showToast('Erreur lors de l\'action.', 'error', err)
+    showToast("Erreur lors de l'action.", 'error', err)
   }
 }
 
@@ -308,9 +325,19 @@ const submitReferenceForm = async () => {
     if (hasFiles) {
       const fd = new FormData()
 
-      const scalarFields = ['title', 'subtitle', 'abstract', 'isbn', 'publication_year',
-                            'document_type', 'language', 'pages', 'category_id',
-                            'publisher_id', 'status']
+      const scalarFields = [
+        'title',
+        'subtitle',
+        'abstract',
+        'isbn',
+        'publication_year',
+        'document_type',
+        'language',
+        'pages',
+        'category_id',
+        'publisher_id',
+        'status',
+      ]
 
       for (const key of scalarFields) {
         const val = form[key]
@@ -352,7 +379,7 @@ const submitReferenceForm = async () => {
     closeReferenceModal()
     fetchAllReferences()
   } catch (err) {
-    showToast('Erreur lors de l\'enregistrement.', 'error', err)
+    showToast("Erreur lors de l'enregistrement.", 'error', err)
   }
 }
 
@@ -469,18 +496,25 @@ onMounted(async () => {
 
     <!-- Loading -->
     <div v-if="referenceStore.isLoading" class="flex items-center justify-center py-12">
-      <div class="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin"></div>
+      <div
+        class="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin"
+      ></div>
     </div>
 
     <!-- Cards Grid -->
-    <div v-else-if="referenceStore.references && paginatedReferences.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    <div
+      v-else-if="referenceStore.references && paginatedReferences.length > 0"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+    >
       <div
         v-for="reference in paginatedReferences"
         :key="reference.id"
         class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all group border border-gray-100"
       >
         <!-- Cover -->
-        <div class="relative aspect-[2/3] bg-gradient-to-br from-[#1B2A4A] to-[#1E3368] overflow-hidden">
+        <div
+          class="relative aspect-[2/3] bg-gradient-to-br from-[#1B2A4A] to-[#1E3368] overflow-hidden"
+        >
           <img
             v-if="reference.cover_image"
             :src="reference.cover_image"
@@ -542,7 +576,9 @@ onMounted(async () => {
               Non catégorisé
             </span>
           </div>
-          <h3 class="font-semibold text-[#1B2A4A] text-sm line-clamp-2 group-hover:text-[#0D9488] transition-colors mb-1">
+          <h3
+            class="font-semibold text-[#1B2A4A] text-sm line-clamp-2 group-hover:text-[#0D9488] transition-colors mb-1"
+          >
             {{ reference.title }}
           </h3>
           <p v-if="reference.subtitle" class="text-xs text-gray-500 line-clamp-1 mb-2">
@@ -562,7 +598,9 @@ onMounted(async () => {
     <div v-else class="bg-white rounded-2xl border border-gray-100 py-16 text-center">
       <BookOpen class="w-10 h-10 text-gray-300 mx-auto mb-3" />
       <p class="font-medium text-[#1B2A4A]">Aucune référence trouvée</p>
-      <p class="text-sm text-gray-400 mt-1">Modifiez vos filtres ou créez une nouvelle référence.</p>
+      <p class="text-sm text-gray-400 mt-1">
+        Modifiez vos filtres ou créez une nouvelle référence.
+      </p>
     </div>
 
     <!-- Pagination -->
@@ -591,11 +629,13 @@ onMounted(async () => {
           :key="page"
           @click="typeof page === 'number' ? changePage(page) : null"
           class="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
-          :class="page === currentPage
-            ? 'bg-[#0D9488] text-white border-[#0D9488]'
-            : typeof page === 'number'
-              ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
-              : 'border-transparent text-gray-400 cursor-default'"
+          :class="
+            page === currentPage
+              ? 'bg-[#0D9488] text-white border-[#0D9488]'
+              : typeof page === 'number'
+                ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+                : 'border-transparent text-gray-400 cursor-default'
+          "
           :disabled="typeof page !== 'number'"
         >
           {{ page }}
@@ -630,7 +670,9 @@ onMounted(async () => {
             <button
               @click="executeModal"
               :disabled="referenceStore.isActionLoading"
-              :class="modal.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#0D9488] hover:bg-[#0a7a6f]'"
+              :class="
+                modal.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#0D9488] hover:bg-[#0a7a6f]'
+              "
               class="px-4 py-2 rounded-xl text-sm text-white font-semibold disabled:opacity-50"
             >
               {{ referenceStore.isActionLoading ? 'En cours...' : modal.confirmLabel }}
@@ -647,7 +689,9 @@ onMounted(async () => {
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto p-4"
         @click.self="closeReferenceModal"
       >
-        <div class="bg-white rounded-2xl p-6 w-full max-w-4xl mx-auto my-4 max-h-[90vh] overflow-y-auto">
+        <div
+          class="bg-white rounded-2xl p-6 w-full max-w-4xl mx-auto my-4 max-h-[90vh] overflow-y-auto"
+        >
           <h3 class="text-lg font-semibold text-[#1B2A4A] mb-6 flex items-center gap-2">
             <BookOpen class="w-5 h-5 text-[#0D9488]" />
             {{ referenceModal.isEdit ? 'Modifier la référence' : 'Nouvelle référence' }}
@@ -688,7 +732,9 @@ onMounted(async () => {
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Année de publication</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Année de publication</label
+                >
                 <input
                   v-model="referenceModal.form.publication_year"
                   type="number"
@@ -698,7 +744,9 @@ onMounted(async () => {
                 />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Type de document *</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Type de document *</label
+                >
                 <select
                   v-model="referenceModal.form.document_type"
                   required
@@ -772,10 +820,15 @@ onMounted(async () => {
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Image de couverture</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Image de couverture</label
+                >
                 <div class="border border-gray-200 rounded-xl p-4">
                   <!-- Preview -->
-                  <div v-if="coverImagePreview || referenceModal.form.cover_image" class="relative mb-4">
+                  <div
+                    v-if="coverImagePreview || referenceModal.form.cover_image"
+                    class="relative mb-4"
+                  >
                     <img
                       :src="coverImagePreview || referenceModal.form.cover_image"
                       class="w-full h-48 object-cover rounded-xl"
@@ -790,12 +843,21 @@ onMounted(async () => {
                     </button>
                   </div>
                   <!-- Upload -->
-                  <label class="flex items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-gray-300 rounded-xl p-5 hover:border-[#0D9488] transition-colors">
+                  <label
+                    class="flex items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-gray-300 rounded-xl p-5 hover:border-[#0D9488] transition-colors"
+                  >
                     <Upload class="w-6 h-6 text-gray-400" />
                     <span class="text-sm text-gray-500">
-                      {{ coverImageFile ? coverImageFile.name : 'Cliquez pour sélectionner une image' }}
+                      {{
+                        coverImageFile ? coverImageFile.name : 'Cliquez pour sélectionner une image'
+                      }}
                     </span>
-                    <input type="file" @change="handleCoverImageChange" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp" class="hidden" />
+                    <input
+                      type="file"
+                      @change="handleCoverImageChange"
+                      accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                      class="hidden"
+                    />
                   </label>
                 </div>
               </div>
@@ -803,22 +865,40 @@ onMounted(async () => {
                 <label class="block text-sm font-medium text-gray-700 mb-2">Fichier</label>
                 <div class="border border-gray-200 rounded-xl p-4">
                   <!-- Fichier existant -->
-                  <div v-if="referenceModal.form.file_path && !filePathFile" class="flex items-center justify-between mb-4 bg-gray-50 rounded-xl px-4 py-3">
+                  <div
+                    v-if="referenceModal.form.file_path && !filePathFile"
+                    class="flex items-center justify-between mb-4 bg-gray-50 rounded-xl px-4 py-3"
+                  >
                     <span class="text-sm text-gray-700 truncate flex-1 flex items-center gap-2">
                       <FileText class="w-4 h-4 shrink-0" />
                       {{ referenceModal.form.file_path }}
                     </span>
-                    <button @click="removeFilePath" type="button" class="text-red-500 hover:text-red-700 transition-colors">
+                    <button
+                      @click="removeFilePath"
+                      type="button"
+                      class="text-red-500 hover:text-red-700 transition-colors"
+                    >
                       <X class="w-5 h-5" />
                     </button>
                   </div>
                   <!-- Upload -->
-                  <label class="flex items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-gray-300 rounded-xl p-5 hover:border-[#0D9488] transition-colors">
+                  <label
+                    class="flex items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-gray-300 rounded-xl p-5 hover:border-[#0D9488] transition-colors"
+                  >
                     <Upload class="w-6 h-6 text-gray-400" />
                     <span class="text-sm text-gray-500">
-                      {{ filePathFile ? filePathFile.name : 'Cliquez pour sélectionner un fichier (PDF, EPUB, DOCX)' }}
+                      {{
+                        filePathFile
+                          ? filePathFile.name
+                          : 'Cliquez pour sélectionner un fichier (PDF, EPUB, DOCX)'
+                      }}
                     </span>
-                    <input type="file" @change="handleFilePathChange" accept=".pdf,.epub,.docx" class="hidden" />
+                    <input
+                      type="file"
+                      @change="handleFilePathChange"
+                      accept=".pdf,.epub,.docx"
+                      class="hidden"
+                    />
                   </label>
                 </div>
               </div>
@@ -829,14 +909,20 @@ onMounted(async () => {
                     Aucun auteur disponible
                   </div>
                   <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label v-for="author in authors" :key="author.id" class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-xl transition-colors">
+                    <label
+                      v-for="author in authors"
+                      :key="author.id"
+                      class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-xl transition-colors"
+                    >
                       <input
                         type="checkbox"
                         :value="author.id"
                         v-model="referenceModal.form.authors"
                         class="w-4 h-4 rounded border-gray-300 text-[#0D9488] focus:ring-[#0D9488]"
                       />
-                      <span class="text-sm text-gray-700">{{ author.first_name }} {{ author.last_name }}</span>
+                      <span class="text-sm text-gray-700"
+                        >{{ author.first_name }} {{ author.last_name }}</span
+                      >
                     </label>
                   </div>
                 </div>
@@ -860,7 +946,10 @@ onMounted(async () => {
                       Ajouter
                     </button>
                   </div>
-                  <div v-if="referenceModal.form.keywords.length === 0" class="text-sm text-gray-400 text-center py-3">
+                  <div
+                    v-if="referenceModal.form.keywords.length === 0"
+                    class="text-sm text-gray-400 text-center py-3"
+                  >
                     Aucun mot-clé ajouté
                   </div>
                   <div v-else class="flex flex-wrap gap-2">
@@ -895,8 +984,19 @@ onMounted(async () => {
                 :disabled="referenceStore.isActionLoading"
                 class="px-6 py-3 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] transition-colors disabled:opacity-50 flex items-center gap-2"
               >
-                <span v-if="referenceStore.isActionLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                {{ referenceStore.isActionLoading ? (referenceModal.isEdit ? 'Modification...' : 'Création...') : (referenceModal.isEdit ? 'Enregistrer' : 'Créer') }}
+                <span
+                  v-if="referenceStore.isActionLoading"
+                  class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+                ></span>
+                {{
+                  referenceStore.isActionLoading
+                    ? referenceModal.isEdit
+                      ? 'Modification...'
+                      : 'Création...'
+                    : referenceModal.isEdit
+                      ? 'Enregistrer'
+                      : 'Créer'
+                }}
               </button>
             </div>
           </form>
@@ -906,15 +1006,28 @@ onMounted(async () => {
 
     <!-- Modal détails (Side Drawer) -->
     <Teleport to="body">
-      <Transition enter-active-class="transition ease-in-out duration-300" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in-out duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <Transition
+        enter-active-class="transition ease-in-out duration-300"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition ease-in-out duration-200"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
         <div
           v-if="detailsModal.visible"
           class="fixed inset-0 bg-black/50 z-50"
           @click.self="detailsModal.visible = false"
-        >
-        </div>
+        ></div>
       </Transition>
-      <Transition enter-active-class="transition ease-in-out duration-300" enter-from-class="translate-x-full" enter-to-class="translate-x-0" leave-active-class="transition ease-in-out duration-200" leave-from-class="translate-x-0" leave-to-class="translate-x-full">
+      <Transition
+        enter-active-class="transition ease-in-out duration-300"
+        enter-from-class="translate-x-full"
+        enter-to-class="translate-x-0"
+        leave-active-class="transition ease-in-out duration-200"
+        leave-from-class="translate-x-0"
+        leave-to-class="translate-x-full"
+      >
         <div
           v-if="detailsModal.visible"
           class="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-white shadow-2xl z-[60] overflow-y-auto"
@@ -925,7 +1038,10 @@ onMounted(async () => {
                 <BookOpen class="w-6 h-6 text-[#0D9488]" />
                 Détails de la référence
               </h3>
-              <button @click="detailsModal.visible = false" class="text-gray-400 hover:text-[#1B2A4A] transition-colors">
+              <button
+                @click="detailsModal.visible = false"
+                class="text-gray-400 hover:text-[#1B2A4A] transition-colors"
+              >
                 <X class="w-6 h-6" />
               </button>
             </div>
@@ -934,15 +1050,29 @@ onMounted(async () => {
               <!-- Cover + Title Section -->
               <div class="flex gap-6">
                 <div v-if="detailsModal.reference.cover_image" class="shrink-0">
-                  <img :src="detailsModal.reference.cover_image" class="w-40 h-56 object-cover rounded-xl shadow-md border border-gray-100" alt="Couverture">
+                  <img
+                    :src="detailsModal.reference.cover_image"
+                    class="w-40 h-56 object-cover rounded-xl shadow-md border border-gray-100"
+                    alt="Couverture"
+                  />
                 </div>
-                <div v-else class="shrink-0 w-40 h-56 bg-gray-100 rounded-xl flex items-center justify-center border border-dashed border-gray-300">
+                <div
+                  v-else
+                  class="shrink-0 w-40 h-56 bg-gray-100 rounded-xl flex items-center justify-center border border-dashed border-gray-300"
+                >
                   <BookOpen class="w-10 h-10 text-gray-300" />
                 </div>
                 <div class="flex-1 space-y-3">
-                  <h4 class="text-lg font-bold text-[#1B2A4A]">{{ detailsModal.reference.title }}</h4>
-                  <p v-if="detailsModal.reference.subtitle" class="text-gray-600">{{ detailsModal.reference.subtitle }}</p>
-                  <span :class="referenceStore.getStatusClass(detailsModal.reference.status)" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium">
+                  <h4 class="text-lg font-bold text-[#1B2A4A]">
+                    {{ detailsModal.reference.title }}
+                  </h4>
+                  <p v-if="detailsModal.reference.subtitle" class="text-gray-600">
+                    {{ detailsModal.reference.subtitle }}
+                  </p>
+                  <span
+                    :class="referenceStore.getStatusClass(detailsModal.reference.status)"
+                    class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium"
+                  >
                     {{ referenceStore.getStatusLabel(detailsModal.reference.status) }}
                   </span>
                 </div>
@@ -952,15 +1082,21 @@ onMounted(async () => {
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <span class="text-sm font-medium text-gray-500">Type de document</span>
-                  <p class="text-sm text-gray-900 mt-1">{{ referenceStore.getDocumentTypeLabel(detailsModal.reference.document_type) }}</p>
+                  <p class="text-sm text-gray-900 mt-1">
+                    {{ referenceStore.getDocumentTypeLabel(detailsModal.reference.document_type) }}
+                  </p>
                 </div>
                 <div>
                   <span class="text-sm font-medium text-gray-500">Langue</span>
-                  <p class="text-sm text-gray-900 mt-1">{{ referenceStore.getLanguageLabel(detailsModal.reference.language) }}</p>
+                  <p class="text-sm text-gray-900 mt-1">
+                    {{ referenceStore.getLanguageLabel(detailsModal.reference.language) }}
+                  </p>
                 </div>
                 <div v-if="detailsModal.reference.publication_year">
                   <span class="text-sm font-medium text-gray-500">Année de publication</span>
-                  <p class="text-sm text-gray-900 mt-1">{{ detailsModal.reference.publication_year }}</p>
+                  <p class="text-sm text-gray-900 mt-1">
+                    {{ detailsModal.reference.publication_year }}
+                  </p>
                 </div>
                 <div v-if="detailsModal.reference.pages">
                   <span class="text-sm font-medium text-gray-500">Nombre de pages</span>
@@ -968,29 +1104,41 @@ onMounted(async () => {
                 </div>
                 <div v-if="detailsModal.reference.isbn">
                   <span class="text-sm font-medium text-gray-500">ISBN</span>
-                  <p class="text-sm text-gray-900 mt-1 font-mono">{{ detailsModal.reference.isbn }}</p>
+                  <p class="text-sm text-gray-900 mt-1 font-mono">
+                    {{ detailsModal.reference.isbn }}
+                  </p>
                 </div>
                 <div v-if="detailsModal.reference.category">
                   <span class="text-sm font-medium text-gray-500">Catégorie</span>
-                  <p class="text-sm text-gray-900 mt-1">{{ detailsModal.reference.category.name }}</p>
+                  <p class="text-sm text-gray-900 mt-1">
+                    {{ detailsModal.reference.category.name }}
+                  </p>
                 </div>
                 <div v-if="detailsModal.reference.publisher">
                   <span class="text-sm font-medium text-gray-500">Éditeur</span>
-                  <p class="text-sm text-gray-900 mt-1">{{ detailsModal.reference.publisher.name }}</p>
+                  <p class="text-sm text-gray-900 mt-1">
+                    {{ detailsModal.reference.publisher.name }}
+                  </p>
                 </div>
               </div>
 
               <!-- Résumé -->
               <div v-if="detailsModal.reference.abstract" class="bg-gray-50 p-4 rounded-xl">
                 <span class="text-sm font-medium text-gray-500">Résumé</span>
-                <p class="text-sm text-gray-900 mt-2 leading-relaxed">{{ detailsModal.reference.abstract }}</p>
+                <p class="text-sm text-gray-900 mt-2 leading-relaxed">
+                  {{ detailsModal.reference.abstract }}
+                </p>
               </div>
 
               <!-- Auteurs -->
               <div v-if="detailsModal.reference.authors && detailsModal.reference.authors.length">
                 <span class="text-sm font-medium text-gray-500">Auteurs</span>
                 <div class="flex flex-wrap gap-2 mt-2">
-                  <span v-for="author in detailsModal.reference.authors" :key="author.id" class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                  <span
+                    v-for="author in detailsModal.reference.authors"
+                    :key="author.id"
+                    class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
+                  >
                     {{ author.first_name }} {{ author.last_name }}
                   </span>
                 </div>
@@ -1000,7 +1148,11 @@ onMounted(async () => {
               <div v-if="detailsModal.reference.keywords && detailsModal.reference.keywords.length">
                 <span class="text-sm font-medium text-gray-500">Mots-clés</span>
                 <div class="flex flex-wrap gap-2 mt-2">
-                  <span v-for="kw in detailsModal.reference.keywords" :key="kw.id" class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-xs font-medium">
+                  <span
+                    v-for="kw in detailsModal.reference.keywords"
+                    :key="kw.id"
+                    class="bg-[#0D9488]/10 text-[#0D9488] px-3 py-1 rounded-full text-xs font-medium"
+                  >
                     {{ kw.keyword }}
                   </span>
                 </div>

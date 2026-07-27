@@ -53,5 +53,5 @@ export const userService = {
   getDepositFileUrl(id, inline = false) {
     const url = `${import.meta.env.VITE_API_URL}/user/deposits/${id}/file`
     return inline ? `${url}?inline=1` : url
-  }
+  },
 }

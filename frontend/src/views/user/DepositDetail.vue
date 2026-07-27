@@ -20,11 +20,9 @@ import {
   Calendar,
   BookOpen,
   Tag,
-
   Globe,
   Hash,
   Building,
-
   Image,
   Download,
   X,
@@ -41,13 +39,25 @@ const showZoomModal = ref(false)
 const isAdmin = ref(false)
 
 const statusConfig = {
-  pending:             { label: 'En attente',        cls: 'bg-gray-100 text-gray-600',      icon: Clock },
-  assigned:            { label: 'Assignée',           cls: 'bg-blue-100 text-blue-700',       icon: Send },
-  manager_approved:    { label: 'Validée (resp.)',   cls: 'bg-teal-100 text-teal-700',       icon: CheckCircle },
-  manager_rejected:    { label: 'Refusée (resp.)',   cls: 'bg-orange-100 text-orange-700',   icon: XCircle },
-  second_opinion:      { label: 'Second avis',        cls: 'bg-purple-100 text-purple-700',   icon: Eye },
-  approved_published:  { label: 'Publiée',            cls: 'bg-emerald-100 text-emerald-800', icon: CheckCircle },
-  rejected:            { label: 'Rejetée',            cls: 'bg-red-100 text-red-700',         icon: XCircle },
+  pending: { label: 'En attente', cls: 'bg-gray-100 text-gray-600', icon: Clock },
+  assigned: { label: 'Assignée', cls: 'bg-blue-100 text-blue-700', icon: Send },
+  manager_approved: {
+    label: 'Validée (resp.)',
+    cls: 'bg-teal-100 text-teal-700',
+    icon: CheckCircle,
+  },
+  manager_rejected: {
+    label: 'Refusée (resp.)',
+    cls: 'bg-orange-100 text-orange-700',
+    icon: XCircle,
+  },
+  second_opinion: { label: 'Second avis', cls: 'bg-purple-100 text-purple-700', icon: Eye },
+  approved_published: {
+    label: 'Publiée',
+    cls: 'bg-emerald-100 text-emerald-800',
+    icon: CheckCircle,
+  },
+  rejected: { label: 'Rejetée', cls: 'bg-red-100 text-red-700', icon: XCircle },
 }
 
 function getStatus(s) {
@@ -56,17 +66,32 @@ function getStatus(s) {
 
 function getTypeLabel(type) {
   const labels = {
-    livre: 'Livre', memoire: 'Mémoire', these: 'Thèse', article: 'Article',
-    revue: 'Revue', rapport: 'Rapport', guide: 'Guide', autre: 'Autre',
+    livre: 'Livre',
+    memoire: 'Mémoire',
+    these: 'Thèse',
+    article: 'Article',
+    revue: 'Revue',
+    rapport: 'Rapport',
+    guide: 'Guide',
+    autre: 'Autre',
   }
   return labels[type] || type || 'Non spécifié'
 }
 
 function getLanguageLabel(lang) {
   const labels = {
-    fr: 'Français', en: 'Anglais', es: 'Espagnol', de: 'Allemand',
-    it: 'Italien', pt: 'Portugais', nl: 'Néerlandais', ru: 'Russe',
-    zh: 'Chinois', ar: 'Arabe', ja: 'Japonais', ko: 'Coréen',
+    fr: 'Français',
+    en: 'Anglais',
+    es: 'Espagnol',
+    de: 'Allemand',
+    it: 'Italien',
+    pt: 'Portugais',
+    nl: 'Néerlandais',
+    ru: 'Russe',
+    zh: 'Chinois',
+    ar: 'Arabe',
+    ja: 'Japonais',
+    ko: 'Coréen',
   }
   return labels[lang] || lang || 'Non spécifié'
 }
@@ -74,7 +99,11 @@ function getLanguageLabel(lang) {
 function formatDateTime(d) {
   if (!d) return '—'
   return new Date(d).toLocaleString('fr-FR', {
-    day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 
@@ -153,13 +182,24 @@ onMounted(async () => {
     }
     // Normalisation locale : certains endpoints peuvent renvoyer des clés différentes
     if (deposit.value) {
-      deposit.value.publisher = deposit.value.publisher || deposit.value.editor || deposit.value.publisher_name || (deposit.value.reference && (deposit.value.reference.publisher || deposit.value.reference.publisher_name)) || null
-      deposit.value.pages = deposit.value.pages ?? deposit.value.page_count ?? deposit.value.number_of_pages ?? null
-      deposit.value.submittedAt = deposit.value.submitted_at || deposit.value.created_at || deposit.value.submittedAt || null
+      deposit.value.publisher =
+        deposit.value.publisher ||
+        deposit.value.editor ||
+        deposit.value.publisher_name ||
+        (deposit.value.reference &&
+          (deposit.value.reference.publisher || deposit.value.reference.publisher_name)) ||
+        null
+      deposit.value.pages =
+        deposit.value.pages ?? deposit.value.page_count ?? deposit.value.number_of_pages ?? null
+      deposit.value.submittedAt =
+        deposit.value.submitted_at || deposit.value.created_at || deposit.value.submittedAt || null
       deposit.value.file_size = deposit.value.file_size || deposit.value.fileSize || null
     }
   } catch (err) {
-    error.value = err.response?.data?.message || err.message || 'Impossible de charger les détails de la demande.'
+    error.value =
+      err.response?.data?.message ||
+      err.message ||
+      'Impossible de charger les détails de la demande.'
   } finally {
     isLoading.value = false
   }
@@ -180,7 +220,9 @@ onMounted(async () => {
       </div>
 
       <div v-if="isLoading" class="flex justify-center py-20">
-        <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
+        <div
+          class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"
+        ></div>
       </div>
 
       <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-xl p-6">
@@ -203,12 +245,21 @@ onMounted(async () => {
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2 space-y-6">
             <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
-              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4">Description</h2>
-              <p class="text-gray-700 leading-relaxed">{{ deposit.summary || deposit.description || 'Aucune description fournie.' }}</p>
+              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4">
+                Description
+              </h2>
+              <p class="text-gray-700 leading-relaxed">
+                {{ deposit.summary || deposit.description || 'Aucune description fournie.' }}
+              </p>
             </div>
 
-            <div v-if="deposit.keywords?.length" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
-              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+            <div
+              v-if="deposit.keywords?.length"
+              class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft"
+            >
+              <h2
+                class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2"
+              >
                 <Tag class="w-4 h-4" />
                 Mots-clés
               </h2>
@@ -223,8 +274,13 @@ onMounted(async () => {
               </div>
             </div>
 
-            <div v-if="deposit.history?.length" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
-              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+            <div
+              v-if="deposit.history?.length"
+              class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft"
+            >
+              <h2
+                class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2"
+              >
                 <Clock class="w-4 h-4" />
                 Historique
               </h2>
@@ -241,15 +297,22 @@ onMounted(async () => {
                       <span class="text-xs text-gray-400">({{ entry.role }})</span>
                     </div>
                     <p class="text-sm text-gray-600">{{ entry.action }}</p>
-                    <p v-if="entry.comment" class="text-sm text-gray-500 italic mt-0.5">{{ entry.comment }}</p>
+                    <p v-if="entry.comment" class="text-sm text-gray-500 italic mt-0.5">
+                      {{ entry.comment }}
+                    </p>
                     <p class="text-xs text-gray-400 mt-0.5">{{ formatDateTime(entry.at) }}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div v-if="deposit.reference" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
-              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+            <div
+              v-if="deposit.reference"
+              class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft"
+            >
+              <h2
+                class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2"
+              >
                 <BookOpen class="w-4 h-4" />
                 Référence associée
               </h2>
@@ -267,8 +330,13 @@ onMounted(async () => {
               </div>
             </div>
 
-            <div v-if="deposit.adminDecisionComment && deposit.status === 'rejected'" class="bg-red-50 border border-red-200 rounded-2xl p-6">
-              <h2 class="text-sm font-bold text-red-800 uppercase tracking-wide mb-2 flex items-center gap-2">
+            <div
+              v-if="deposit.adminDecisionComment && deposit.status === 'rejected'"
+              class="bg-red-50 border border-red-200 rounded-2xl p-6"
+            >
+              <h2
+                class="text-sm font-bold text-red-800 uppercase tracking-wide mb-2 flex items-center gap-2"
+              >
                 <XCircle class="w-4 h-4" />
                 Motif du rejet
               </h2>
@@ -278,7 +346,9 @@ onMounted(async () => {
 
           <div class="space-y-6">
             <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
-              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4">Informations</h2>
+              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4">
+                Informations
+              </h2>
               <div class="space-y-4 text-sm">
                 <div>
                   <span class="text-gray-500 block text-xs">Titre</span>
@@ -292,13 +362,17 @@ onMounted(async () => {
                 </div>
                 <div v-if="deposit.type">
                   <span class="text-gray-500 block text-xs">Type de document</span>
-                  <span class="inline-block bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                  <span
+                    class="inline-block bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full text-xs font-medium"
+                  >
                     {{ getTypeLabel(deposit.type) }}
                   </span>
                 </div>
                 <div v-if="deposit.category">
                   <span class="text-gray-500 block text-xs">Catégorie</span>
-                  <span class="inline-block bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                  <span
+                    class="inline-block bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full text-xs font-medium"
+                  >
                     {{ deposit.category.name }}
                   </span>
                 </div>
@@ -325,7 +399,9 @@ onMounted(async () => {
                 </div>
                 <div v-if="deposit.year || deposit.publication_year">
                   <span class="text-gray-500 block text-xs">Année de publication</span>
-                  <span class="text-navy-800 font-mono">{{ deposit.year || deposit.publication_year }}</span>
+                  <span class="text-navy-800 font-mono">{{
+                    deposit.year || deposit.publication_year
+                  }}</span>
                 </div>
                 <div v-if="deposit.pages">
                   <span class="text-gray-500 block text-xs">Pages</span>
@@ -334,8 +410,13 @@ onMounted(async () => {
               </div>
             </div>
 
-            <div v-if="deposit.cover_image || deposit.cover_image_preview" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
-              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+            <div
+              v-if="deposit.cover_image || deposit.cover_image_preview"
+              class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft"
+            >
+              <h2
+                class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2"
+              >
                 <Image class="w-4 h-4" />
                 Couverture
               </h2>
@@ -348,7 +429,9 @@ onMounted(async () => {
             </div>
 
             <div v-if="fileUrl" class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
-              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+              <h2
+                class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2"
+              >
                 <FileText class="w-4 h-4" />
                 Fichier
               </h2>
@@ -357,7 +440,10 @@ onMounted(async () => {
                   <FileText class="w-10 h-10 text-teal-600 shrink-0" />
                   <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-navy-800 truncate">
-                      {{ (deposit.proposed_file || deposit.file || '').split('/').pop() || 'Document joint' }}
+                      {{
+                        (deposit.proposed_file || deposit.file || '').split('/').pop() ||
+                        'Document joint'
+                      }}
                     </p>
                     <p class="text-xs text-gray-500">
                       {{ getFileExtension(fileUrl || '').toUpperCase() }} ·
@@ -392,11 +478,19 @@ onMounted(async () => {
                     title="Aperçu PDF"
                   ></iframe>
                 </div>
-                <div v-else-if="isViewableFile(fileUrl)" class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div
+                  v-else-if="isViewableFile(fileUrl)"
+                  class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl"
+                >
                   <p class="text-sm text-amber-800">
                     <Eye class="w-4 h-4 inline mr-1" />
-                    Ce format de fichier ne peut pas être prévisualisé directement. 
-                    <a :href="getViewerUrl(fileUrlInline)" target="_blank" rel="noopener noreferrer" class="underline hover:text-amber-600">
+                    Ce format de fichier ne peut pas être prévisualisé directement.
+                    <a
+                      :href="getViewerUrl(fileUrlInline)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="underline hover:text-amber-600"
+                    >
                       Cliquez ici pour l'ouvrir
                     </a>
                   </p>
@@ -405,7 +499,9 @@ onMounted(async () => {
             </div>
 
             <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
-              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+              <h2
+                class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2"
+              >
                 <Calendar class="w-4 h-4" />
                 Chronologie
               </h2>
@@ -414,19 +510,28 @@ onMounted(async () => {
                   <div class="w-2 h-2 mt-1.5 rounded-full bg-teal-600 shrink-0"></div>
                   <div>
                     <p class="text-xs text-gray-500">Soumise le</p>
-                    <p class="text-sm text-navy-800">{{ formatDateTime(deposit.submittedAt || deposit.created_at) }}</p>
+                    <p class="text-sm text-navy-800">
+                      {{ formatDateTime(deposit.submittedAt || deposit.created_at) }}
+                    </p>
                   </div>
                 </div>
-                <div v-if="deposit.assignedManagerId || deposit.assignedManager" class="flex items-start gap-3">
+                <div
+                  v-if="deposit.assignedManagerId || deposit.assignedManager"
+                  class="flex items-start gap-3"
+                >
                   <div class="w-2 h-2 mt-1.5 rounded-full bg-blue-600 shrink-0"></div>
                   <div>
                     <p class="text-xs text-gray-500">Assignée à</p>
                     <p class="text-sm text-navy-800">
-                      {{ deposit.assignedManager?.first_name }} {{ deposit.assignedManager?.last_name }}
+                      {{ deposit.assignedManager?.first_name }}
+                      {{ deposit.assignedManager?.last_name }}
                     </p>
                   </div>
                 </div>
-                <div v-if="deposit.updated_at !== deposit.created_at" class="flex items-start gap-3">
+                <div
+                  v-if="deposit.updated_at !== deposit.created_at"
+                  class="flex items-start gap-3"
+                >
                   <div class="w-2 h-2 mt-1.5 rounded-full bg-gray-400 shrink-0"></div>
                   <div>
                     <p class="text-xs text-gray-500">Dernière mise à jour</p>
@@ -437,13 +542,18 @@ onMounted(async () => {
             </div>
 
             <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-soft">
-              <h2 class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+              <h2
+                class="text-sm font-bold text-navy-800 uppercase tracking-wide mb-4 flex items-center gap-2"
+              >
                 <User class="w-4 h-4" />
                 Déposant
               </h2>
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold">
-                  {{ deposit.applicant?.first_name?.charAt(0) }}{{ deposit.applicant?.last_name?.charAt(0) }}
+                <div
+                  class="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold"
+                >
+                  {{ deposit.applicant?.first_name?.charAt(0)
+                  }}{{ deposit.applicant?.last_name?.charAt(0) }}
                 </div>
                 <div>
                   <p class="text-sm font-medium text-navy-800">
@@ -457,7 +567,11 @@ onMounted(async () => {
         </div>
 
         <!-- Zoom Image Modal -->
-        <div v-if="showZoomModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 transition-opacity duration-300" @click="showZoomModal = false">
+        <div
+          v-if="showZoomModal"
+          class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 transition-opacity duration-300"
+          @click="showZoomModal = false"
+        >
           <div class="relative max-w-4xl max-h-[90vh]" @click.stop>
             <img
               :src="deposit.cover_image || deposit.cover_image_preview"

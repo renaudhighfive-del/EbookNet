@@ -107,5 +107,5 @@ export const hrService = {
   async getActivityLogs() {
     const response = await api.get('/hr/activity-logs')
     return response.data
-  }
+  },
 }

@@ -225,12 +225,18 @@
                   :key="action.id"
                   class="flex items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
                 >
-                  <div class="w-11 h-11 rounded-2xl bg-[#F1F5F9] flex items-center justify-center text-[#0D9488]">
+                  <div
+                    class="w-11 h-11 rounded-2xl bg-[#F1F5F9] flex items-center justify-center text-[#0D9488]"
+                  >
                     <Clock class="w-5 h-5" />
                   </div>
                   <div class="min-w-0">
-                    <p class="text-sm font-semibold text-[#1B2A4A] truncate">{{ formatActionLabel(action.action) }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ formatDateTime(action.created_at) }}</p>
+                    <p class="text-sm font-semibold text-[#1B2A4A] truncate">
+                      {{ formatActionLabel(action.action) }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                      {{ formatDateTime(action.created_at) }}
+                    </p>
                   </div>
                 </div>
               </template>
@@ -240,14 +246,17 @@
 
           <div class="bg-[#F5F5EB] rounded-3xl p-6 border border-[#E8E6D3] text-sm text-gray-700">
             <div class="flex items-center gap-3 mb-3">
-              <div class="w-9 h-9 rounded-2xl bg-[#EEF4F0] flex items-center justify-center text-[#0D9488]">
+              <div
+                class="w-9 h-9 rounded-2xl bg-[#EEF4F0] flex items-center justify-center text-[#0D9488]"
+              >
                 <FileText class="w-4 h-4" />
               </div>
               <p class="font-semibold text-[#1B2A4A]">Rappel</p>
             </div>
             <p>
-              En tant que Responsable RH, vous pouvez créer des comptes Utilisateur, Responsable RH et Responsable Demandes.
-              Le rôle Administrateur ne peut être attribué que par un administrateur.
+              En tant que Responsable RH, vous pouvez créer des comptes Utilisateur, Responsable RH
+              et Responsable Demandes. Le rôle Administrateur ne peut être attribué que par un
+              administrateur.
             </p>
           </div>
         </div>
@@ -260,10 +269,14 @@
         v-if="userModal.visible"
         class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       >
-        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div
+          class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        >
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold text-[#1B2A4A]">
-              {{ userModal.isEdit ? 'Modifier le compte utilisateur' : 'Créer un compte utilisateur' }}
+              {{
+                userModal.isEdit ? 'Modifier le compte utilisateur' : 'Créer un compte utilisateur'
+              }}
             </h3>
             <button
               @click="closeUserModal"
@@ -321,7 +334,9 @@
 
             <!-- Téléphone -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone (optionnel)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Téléphone (optionnel)</label
+              >
               <input
                 v-model="userModal.form.phone"
                 type="tel"
@@ -335,7 +350,9 @@
 
             <!-- Mot de passe -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe (laisser vide pour ne pas changer)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Mot de passe (laisser vide pour ne pas changer)</label
+              >
               <input
                 v-model="userModal.form.password"
                 type="password"
@@ -409,7 +426,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
-import { Users, CircleCheck, CircleMinus, Ban, UserPlus, Pencil, ArrowRight, XCircle, Clock, FileText } from '@lucide/vue'
+import {
+  Users,
+  CircleCheck,
+  CircleMinus,
+  Ban,
+  UserPlus,
+  Pencil,
+  ArrowRight,
+  XCircle,
+  Clock,
+  FileText,
+} from '@lucide/vue'
 import RHLayout from '@/layouts/RHLayout.vue'
 import api from '@/services/api'
 import { useUserStore } from '@/stores/user'
@@ -503,24 +531,33 @@ const handleUserSubmit = async () => {
 
 // Accès direct au store — pas de destructuration des computed/ref
 // pour préserver la réactivité
-const isLoading    = computed(() => userStore.isLoading)
+const isLoading = computed(() => userStore.isLoading)
 const isActionLoading = computed(() => userStore.isActionLoading)
-const stats        = computed(() => userStore.stats)
-const recentUsers  = computed(() => userStore.recentUsers)
+const stats = computed(() => userStore.stats)
+const recentUsers = computed(() => userStore.recentUsers)
 const recentActions = computed(() => activityLogs.value.slice(0, 5))
 
-const { getRoleLabel, getRoleClass, getStatusLabel, getStatusClass,
-        getAvatarColor, getUserInitials, formatDate } = userStore
+const {
+  getRoleLabel,
+  getRoleClass,
+  getStatusLabel,
+  getStatusClass,
+  getAvatarColor,
+  getUserInitials,
+  formatDate,
+} = userStore
 
 const chartData = computed(() => ({
   labels: ['Actifs', 'Inactifs', 'Suspendus'],
-  datasets: [{
-    data: [stats.value.active, stats.value.inactive, stats.value.suspended],
-    backgroundColor: ['#0D9488', '#D1D5DB', '#EF4444'],
-    borderColor:     ['#0a7a6f', '#9CA3AF', '#DC2626'],
-    borderWidth: 2,
-    hoverOffset: 6,
-  }],
+  datasets: [
+    {
+      data: [stats.value.active, stats.value.inactive, stats.value.suspended],
+      backgroundColor: ['#0D9488', '#D1D5DB', '#EF4444'],
+      borderColor: ['#0a7a6f', '#9CA3AF', '#DC2626'],
+      borderWidth: 2,
+      hoverOffset: 6,
+    },
+  ],
 }))
 
 const chartOptions = {
@@ -554,7 +591,8 @@ const getActionClass = (action) => {
   if (action.includes('Création')) return 'bg-green-50 text-green-700 border-green-200'
   if (action.includes('Modification')) return 'bg-blue-50 text-blue-700 border-blue-200'
   if (action.includes('Suspension')) return 'bg-orange-50 text-orange-700 border-orange-200'
-  if (action.includes('Approbation') || action.includes('Restauration')) return 'bg-teal-50 text-teal-700 border-teal-200'
+  if (action.includes('Approbation') || action.includes('Restauration'))
+    return 'bg-teal-50 text-teal-700 border-teal-200'
   return 'bg-gray-50 text-gray-700 border-gray-200'
 }
 

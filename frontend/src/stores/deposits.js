@@ -9,15 +9,30 @@ import api from '@/services/api'
 
 // Mapping des codes ISO de langue vers leur libellé français
 const ISO_LANGUAGES = {
-  fr: 'Français', en: 'Anglais', es: 'Espagnol', de: 'Allemand',
-  it: 'Italien', pt: 'Portugais', nl: 'Néerlandais', ru: 'Russe',
-  zh: 'Chinois', ar: 'Arabe', ja: 'Japonais', ko: 'Coréen',
+  fr: 'Français',
+  en: 'Anglais',
+  es: 'Espagnol',
+  de: 'Allemand',
+  it: 'Italien',
+  pt: 'Portugais',
+  nl: 'Néerlandais',
+  ru: 'Russe',
+  zh: 'Chinois',
+  ar: 'Arabe',
+  ja: 'Japonais',
+  ko: 'Coréen',
 }
 
 // Libellés des types de document
 const DOCUMENT_TYPE_LABELS = {
-  livre: 'Livre', memoire: 'Mémoire', these: 'Thèse', article: 'Article',
-  revue: 'Revue', rapport: 'Rapport', guide: 'Guide', autre: 'Autre',
+  livre: 'Livre',
+  memoire: 'Mémoire',
+  these: 'Thèse',
+  article: 'Article',
+  revue: 'Revue',
+  rapport: 'Rapport',
+  guide: 'Guide',
+  autre: 'Autre',
 }
 
 // -----------------------------------------------------------------------
@@ -25,24 +40,30 @@ const DOCUMENT_TYPE_LABELS = {
 // une fois pour toutes dans normalizeApiDeposit, jamais dupliqués ici).
 // -----------------------------------------------------------------------
 const STATUS_LABELS = {
-  pending:            { label: 'En attente',       cls: 'bg-gray-100 text-gray-600',    step: 0 },
-  assigned:           { label: 'Assignée',         cls: 'bg-blue-100 text-blue-700',    step: 1 },
-  manager_approved:   { label: 'Validée (resp.)',  cls: 'bg-teal-100 text-teal-700',    step: 2 },
-  manager_rejected:   { label: 'Refusée (resp.)',  cls: 'bg-orange-100 text-orange-700',step: -1 },
-  second_opinion:     { label: 'Second avis',      cls: 'bg-purple-100 text-purple-700',step: 2 },
-  approved_published: { label: 'Publiée',          cls: 'bg-emerald-100 text-emerald-800', step: 4 },
-  rejected:           { label: 'Rejetée',          cls: 'bg-red-100 text-red-700',      step: -2 },
+  pending: { label: 'En attente', cls: 'bg-gray-100 text-gray-600', step: 0 },
+  assigned: { label: 'Assignée', cls: 'bg-blue-100 text-blue-700', step: 1 },
+  manager_approved: { label: 'Validée (resp.)', cls: 'bg-teal-100 text-teal-700', step: 2 },
+  manager_rejected: { label: 'Refusée (resp.)', cls: 'bg-orange-100 text-orange-700', step: -1 },
+  second_opinion: { label: 'Second avis', cls: 'bg-purple-100 text-purple-700', step: 2 },
+  approved_published: { label: 'Publiée', cls: 'bg-emerald-100 text-emerald-800', step: 4 },
+  rejected: { label: 'Rejetée', cls: 'bg-red-100 text-red-700', step: -2 },
 }
 
 // Machine à états : transitions valides depuis chaque statut
 const STATUS_TRANSITIONS = {
-  pending:            ['assigned', 'rejected'],
-  assigned:           ['manager_approved', 'manager_rejected', 'second_opinion', 'pending', 'rejected'],
-  manager_approved:   ['approved_published', 'rejected', 'second_opinion'],
-  manager_rejected:   ['rejected', 'approved_published', 'second_opinion', 'assigned'],
-  second_opinion:     ['manager_approved', 'manager_rejected', 'approved_published', 'rejected', 'assigned'],
+  pending: ['assigned', 'rejected'],
+  assigned: ['manager_approved', 'manager_rejected', 'second_opinion', 'pending', 'rejected'],
+  manager_approved: ['approved_published', 'rejected', 'second_opinion'],
+  manager_rejected: ['rejected', 'approved_published', 'second_opinion', 'assigned'],
+  second_opinion: [
+    'manager_approved',
+    'manager_rejected',
+    'approved_published',
+    'rejected',
+    'assigned',
+  ],
   approved_published: ['pending'],
-  rejected:           [],
+  rejected: [],
 }
 
 // -----------------------------------------------------------------------
@@ -51,27 +72,67 @@ const STATUS_TRANSITIONS = {
 // validation de commentaire incohérente, double publication).
 // -----------------------------------------------------------------------
 const ACTION_REGISTRY = {
-  assign:             { label: 'Assigner à un responsable', variant: 'green',      requiresComment: false, minLength: 0 },
-  reassign:           { label: 'Réassigner',                variant: 'blue',       requiresComment: false, minLength: 0 },
-  remind:             { label: 'Relancer le responsable',   variant: 'amber',      requiresComment: false, minLength: 0 },
-  reject_direct:      { label: 'Rejeter directement',        variant: 'red',        requiresComment: true,  minLength: 30 },
-  approve_publish:    { label: 'Approuver & Publier',        variant: 'green',      requiresComment: false, minLength: 0 },
-  second_opinion_req: { label: 'Demander un 2ème avis',      variant: 'white',      requiresComment: true,  minLength: 20 },
-  reject_definitive:  { label: 'Rejeter définitivement',     variant: 'red',        requiresComment: true,  minLength: 50 },
-  confirm_reject:     { label: 'Confirmer le rejet',         variant: 'red-outline',requiresComment: true,  minLength: 20 },
-  override_publish:   { label: 'Passer outre & Publier',     variant: 'orange',     requiresComment: true,  minLength: 50 },
-  unpublish:          { label: 'Dépublier',                  variant: 'red',        requiresComment: true,  minLength: 30 },
+  assign: {
+    label: 'Assigner à un responsable',
+    variant: 'green',
+    requiresComment: false,
+    minLength: 0,
+  },
+  reassign: { label: 'Réassigner', variant: 'blue', requiresComment: false, minLength: 0 },
+  remind: {
+    label: 'Relancer le responsable',
+    variant: 'amber',
+    requiresComment: false,
+    minLength: 0,
+  },
+  reject_direct: {
+    label: 'Rejeter directement',
+    variant: 'red',
+    requiresComment: true,
+    minLength: 30,
+  },
+  approve_publish: {
+    label: 'Approuver & Publier',
+    variant: 'green',
+    requiresComment: false,
+    minLength: 0,
+  },
+  second_opinion_req: {
+    label: 'Demander un 2ème avis',
+    variant: 'white',
+    requiresComment: true,
+    minLength: 20,
+  },
+  reject_definitive: {
+    label: 'Rejeter définitivement',
+    variant: 'red',
+    requiresComment: true,
+    minLength: 50,
+  },
+  confirm_reject: {
+    label: 'Confirmer le rejet',
+    variant: 'red-outline',
+    requiresComment: true,
+    minLength: 20,
+  },
+  override_publish: {
+    label: 'Passer outre & Publier',
+    variant: 'orange',
+    requiresComment: true,
+    minLength: 50,
+  },
+  unpublish: { label: 'Dépublier', variant: 'red', requiresComment: true, minLength: 30 },
 }
 
 // Actions disponibles pour chaque statut, dans l'ordre d'affichage voulu
 const STATUS_ACTIONS = {
-  pending:            ['assign', 'reject_direct'],
-  assigned:           ['remind', 'reassign'],
-  manager_approved:   ['approve_publish', 'reject_definitive'],
-  manager_rejected:   ['confirm_reject', 'override_publish', 'second_opinion_req'],
-  second_opinion:     [],
+  pending: ['assign', 'reject_direct'],
+  assigned: ['remind', 'reassign'],
+  manager_approved: ['approve_publish', 'reject_definitive'],
+  manager_rejected: ['confirm_reject', 'override_publish', 'second_opinion_req'],
+  second_opinion: [],
   approved_published: ['unpublish'],
-  rejected:           [],
+  rejected: [],
 }
 
 // Statuts qui indiquent qu'un responsable a une demande en cours d'examen
@@ -97,12 +158,17 @@ function normalizeApiDeposit(item) {
   // Auteurs : table relationnelle si présent, sinon texte séparé par des virgules.
   const authorNames = (() => {
     if (Array.isArray(item.authors) && item.authors.length) {
-      return item.authors.map(a =>
-        typeof a === 'string' ? a : `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim()
-      ).filter(Boolean)
+      return item.authors
+        .map((a) =>
+          typeof a === 'string' ? a : `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim(),
+        )
+        .filter(Boolean)
     }
     if (item.author && typeof item.author === 'string') {
-      return item.author.split(',').map(s => s.trim()).filter(Boolean)
+      return item.author
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
     }
     return []
   })()
@@ -112,16 +178,17 @@ function normalizeApiDeposit(item) {
   // ou ["...", ...] (champ JSON sur DepositRequest) selon le contexte.
   const keywords = (() => {
     if (!Array.isArray(item.keywords)) return []
-    return item.keywords.map(k => (typeof k === 'string' ? k : k.keyword ?? '')).filter(Boolean)
+    return item.keywords.map((k) => (typeof k === 'string' ? k : (k.keyword ?? ''))).filter(Boolean)
   })()
 
-  const mappedStatus = ({
-    approved_by_manager: 'manager_approved',
-    rejected_by_manager: 'manager_rejected',
-    second_review: 'second_opinion',
-    approved: 'approved_published',
-    published: 'approved_published',
-  })[item.status] || item.status
+  const mappedStatus =
+    {
+      approved_by_manager: 'manager_approved',
+      rejected_by_manager: 'manager_rejected',
+      second_review: 'second_opinion',
+      approved: 'approved_published',
+      published: 'approved_published',
+    }[item.status] || item.status
 
   return {
     id: item.id,
@@ -143,10 +210,19 @@ function normalizeApiDeposit(item) {
     fileSize: item.file_size || null,
     cover_image: item.cover_image_url || item.cover_image || null,
     submittedBy: item.applicant
-      ? { id: item.applicant.id, first_name: item.applicant.first_name, last_name: item.applicant.last_name, email: item.applicant.email }
+      ? {
+          id: item.applicant.id,
+          first_name: item.applicant.first_name,
+          last_name: item.applicant.last_name,
+          email: item.applicant.email,
+        }
       : null,
     submittedAt: item.created_at || item.submittedAt || null,
-    assignedManagerId: item.assigned_manager_id || item.assignedManagerId || (item.assignedManager ? item.assignedManager.id : null) || null,
+    assignedManagerId:
+      item.assigned_manager_id ||
+      item.assignedManagerId ||
+      (item.assignedManager ? item.assignedManager.id : null) ||
+      null,
     assignedAt: item.updated_at || item.assignedAt || null,
     status: mappedStatus,
     history: item.history || [],
@@ -171,28 +247,50 @@ export const useDepositsStore = defineStore('deposits', () => {
   const pagination = ref(null)
   const managers = ref([])
 
-  const pendingCount = computed(() => deposits.value.filter(d => d.status === 'pending' || d.status === 'assigned').length)
+  const pendingCount = computed(
+    () => deposits.value.filter((d) => d.status === 'pending' || d.status === 'assigned').length,
+  )
 
   function _addHistory(deposit, actor, role, action, comment) {
-    deposit.history.push({ actor, role, action, comment: comment || null, at: new Date().toISOString() })
+    deposit.history.push({
+      actor,
+      role,
+      action,
+      comment: comment || null,
+      at: new Date().toISOString(),
+    })
   }
 
   function _addActivityLog(action, depositId, color = 'orange') {
-    activityLogs.value.unshift({ id: Date.now(), type: 'Workflow', action, deposit_id: depositId, color, created_at: new Date().toISOString() })
+    activityLogs.value.unshift({
+      id: Date.now(),
+      type: 'Workflow',
+      action,
+      deposit_id: depositId,
+      color,
+      created_at: new Date().toISOString(),
+    })
   }
 
   function _updateInStore(id, updated) {
-    const idx = deposits.value.findIndex(d => d.id === id)
+    const idx = deposits.value.findIndex((d) => d.id === id)
     if (idx !== -1) deposits.value[idx] = { ...deposits.value[idx], ...updated }
-    if (currentDeposit.value?.id === id) currentDeposit.value = { ...currentDeposit.value, ...updated }
+    if (currentDeposit.value?.id === id)
+      currentDeposit.value = { ...currentDeposit.value, ...updated }
   }
 
   function getStatusConfig(s) {
-    return STATUS_LABELS[s] || { label: s || 'Inconnu', cls: 'bg-gray-100 text-gray-500', step: -99 }
+    return (
+      STATUS_LABELS[s] || { label: s || 'Inconnu', cls: 'bg-gray-100 text-gray-500', step: -99 }
+    )
   }
 
-  function getTypeLabel(type) { return DOCUMENT_TYPE_LABELS[type] || type || 'Non spécifié' }
-  function getLanguageLabel(lang) { return ISO_LANGUAGES[lang] || lang || 'Non spécifié' }
+  function getTypeLabel(type) {
+    return DOCUMENT_TYPE_LABELS[type] || type || 'Non spécifié'
+  }
+  function getLanguageLabel(lang) {
+    return ISO_LANGUAGES[lang] || lang || 'Non spécifié'
+  }
 
   function getUserInitials(user) {
     if (!user) return '?'
@@ -201,12 +299,30 @@ export const useDepositsStore = defineStore('deposits', () => {
 
   function formatDate(d) {
     if (!d) return '—'
-    try { return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) } catch { return '—' }
+    try {
+      return new Date(d).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    } catch {
+      return '—'
+    }
   }
 
   function formatDateTime(d) {
     if (!d) return '—'
-    try { return new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) } catch { return '—' }
+    try {
+      return new Date(d).toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    } catch {
+      return '—'
+    }
   }
 
   function getTimeAgo(d) {
@@ -220,7 +336,11 @@ export const useDepositsStore = defineStore('deposits', () => {
   }
 
   function getAgingDays(d) {
-    try { return d ? Math.floor((Date.now() - new Date(d)) / 86400000) : 0 } catch { return 0 }
+    try {
+      return d ? Math.floor((Date.now() - new Date(d)) / 86400000) : 0
+    } catch {
+      return 0
+    }
   }
 
   function getAgingBadge(d) {
@@ -247,7 +367,7 @@ export const useDepositsStore = defineStore('deposits', () => {
    * @returns {Array<{key:string,label:string,variant:string,requiresComment:boolean,mi...
    */
   function getActionsForStatus(status) {
-    return (STATUS_ACTIONS[status] || []).map(key => ({ key, ...ACTION_REGISTRY[key] }))
+    return (STATUS_ACTIONS[status] || []).map((key) => ({ key, ...ACTION_REGISTRY[key] }))
   }
 
   /**
@@ -258,25 +378,25 @@ export const useDepositsStore = defineStore('deposits', () => {
    */
   function getAvailableManagers(currentManagerId = null) {
     const managerBusyCounts = {}
-    deposits.value.forEach(d => {
+    deposits.value.forEach((d) => {
       if (d.assignedManagerId && MANAGER_BUSY_STATUSES.includes(d.status)) {
         managerBusyCounts[d.assignedManagerId] = (managerBusyCounts[d.assignedManagerId] || 0) + 1
       }
     })
 
     return managers.value
-      .filter(m => m.status === 'active' && m.role === 'responsable_demande')
-      .filter(m => m.id === currentManagerId || !managerBusyCounts[m.id])
-      .map(m => ({ ...m, open_deposits: managerBusyCounts[m.id] || 0 }))
+      .filter((m) => m.status === 'active' && m.role === 'responsable_demande')
+      .filter((m) => m.id === currentManagerId || !managerBusyCounts[m.id])
+      .map((m) => ({ ...m, open_deposits: managerBusyCounts[m.id] || 0 }))
       .sort((a, b) => a.open_deposits - b.open_deposits)
   }
 
   function getActiveManagers() {
-    return managers.value.filter(m => m.status === 'active' && m.role === 'responsable_demande')
+    return managers.value.filter((m) => m.status === 'active' && m.role === 'responsable_demande')
   }
 
   function getManagerById(id) {
-    return managers.value.find(m => m.id === id) || null
+    return managers.value.find((m) => m.id === id) || null
   }
 
   async function fetchManagers() {
@@ -298,12 +418,19 @@ export const useDepositsStore = defineStore('deposits', () => {
       const authStore = useAuthStore()
       const isResponsable = authStore.user?.role === 'responsable_demande'
       const endpoint = isResponsable ? '/responsable/deposits' : '/admin/deposits'
-      
+
       const response = await api.get(endpoint, { params })
       const data = response.data
       const list = data.data || data || []
       deposits.value = list.map(normalizeApiDeposit)
-      pagination.value = data.data ? { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total } : null
+      pagination.value = data.data
+        ? {
+            current_page: data.current_page,
+            last_page: data.last_page,
+            per_page: data.per_page,
+            total: data.total,
+          }
+        : null
       return deposits.value
     } catch (err) {
       deposits.value = []
@@ -321,14 +448,14 @@ export const useDepositsStore = defineStore('deposits', () => {
       const authStore = useAuthStore()
       const isResponsable = authStore.user?.role === 'responsable_demande'
       const endpoint = isResponsable ? `/responsable/deposits/${id}` : `/admin/deposits/${id}`
-      
+
       const response = await api.get(endpoint)
       const data = response.data
       const item = data.deposit_request || data
       currentDeposit.value = normalizeApiDeposit(item)
       return currentDeposit.value
     } catch (err) {
-      const found = deposits.value.find(d => String(d.id) === String(id))
+      const found = deposits.value.find((d) => String(d.id) === String(id))
       if (found) {
         currentDeposit.value = JSON.parse(JSON.stringify(found))
         return currentDeposit.value
@@ -347,8 +474,14 @@ export const useDepositsStore = defineStore('deposits', () => {
   async function assignManager(id, managerId) {
     isSubmitting.value = true
     try {
-      const deposit = deposits.value.find(d => String(d.id) === String(id))
-      const allowedFrom = ['pending', 'assigned', 'manager_approved', 'manager_rejected', 'second_opinion']
+      const deposit = deposits.value.find((d) => String(d.id) === String(id))
+      const allowedFrom = [
+        'pending',
+        'assigned',
+        'manager_approved',
+        'manager_rejected',
+        'second_opinion',
+      ]
       if (deposit && !allowedFrom.includes(deposit.status)) {
         throw new Error('Transition de statut non autorisée.')
       }
@@ -359,9 +492,9 @@ export const useDepositsStore = defineStore('deposits', () => {
       return updated
     } catch (err) {
       const msg = err.response?.data?.message || err.message || "Erreur lors de l'assignation."
-      const deposit = deposits.value.find(d => String(d.id) === String(id))
+      const deposit = deposits.value.find((d) => String(d.id) === String(id))
       if (deposit && !err.response) {
-        useToastStore().error('Impossible d\'assigner le responsable. Veuillez réessayer.')
+        useToastStore().error("Impossible d'assigner le responsable. Veuillez réessayer.")
       }
       useToastStore().error(msg)
       throw err
@@ -383,7 +516,11 @@ export const useDepositsStore = defineStore('deposits', () => {
     try {
       const result = await adminService.publishDeposit(id, meta)
       const updated = normalizeApiDeposit(result.deposit_request || result)
-      const patch = { ...updated, status: 'approved_published', referenceId: result.reference?.id || updated.referenceId }
+      const patch = {
+        ...updated,
+        status: 'approved_published',
+        referenceId: result.reference?.id || updated.referenceId,
+      }
       if (meta.adminOverride) patch.adminOverride = true
       if (meta.comment) patch.adminDecisionComment = meta.comment
       _updateInStore(id, patch)
@@ -412,7 +549,7 @@ export const useDepositsStore = defineStore('deposits', () => {
         return await approveAndPublish(id, meta)
       }
 
-      const deposit = deposits.value.find(d => String(d.id) === String(id))
+      const deposit = deposits.value.find((d) => String(d.id) === String(id))
       if (!deposit) throw new Error('Demande introuvable.')
 
       if (!canTransition(deposit.status, nextStatus)) {
@@ -436,8 +573,11 @@ export const useDepositsStore = defineStore('deposits', () => {
       }
 
       const actionLabels = {
-        pending: 'Dépublication', assigned: 'Assignation', manager_approved: 'Approbation responsable',
-        manager_rejected: 'Rejet responsable', second_opinion: 'Demande de second avis',
+        pending: 'Dépublication',
+        assigned: 'Assignation',
+        manager_approved: 'Approbation responsable',
+        manager_rejected: 'Rejet responsable',
+        second_opinion: 'Demande de second avis',
         rejected: 'Rejet définitif',
       }
 
@@ -448,9 +588,17 @@ export const useDepositsStore = defineStore('deposits', () => {
         if (meta.comment) deposit.adminDecisionComment = meta.comment
 
         const authStore = useAuthStore()
-        const actor = authStore.user ? `${authStore.user.first_name} ${authStore.user.last_name}` : 'Admin System'
+        const actor = authStore.user
+          ? `${authStore.user.first_name} ${authStore.user.last_name}`
+          : 'Admin System'
         const role = authStore.userRole === 'responsable_demande' ? 'Responsable' : 'Administrateur'
-        _addHistory(deposit, actor, role, actionLabels[nextStatus] || nextStatus, meta.comment || null)
+        _addHistory(
+          deposit,
+          actor,
+          role,
+          actionLabels[nextStatus] || nextStatus,
+          meta.comment || null,
+        )
         _updateInStore(id, deposit)
       }
 
@@ -479,7 +627,7 @@ export const useDepositsStore = defineStore('deposits', () => {
   }
 
   async function unassignManager(id) {
-    const deposit = deposits.value.find(d => String(d.id) === String(id))
+    const deposit = deposits.value.find((d) => String(d.id) === String(id))
     if (!deposit) return
     if (deposit.status !== 'assigned') {
       useToastStore().error('Annulation impossible pour ce statut.')
@@ -494,21 +642,33 @@ export const useDepositsStore = defineStore('deposits', () => {
       deposit.assignedManagerId = null
       deposit.assignedAt = null
       deposit.status = 'pending'
-      _addHistory(deposit, 'Admin System', 'Administrateur', 'Annulation assignation', 'Assignation annulée.')
+      _addHistory(
+        deposit,
+        'Admin System',
+        'Administrateur',
+        'Annulation assignation',
+        'Assignation annulée.',
+      )
       _updateInStore(id, deposit)
     }
     useToastStore().info('Assignation annulée.')
   }
 
   async function remindManager(id) {
-    const deposit = deposits.value.find(d => String(d.id) === String(id))
+    const deposit = deposits.value.find((d) => String(d.id) === String(id))
     if (!deposit) return
     try {
       await adminService.remindDeposit(id)
     } catch {
       // La relance envoie juste un email — on trace localement même en cas d'échec...
     }
-    _addHistory(deposit, 'Admin System', 'Administrateur', 'Relance responsable', 'Relance envoyée.')
+    _addHistory(
+      deposit,
+      'Admin System',
+      'Administrateur',
+      'Relance responsable',
+      'Relance envoyée.',
+    )
     _updateInStore(id, deposit)
     useToastStore().success('Relance envoyée au responsable.')
   }
@@ -522,16 +682,53 @@ export const useDepositsStore = defineStore('deposits', () => {
 
   function getStepsForStatus(status) {
     const currentStep = getCurrentStep(status)
-    return STEPS.map((s, i) => ({ ...s, active: i === currentStep, completed: i < currentStep, future: i > currentStep }))
+    return STEPS.map((s, i) => ({
+      ...s,
+      active: i === currentStep,
+      completed: i < currentStep,
+      future: i > currentStep,
+    }))
   }
 
   return {
-    deposits, currentDeposit, isLoading, isSubmitting, error, activityLogs, pagination, pendingCount,
-    getStatusConfig, getTypeLabel, getLanguageLabel, getUserInitials, formatDate, formatDateTime,
-    getTimeAgo, getAgingDays, getAgingBadge, getAvailableManagers, getActiveManagers,
-    getManagerById, canTransition, getActionsForStatus,
-    fetchDeposits, fetchDeposit, fetchManagers, updateDepositStatus, assignManager, reassignManager,
-    unassignManager, remindManager, approveAndPublish, getCurrentStep, getStepsForStatus,
-    STEPS, STATUS_LABELS, ISO_LANGUAGES, DOCUMENT_TYPE_LABELS, STATUS_TRANSITIONS, ACTION_REGISTRY,
+    deposits,
+    currentDeposit,
+    isLoading,
+    isSubmitting,
+    error,
+    activityLogs,
+    pagination,
+    pendingCount,
+    getStatusConfig,
+    getTypeLabel,
+    getLanguageLabel,
+    getUserInitials,
+    formatDate,
+    formatDateTime,
+    getTimeAgo,
+    getAgingDays,
+    getAgingBadge,
+    getAvailableManagers,
+    getActiveManagers,
+    getManagerById,
+    canTransition,
+    getActionsForStatus,
+    fetchDeposits,
+    fetchDeposit,
+    fetchManagers,
+    updateDepositStatus,
+    assignManager,
+    reassignManager,
+    unassignManager,
+    remindManager,
+    approveAndPublish,
+    getCurrentStep,
+    getStepsForStatus,
+    STEPS,
+    STATUS_LABELS,
+    ISO_LANGUAGES,
+    DOCUMENT_TYPE_LABELS,
+    STATUS_TRANSITIONS,
+    ACTION_REGISTRY,
   }
 })

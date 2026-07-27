@@ -19,7 +19,7 @@ import { useCategoryStore } from '../../stores/category'
 
 const categoryStore = useCategoryStore()
 
-// ─── State ──────────────────────�...
+// ─── State ──────────────────────�...
 
 const searchQuery = ref('')
 const searchTimeout = ref(null)
@@ -37,7 +37,7 @@ const modal = ref({
 const deleteModal = ref({ visible: false, category: null })
 const detailsModal = ref({ visible: false, category: null, references: [] })
 
-// ─── Filtrage frontend ──────────────────�...
+// ─── Filtrage frontend ──────────────────�...
 
 const filteredCategories = computed(() => {
   if (!categoryStore.categories) return []
@@ -45,22 +45,23 @@ const filteredCategories = computed(() => {
 
   // Filtrer par statut
   if (filterStatus.value) {
-    filtered = filtered.filter(c => c.status === filterStatus.value)
+    filtered = filtered.filter((c) => c.status === filterStatus.value)
   }
 
   // Filtrer par recherche
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(c =>
-      c.name.toLowerCase().includes(query) ||
-      (c.description && c.description.toLowerCase().includes(query))
+    filtered = filtered.filter(
+      (c) =>
+        c.name.toLowerCase().includes(query) ||
+        (c.description && c.description.toLowerCase().includes(query)),
     )
   }
 
   return filtered
 })
 
-// ─── Pagination locale ──────────────────�...
+// ─── Pagination locale ──────────────────�...
 
 const currentPage = ref(1)
 
@@ -90,14 +91,16 @@ const visiblePages = computed(() => {
   return pages
 })
 
-// ─── Fetch ──────────────────────�...
+// ─── Fetch ──────────────────────�...
 
 const fetchCategoriesWithParams = () => {
   // Charger toutes les catégories sans pagination ni filtre (filtrage frontend)
-  categoryStore.fetchCategories({ per_page: 1000 }).catch(() => showToast('Erreur lors du chargement.', 'error'))
+  categoryStore
+    .fetchCategories({ per_page: 1000 })
+    .catch(() => showToast('Erreur lors du chargement.', 'error'))
 }
 
-// ─── Watchers ─────────────────────�...
+// ─── Watchers ─────────────────────�...
 
 // Réinitialiser la page lors du changement de filtre ou recherche
 const resetPage = () => {
@@ -164,7 +167,10 @@ const confirmDelete = async () => {
 const toggleStatus = async (category) => {
   try {
     await categoryStore.toggleCategoryStatus(category.id)
-    showToast(`Catégorie ${category.status === 'active' ? 'désactivée' : 'activée'} avec succès.`, 'success')
+    showToast(
+      `Catégorie ${category.status === 'active' ? 'désactivée' : 'activée'} avec succès.`,
+      'success',
+    )
   } catch (err) {
     showToast(err.response?.data?.message || 'Une erreur est survenue.', 'error')
   }
@@ -188,7 +194,7 @@ const showToast = (message, type) => {
   setTimeout(() => (toast.value.message = ''), 3000)
 }
 
-// ─── Lifecycle ─────────────────────�...
+// ─── Lifecycle ─────────────────────�...
 
 onMounted(() => {
   fetchCategoriesWithParams()
@@ -238,39 +244,82 @@ onMounted(() => {
 
       <!-- Loading -->
       <div v-if="categoryStore.isLoading" class="flex items-center justify-center py-12">
-        <div class="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin"></div>
+        <div
+          class="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin"
+        ></div>
       </div>
 
       <!-- Table -->
-      <div v-else-if="categoryStore.categories && paginatedCategories.length > 0" class="overflow-x-auto">
+      <div
+        v-else-if="categoryStore.categories && paginatedCategories.length > 0"
+        class="overflow-x-auto"
+      >
         <table class="w-full">
           <thead>
             <tr class="border-b border-gray-100 pb-3">
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Nom</th>
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Slug</th>
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Description</th>
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Références</th>
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Statut</th>
-              <th class="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Actions</th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Nom
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Slug
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Description
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Références
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Statut
+              </th>
+              <th
+                class="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="category in paginatedCategories" :key="category.id" class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+            <tr
+              v-for="category in paginatedCategories"
+              :key="category.id"
+              class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+            >
               <td class="py-4">
                 <div class="font-semibold text-[#1B2A4A]">{{ category.name }}</div>
               </td>
               <td class="py-4">
-                <code class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{{ category.slug }}</code>
+                <code class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{{
+                  category.slug
+                }}</code>
               </td>
               <td class="py-4">
-                <div class="text-sm text-gray-600 max-w-xs truncate">{{ category.description || '-' }}</div>
+                <div class="text-sm text-gray-600 max-w-xs truncate">
+                  {{ category.description || '-' }}
+                </div>
               </td>
               <td class="py-4">
-                <span class="text-sm font-medium text-gray-700">{{ category.references_count || 0 }}</span>
+                <span class="text-sm font-medium text-gray-700">{{
+                  category.references_count || 0
+                }}</span>
               </td>
               <td class="py-4">
                 <span
-                  :class="category.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
+                  :class="
+                    category.status === 'active'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-600'
+                  "
                   class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
                 >
                   <CheckCircle v-if="category.status === 'active'" class="w-3.5 h-3.5" />
@@ -345,13 +394,15 @@ onMounted(() => {
           <button
             v-for="page in visiblePages"
             :key="page"
-            @click="typeof page === 'number' ? currentPage = page : null"
+            @click="typeof page === 'number' ? (currentPage = page) : null"
             class="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
-            :class="page === currentPage
-              ? 'bg-[#0D9488] text-white border-[#0D9488]'
-              : typeof page === 'number'
-                ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
-                : 'border-transparent text-gray-400 cursor-default'"
+            :class="
+              page === currentPage
+                ? 'bg-[#0D9488] text-white border-[#0D9488]'
+                : typeof page === 'number'
+                  ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+                  : 'border-transparent text-gray-400 cursor-default'
+            "
             :disabled="typeof page !== 'number'"
           >
             {{ page }}
@@ -421,7 +472,13 @@ onMounted(() => {
               :disabled="categoryStore.isActionLoading"
               class="px-4 py-2.5 rounded-xl bg-[#0D9488] text-white hover:bg-[#0B847A] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {{ categoryStore.isActionLoading ? 'En cours...' : modal.isEdit ? 'Mettre à jour' : 'Créer' }}
+              {{
+                categoryStore.isActionLoading
+                  ? 'En cours...'
+                  : modal.isEdit
+                    ? 'Mettre à jour'
+                    : 'Créer'
+              }}
             </button>
           </div>
         </div>
@@ -438,9 +495,14 @@ onMounted(() => {
           <div class="p-6">
             <h3 class="text-lg font-bold text-[#1B2A4A] mb-2">Supprimer la catégorie</h3>
             <p class="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir supprimer la catégorie <strong>{{ deleteModal.category?.name }}</strong> ?
-              <span v-if="deleteModal.category?.references_count > 0" class="block mt-2 text-red-600">
-                Cette catégorie contient {{ deleteModal.category.references_count }} référence(s) et ne peut pas être supprimée.
+              Êtes-vous sûr de vouloir supprimer la catégorie
+              <strong>{{ deleteModal.category?.name }}</strong> ?
+              <span
+                v-if="deleteModal.category?.references_count > 0"
+                class="block mt-2 text-red-600"
+              >
+                Cette catégorie contient {{ deleteModal.category.references_count }} référence(s) et
+                ne peut pas être supprimée.
               </span>
             </p>
             <div class="flex justify-end gap-3">
@@ -452,7 +514,9 @@ onMounted(() => {
               </button>
               <button
                 @click="confirmDelete"
-                :disabled="categoryStore.isActionLoading || deleteModal.category?.references_count > 0"
+                :disabled="
+                  categoryStore.isActionLoading || deleteModal.category?.references_count > 0
+                "
                 class="px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {{ categoryStore.isActionLoading ? 'Suppression...' : 'Supprimer' }}
@@ -469,7 +533,9 @@ onMounted(() => {
         v-if="detailsModal.visible"
         class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
       >
-        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div
+          class="bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col"
+        >
           <div class="p-6 border-b border-gray-100 flex items-center justify-between">
             <h3 class="text-lg font-bold text-[#1B2A4A]">Détails de la catégorie</h3>
             <button
@@ -484,40 +550,73 @@ onMounted(() => {
               <!-- Info catégorie -->
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Nom</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Nom</label
+                  >
                   <p class="text-sm font-medium text-[#1B2A4A]">{{ detailsModal.category.name }}</p>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Slug</label>
-                  <code class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">{{ detailsModal.category.slug }}</code>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Slug</label
+                  >
+                  <code class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">{{
+                    detailsModal.category.slug
+                  }}</code>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Statut</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Statut</label
+                  >
                   <span
-                    :class="detailsModal.category.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
+                    :class="
+                      detailsModal.category.status === 'active'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-600'
+                    "
                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
                   >
-                    <CheckCircle v-if="detailsModal.category.status === 'active'" class="w-3.5 h-3.5" />
+                    <CheckCircle
+                      v-if="detailsModal.category.status === 'active'"
+                      class="w-3.5 h-3.5"
+                    />
                     <XCircle v-else class="w-3.5 h-3.5" />
                     {{ detailsModal.category.status === 'active' ? 'Actif' : 'Inactif' }}
                   </span>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Nombre de références</label>
-                  <p class="text-sm font-medium text-[#1B2A4A]">{{ detailsModal.category.references_count || 0 }}</p>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Nombre de références</label
+                  >
+                  <p class="text-sm font-medium text-[#1B2A4A]">
+                    {{ detailsModal.category.references_count || 0 }}
+                  </p>
                 </div>
                 <div class="col-span-2">
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</label>
-                  <p class="text-sm text-gray-600">{{ detailsModal.category.description || '-' }}</p>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Description</label
+                  >
+                  <p class="text-sm text-gray-600">
+                    {{ detailsModal.category.description || '-' }}
+                  </p>
                 </div>
               </div>
 
               <!-- Références -->
               <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                <label
+                  class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2"
+                >
                   Références liées ({{ detailsModal.category.references_count || 0 }})
                 </label>
-                <div v-if="detailsModal.category.references_count > 0" class="bg-gray-50 rounded-xl p-4">
+                <div
+                  v-if="detailsModal.category.references_count > 0"
+                  class="bg-gray-50 rounded-xl p-4"
+                >
                   <p class="text-sm text-gray-600 text-center">
                     Les références liées seront affichées ici.
                   </p>
@@ -555,4 +654,3 @@ onMounted(() => {
     </Teleport>
   </AdminLayout>
 </template>
-

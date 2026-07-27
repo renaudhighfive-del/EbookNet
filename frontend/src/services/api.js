@@ -29,11 +29,7 @@ api.interceptors.response.use(
     }
 
     // Retry sur timeout / network error (pas de retry pour 4xx/5xx)
-    if (
-      (error.code === 'ECONNABORTED' || !error.response) &&
-      config &&
-      !config._retryCount
-    ) {
+    if ((error.code === 'ECONNABORTED' || !error.response) && config && !config._retryCount) {
       config._retryCount = config._retryCount || 0
       if (config._retryCount < MAX_RETRIES) {
         config._retryCount++

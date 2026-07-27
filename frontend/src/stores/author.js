@@ -141,7 +141,7 @@ export const useAuthorStore = defineStore('author', () => {
    * @param {Object} updatedAuthor - Données mises à jour.
    */
   function _updateInList(id, updatedAuthor) {
-    const index = authors.value.findIndex(a => a.id === id)
+    const index = authors.value.findIndex((a) => a.id === id)
     if (index !== -1) {
       const existing = authors.value[index]
       authors.value.splice(index, 1, { ...existing, ...updatedAuthor })
@@ -153,7 +153,7 @@ export const useAuthorStore = defineStore('author', () => {
    * @param {number|string} id - Identifiant à retirer.
    */
   function _removeFromList(id) {
-    authors.value = authors.value.filter(a => a.id !== id)
+    authors.value = authors.value.filter((a) => a.id !== id)
   }
 
   return {

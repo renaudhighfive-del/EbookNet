@@ -26,9 +26,17 @@ const fetchDetails = async () => {
     deposit.value = await store.fetchDeposit(route.params.id)
     // Normalisation locale : assurer la présence de `publisher` et `pages`
     if (deposit.value) {
-      deposit.value.publisher = deposit.value.publisher || deposit.value.editor || deposit.value.publisher_name || (deposit.value.reference && (deposit.value.reference.publisher || deposit.value.reference.publisher_name)) || null
-      deposit.value.pages = deposit.value.pages ?? deposit.value.page_count ?? deposit.value.number_of_pages ?? null
-      deposit.value.submittedAt = deposit.value.submitted_at || deposit.value.created_at || deposit.value.submittedAt || null
+      deposit.value.publisher =
+        deposit.value.publisher ||
+        deposit.value.editor ||
+        deposit.value.publisher_name ||
+        (deposit.value.reference &&
+          (deposit.value.reference.publisher || deposit.value.reference.publisher_name)) ||
+        null
+      deposit.value.pages =
+        deposit.value.pages ?? deposit.value.page_count ?? deposit.value.number_of_pages ?? null
+      deposit.value.submittedAt =
+        deposit.value.submitted_at || deposit.value.created_at || deposit.value.submittedAt || null
     }
     // S'assurer que le statut de départ est cohérent pour l'examen
     if (deposit.value && !['assigned', 'second_opinion'].includes(deposit.value.status)) {
@@ -123,13 +131,18 @@ const handleSubmit = async () => {
 
     <!-- Loader -->
     <div v-if="isLoading" class="flex justify-center py-20">
-      <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
+      <div
+        class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"
+      ></div>
     </div>
 
     <!-- Error -->
     <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-xl p-6">
       <p class="text-red-700">{{ error }}</p>
-      <router-link to="/manager/deposits" class="mt-4 inline-block text-teal-600 font-medium hover:underline text-sm">
+      <router-link
+        to="/manager/deposits"
+        class="mt-4 inline-block text-teal-600 font-medium hover:underline text-sm"
+      >
         Retour à la liste
       </router-link>
     </div>
@@ -139,13 +152,22 @@ const handleSubmit = async () => {
       <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex items-center gap-3">
         <span class="text-2xl">📋</span>
         <p class="text-blue-800 font-medium">
-          {{ isReadOnly ? 'Cette demande a déjà été examinée.' : 'Cette demande vous est assignée pour examen.' }}
-          <span class="text-xs opacity-75 font-normal block">Statut actuel : {{ store.getStatusConfig(deposit.status).label }}</span>
+          {{
+            isReadOnly
+              ? 'Cette demande a déjà été examinée.'
+              : 'Cette demande vous est assignée pour examen.'
+          }}
+          <span class="text-xs opacity-75 font-normal block"
+            >Statut actuel : {{ store.getStatusConfig(deposit.status).label }}</span
+          >
         </p>
       </div>
 
       <!-- Admin Override Banner -->
-      <div v-if="deposit.adminOverride" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-center gap-3">
+      <div
+        v-if="deposit.adminOverride"
+        class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-center gap-3"
+      >
         <span class="text-2xl">⚠️</span>
         <p class="text-amber-800 font-medium">
           Cette demande a été approuvée par passage outre administratif.
@@ -153,7 +175,10 @@ const handleSubmit = async () => {
       </div>
 
       <!-- Warning Banner -->
-      <div v-if="store.getAgingDays(deposit.submittedAt) >= 3 && !isReadOnly" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center gap-3">
+      <div
+        v-if="store.getAgingDays(deposit.submittedAt) >= 3 && !isReadOnly"
+        class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center gap-3"
+      >
         <span class="text-2xl">⚠️</span>
         <p class="text-amber-800 font-medium">
           Cette demande est en attente depuis {{ store.getAgingDays(deposit.submittedAt) }} jours.
@@ -172,7 +197,12 @@ const handleSubmit = async () => {
           <div class="p-6 space-y-6">
             <!-- Cover or Placeholder -->
             <div v-if="deposit.cover_image" class="w-full flex justify-center mb-6">
-              <img :src="deposit.cover_image" alt="Couverture" @click="showZoomModal = true" class="cursor-zoom-in rounded-xl h-56 object-cover border border-gray-200 shadow-sm" />
+              <img
+                :src="deposit.cover_image"
+                alt="Couverture"
+                @click="showZoomModal = true"
+                class="cursor-zoom-in rounded-xl h-56 object-cover border border-gray-200 shadow-sm"
+              />
             </div>
             <div
               v-else
@@ -190,7 +220,9 @@ const handleSubmit = async () => {
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <span class="text-gray-500 block text-xs">Type</span>
-                  <span class="bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                  <span
+                    class="bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full text-xs font-medium"
+                  >
                     {{ store.getTypeLabel(deposit.type) }}
                   </span>
                 </div>
@@ -201,7 +233,9 @@ const handleSubmit = async () => {
               </div>
               <div>
                 <span class="text-gray-500 block text-xs">Auteurs</span>
-                <span class="text-navy-800 font-medium">{{ deposit.authors?.join(', ') || '—' }}</span>
+                <span class="text-navy-800 font-medium">{{
+                  deposit.authors?.join(', ') || '—'
+                }}</span>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
@@ -230,7 +264,11 @@ const handleSubmit = async () => {
               <div v-if="deposit.keywords?.length">
                 <span class="text-gray-500 block text-xs mb-1">Mots-clés</span>
                 <div class="flex flex-wrap gap-2">
-                  <span v-for="kw in deposit.keywords" :key="kw" class="bg-teal-100 text-teal-700 px-2 py-1 rounded-full text-xs">
+                  <span
+                    v-for="kw in deposit.keywords"
+                    :key="kw"
+                    class="bg-teal-100 text-teal-700 px-2 py-1 rounded-full text-xs"
+                  >
                     {{ kw }}
                   </span>
                 </div>
@@ -242,8 +280,13 @@ const handleSubmit = async () => {
                 </p>
               </div>
 
-              <div v-if="deposit.adminDecisionComment" class="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <h4 class="text-sm font-bold text-amber-800 uppercase tracking-wide mb-2 flex items-center gap-2">
+              <div
+                v-if="deposit.adminDecisionComment"
+                class="bg-amber-50 border border-amber-200 rounded-xl p-4"
+              >
+                <h4
+                  class="text-sm font-bold text-amber-800 uppercase tracking-wide mb-2 flex items-center gap-2"
+                >
                   💬 Justificatif de l'administrateur
                 </h4>
                 <p class="text-amber-700">{{ deposit.adminDecisionComment }}</p>
@@ -252,12 +295,18 @@ const handleSubmit = async () => {
                 <div>
                   <span class="text-gray-500 block text-xs">Déposant</span>
                   <span class="text-navy-800 font-medium">
-                    {{ deposit.submittedBy ? `${deposit.submittedBy.first_name} ${deposit.submittedBy.last_name}` : '—' }}
+                    {{
+                      deposit.submittedBy
+                        ? `${deposit.submittedBy.first_name} ${deposit.submittedBy.last_name}`
+                        : '—'
+                    }}
                   </span>
                 </div>
                 <div>
                   <span class="text-gray-500 block text-xs">Soumis le</span>
-                  <span class="text-gray-700 font-mono">{{ store.formatDate(deposit.submittedAt) }}</span>
+                  <span class="text-gray-700 font-mono">{{
+                    store.formatDate(deposit.submittedAt)
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -275,7 +324,11 @@ const handleSubmit = async () => {
           </div>
         </div>
 
-         <div v-if="showZoomModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 transition-opacity duration-300" @click="showZoomModal = false">
+        <div
+          v-if="showZoomModal"
+          class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 transition-opacity duration-300"
+          @click="showZoomModal = false"
+        >
           <div class="relative max-w-4xl max-h-[90vh]" @click.stop>
             <img
               :src="deposit.cover_image || deposit.cover_image_preview"
@@ -293,31 +346,46 @@ const handleSubmit = async () => {
         </div>
 
         <!-- Right Panel: PDF Preview -->
-        <div class="bg-white rounded-2xl overflow-hidden shadow-soft border border-gray-100 flex flex-col">
+        <div
+          class="bg-white rounded-2xl overflow-hidden shadow-soft border border-gray-100 flex flex-col"
+        >
           <div
             class="bg-navy-50 px-6 py-4 border-b border-navy-100 flex items-center justify-between"
           >
             <h3 class="text-navy-800 font-semibold flex items-center gap-2">
               <span class="text-xl">📖</span> Prévisualisation
             </h3>
-            <a v-if="fileUrl" :href="getViewerUrl(fileUrl)" target="_blank" class="text-xs text-teal-600 hover:underline">
+            <a
+              v-if="fileUrl"
+              :href="getViewerUrl(fileUrl)"
+              target="_blank"
+              class="text-xs text-teal-600 hover:underline"
+            >
               Ouvrir dans un nouvel onglet
             </a>
           </div>
           <div class="p-6 bg-gray-50 flex-1 min-h-112.5 flex items-center justify-center">
-            <iframe v-if="fileUrlInline && isPdf(deposit.file)" :src="fileUrlInline"
-              class="w-full h-full min-h-125 rounded-xl border border-gray-200" title="Aperçu PDF"></iframe>
+            <iframe
+              v-if="fileUrlInline && isPdf(deposit.file)"
+              :src="fileUrlInline"
+              class="w-full h-full min-h-125 rounded-xl border border-gray-200"
+              title="Aperçu PDF"
+            ></iframe>
             <div v-else class="text-center text-gray-500 p-8">
               <div class="text-6xl mb-3">📄</div>
               <p class="text-sm font-medium">Prévisualisation du document</p>
-              <p class="text-xs text-gray-400 mt-2">Le document n'est pas au format PDF ou aucun fichier n'a été joint.</p>
+              <p class="text-xs text-gray-400 mt-2">
+                Le document n'est pas au format PDF ou aucun fichier n'a été joint.
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Decision Section -->
-      <div class="bg-white rounded-2xl shadow-soft border border-gray-100 border-t-4 border-t-teal-600 p-8">
+      <div
+        class="bg-white rounded-2xl shadow-soft border border-gray-100 border-t-4 border-t-teal-600 p-8"
+      >
         <div class="mb-6">
           <h3 class="text-xl font-bold text-navy-800 font-serif mb-2">⚖️ Votre décision</h3>
           <p class="text-gray-600 text-sm">
@@ -328,27 +396,27 @@ const handleSubmit = async () => {
         <!-- Decision Buttons -->
         <div class="flex flex-col md:flex-row gap-4 mb-6">
           <button
-            @click="isReadOnly ? null : decision = 'approve'"
+            @click="isReadOnly ? null : (decision = 'approve')"
             :disabled="isReadOnly"
             class="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl font-semibold text-lg transition-colors border"
             :class="[
               decision === 'approve'
                 ? 'bg-green-600 text-white border-green-600 shadow-sm'
                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50',
-              isReadOnly ? 'opacity-80 cursor-not-allowed' : ''
+              isReadOnly ? 'opacity-80 cursor-not-allowed' : '',
             ]"
           >
             ✅ Valider cette demande
           </button>
           <button
-            @click="isReadOnly ? null : decision = 'reject'"
+            @click="isReadOnly ? null : (decision = 'reject')"
             :disabled="isReadOnly"
             class="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl font-semibold text-lg transition-colors border"
             :class="[
               decision === 'reject'
                 ? 'bg-red-600 text-white border-red-600 shadow-sm'
                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50',
-              isReadOnly ? 'opacity-80 cursor-not-allowed' : ''
+              isReadOnly ? 'opacity-80 cursor-not-allowed' : '',
             ]"
           >
             ❌ Refuser cette demande
@@ -371,7 +439,7 @@ const handleSubmit = async () => {
               :class="[
                 'w-full rounded-xl px-4 py-3 text-gray-800 focus:outline-none border-2',
                 justification.length < 50 && !isReadOnly ? 'border-red-300' : 'border-gray-200',
-                isReadOnly ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''
+                isReadOnly ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : '',
               ]"
               rows="6"
               placeholder="Expliquez les raisons du refus de cette demande..."
@@ -381,7 +449,10 @@ const handleSubmit = async () => {
                 {{ justification.length }} / minimum 50 caractères
               </span>
             </div>
-            <p v-if="justification.length < 50 && !isReadOnly" class="text-red-600 text-sm flex items-center gap-1">
+            <p
+              v-if="justification.length < 50 && !isReadOnly"
+              class="text-red-600 text-sm flex items-center gap-1"
+            >
               ⚠️ La justification doit contenir au moins 50 caractères
             </p>
           </div>
@@ -399,7 +470,10 @@ const handleSubmit = async () => {
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             "
           >
-            <span v-if="isSubmitting" class="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent border-white"></span>
+            <span
+              v-if="isSubmitting"
+              class="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent border-white"
+            ></span>
             <span>{{ isSubmitting ? 'Soumission...' : 'Soumettre ma décision' }}</span>
           </button>
         </div>

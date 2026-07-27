@@ -19,9 +19,18 @@ const showPublisherDropdown = ref(false)
 const isSubmitting = ref(false)
 
 const ISO_LANGUAGES = {
-  fr: 'Français', en: 'Anglais', es: 'Espagnol', de: 'Allemand',
-  it: 'Italien', pt: 'Portugais', nl: 'Néerlandais', ru: 'Russe',
-  zh: 'Chinois', ar: 'Arabe', ja: 'Japonais', ko: 'Coréen',
+  fr: 'Français',
+  en: 'Anglais',
+  es: 'Espagnol',
+  de: 'Allemand',
+  it: 'Italien',
+  pt: 'Portugais',
+  nl: 'Néerlandais',
+  ru: 'Russe',
+  zh: 'Chinois',
+  ar: 'Arabe',
+  ja: 'Japonais',
+  ko: 'Coréen',
 }
 
 const DOCUMENT_TYPES = [
@@ -61,9 +70,7 @@ const publisherDebounce = ref(null)
 const filteredPublishers = computed(() => {
   if (!publisherSearch.value) return publishers.value
   const q = publisherSearch.value.toLowerCase()
-  return publishers.value.filter(p =>
-    p.name?.toLowerCase().includes(q)
-  )
+  return publishers.value.filter((p) => p.name?.toLowerCase().includes(q))
 })
 
 onMounted(async () => {
@@ -199,7 +206,7 @@ async function handleSubmit() {
     return
   }
   if (form.value.isbn && isbnError.value) {
-    toast.error('Veuillez corriger l\'ISBN avant de soumettre.')
+    toast.error("Veuillez corriger l'ISBN avant de soumettre.")
     return
   }
   isSubmitting.value = true
@@ -207,19 +214,22 @@ async function handleSubmit() {
     const payload = new FormData()
     payload.append('title', form.value.title)
     if (form.value.author) payload.append('author', form.value.author)
-    if (form.value.publication_year) payload.append('publication_year', String(parseInt(form.value.publication_year)))
+    if (form.value.publication_year)
+      payload.append('publication_year', String(parseInt(form.value.publication_year)))
     if (form.value.category_id) payload.append('category_id', String(form.value.category_id))
     if (form.value.description) payload.append('description', form.value.description)
-    if (form.value.proposed_file instanceof File) payload.append('proposed_file', form.value.proposed_file)
+    if (form.value.proposed_file instanceof File)
+      payload.append('proposed_file', form.value.proposed_file)
     if (form.value.publisher) payload.append('publisher', form.value.publisher)
     if (form.value.isbn) payload.append('isbn', form.value.isbn)
     if (form.value.pages) payload.append('pages', String(parseInt(form.value.pages)))
     payload.append('language', form.value.language)
     if (form.value.type) payload.append('type', form.value.type)
     if (form.value.keywords.length) {
-      form.value.keywords.forEach(kw => payload.append('keywords[]', kw))
+      form.value.keywords.forEach((kw) => payload.append('keywords[]', kw))
     }
-    if (form.value.cover_image_preview) payload.append('cover_image', form.value.cover_image_preview)
+    if (form.value.cover_image_preview)
+      payload.append('cover_image', form.value.cover_image_preview)
     await depositStore.createDeposit(payload)
     router.push('/my-documents')
   } catch {
@@ -299,7 +309,7 @@ async function handleSubmit() {
                   v-model="publisherSearch"
                   @input="onPublisherInput"
                   @focus="showPublisherDropdown = true"
-                  @blur="setTimeout(() => showPublisherDropdown = false, 200)"
+                  @blur="setTimeout(() => (showPublisherDropdown = false), 200)"
                   class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-navy-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
                   placeholder="Recherchez un éditeur"
                 />
@@ -345,7 +355,9 @@ async function handleSubmit() {
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-navy-800 mb-2">Année de publication</label>
+              <label class="block text-sm font-medium text-navy-800 mb-2"
+                >Année de publication</label
+              >
               <input
                 type="number"
                 v-model="form.publication_year"
@@ -379,7 +391,11 @@ async function handleSubmit() {
                   <GripVertical class="w-3.5 h-3.5" />
                 </span>
                 <span>{{ kw }}</span>
-                <button type="button" @click="removeKeyword(index)" class="text-teal-500 hover:text-teal-700">
+                <button
+                  type="button"
+                  @click="removeKeyword(index)"
+                  class="text-teal-500 hover:text-teal-700"
+                >
                   <X class="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -406,7 +422,10 @@ async function handleSubmit() {
 
           <div>
             <label class="block text-sm font-medium text-navy-800 mb-2">Image de couverture</label>
-            <div v-if="!form.cover_image_preview" class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center bg-beige">
+            <div
+              v-if="!form.cover_image_preview"
+              class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center bg-beige"
+            >
               <UploadCloud class="w-10 h-10 mx-auto mb-2 text-gray-400" />
               <p class="text-gray-500 mb-2">Téléversez une image de couverture</p>
               <label for="cover" class="text-teal-600 font-medium cursor-pointer hover:underline">
@@ -448,7 +467,9 @@ async function handleSubmit() {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-navy-800 mb-2">Fichier du document (PDF, EPUB, DOCX)</label>
+            <label class="block text-sm font-medium text-navy-800 mb-2"
+              >Fichier du document (PDF, EPUB, DOCX)</label
+            >
             <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-beige">
               <UploadCloud class="w-12 h-12 mx-auto mb-3 text-gray-400" />
               <p class="text-gray-500 mb-2">Glissez-déposez votre fichier ici, ou</p>
@@ -462,7 +483,9 @@ async function handleSubmit() {
                 accept=".pdf,.epub,.docx"
                 class="hidden"
               />
-              <p v-if="form.proposed_file" class="text-teal-700 mt-2">✅ {{ form.proposed_file.name }}</p>
+              <p v-if="form.proposed_file" class="text-teal-700 mt-2">
+                ✅ {{ form.proposed_file.name }}
+              </p>
             </div>
           </div>
 

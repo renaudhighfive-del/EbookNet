@@ -83,8 +83,6 @@ onMounted(() => {
 })
 </script>
 
-
-
 <template>
   <RHLayout>
     <template #title>
@@ -268,11 +266,16 @@ onMounted(() => {
             :disabled="isActionLoading"
             class="bg-teal-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
           >
-            {{ isActionLoading ? 'Enregistrement en cours...' : isEdit ? 'Enregistrer les modifications' : 'Créer le compte' }}
+            {{
+              isActionLoading
+                ? 'Enregistrement en cours...'
+                : isEdit
+                  ? 'Enregistrer les modifications'
+                  : 'Créer le compte'
+            }}
           </button>
         </div>
       </form>
     </div>
   </RHLayout>
 </template>
-

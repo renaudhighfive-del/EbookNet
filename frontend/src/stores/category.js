@@ -161,7 +161,7 @@ export const useCategoryStore = defineStore('category', () => {
    * @param {Object} updatedCategory - Données mises à jour.
    */
   function _updateInList(id, updatedCategory) {
-    const index = categories.value.findIndex(c => c.id === id)
+    const index = categories.value.findIndex((c) => c.id === id)
     if (index !== -1) {
       const existing = categories.value[index]
       categories.value.splice(index, 1, { ...existing, ...updatedCategory })
@@ -173,11 +173,11 @@ export const useCategoryStore = defineStore('category', () => {
    * @param {number|string} id - Identifiant à retirer.
    */
   function _removeFromList(id) {
-    categories.value = categories.value.filter(c => c.id !== id)
+    categories.value = categories.value.filter((c) => c.id !== id)
   }
 
   // Catégories filtrées dont le statut est 'active'
-  const activeCategories = computed(() => categories.value.filter(c => c.status === 'active'))
+  const activeCategories = computed(() => categories.value.filter((c) => c.status === 'active'))
 
   return {
     categories,

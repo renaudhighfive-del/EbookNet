@@ -5,10 +5,12 @@ import axios from 'axios'
 import { authService } from '@/services/api/auth.service'
 
 // Origine pour le cookie CSRF Sanctum (déduite de VITE_API_URL si VITE_SANCTUM_URL no...
-const SANCTUM_ORIGIN = import.meta.env.VITE_SANCTUM_URL ?? (() => {
-  const u = new URL(import.meta.env.VITE_API_URL)
-  return u.origin
-})()
+const SANCTUM_ORIGIN =
+  import.meta.env.VITE_SANCTUM_URL ??
+  (() => {
+    const u = new URL(import.meta.env.VITE_API_URL)
+    return u.origin
+  })()
 
 export const useAuthStore = defineStore('auth', () => {
   // Utilisateur connecté (null si non authentifié)

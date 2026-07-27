@@ -71,7 +71,7 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     error.value = null
     try {
       const result = await adminPlanningService.updateAvailabilityRule(id, data)
-      const index = rules.value.findIndex(r => r.id === id)
+      const index = rules.value.findIndex((r) => r.id === id)
       if (index !== -1) {
         rules.value[index] = result.rule
       }
@@ -94,7 +94,7 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     error.value = null
     try {
       const result = await adminPlanningService.deleteAvailabilityRule(id)
-      rules.value = rules.value.filter(r => r.id !== id)
+      rules.value = rules.value.filter((r) => r.id !== id)
       return result
     } catch (err) {
       error.value = err.response?.data?.message || 'Erreur suppression règle'
@@ -176,10 +176,10 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
     try {
       const result = await adminPlanningService.createManualAppointment(data)
       // Ajouter le rendez-vous aux listes locales
-      if (!appointments.value.find(a => a.id === result.appointment.id)) {
+      if (!appointments.value.find((a) => a.id === result.appointment.id)) {
         appointments.value.unshift(result.appointment)
       }
-      if (!calendarAppointments.value.find(a => a.id === result.appointment.id)) {
+      if (!calendarAppointments.value.find((a) => a.id === result.appointment.id)) {
         calendarAppointments.value.push(result.appointment)
       }
       return result
@@ -198,7 +198,7 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
    * @returns {Array} Liste mise à jour.
    */
   function _syncAppointmentInList(list, appointment) {
-    const index = list.findIndex(a => a.id === appointment.id)
+    const index = list.findIndex((a) => a.id === appointment.id)
     if (index !== -1) {
       list[index] = appointment
     }
@@ -212,7 +212,7 @@ export const useAdminPlanningStore = defineStore('adminPlanning', () => {
    * @returns {Array} Nouvelle liste filtrée.
    */
   function _removeAppointmentFromList(list, id) {
-    return list.filter(a => a.id !== id)
+    return list.filter((a) => a.id !== id)
   }
 
   /**

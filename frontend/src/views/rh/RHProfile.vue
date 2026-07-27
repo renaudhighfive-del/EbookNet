@@ -2,7 +2,10 @@
   <RHLayout>
     <template #title>Mon profil</template>
 
-    <div v-if="isLoading" class="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400">
+    <div
+      v-if="isLoading"
+      class="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400"
+    >
       Chargement...
     </div>
 
@@ -24,7 +27,9 @@
             <span class="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full"
               >Responsable RH</span
             >
-            <span v-if="authStore.user?.status" class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full"
+            <span
+              v-if="authStore.user?.status"
+              class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full"
               >Actif</span
             >
           </div>
@@ -99,7 +104,10 @@
               :disabled="profileLoading"
               class="inline-flex items-center gap-2 bg-[#0D9488] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#0a7a6f] transition-colors disabled:opacity-50"
             >
-              <span v-if="profileLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <span
+                v-if="profileLoading"
+                class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+              ></span>
               <Save v-else class="w-4 h-4" />
               {{ profileLoading ? 'Enregistrement...' : 'Enregistrer' }}
             </button>
@@ -185,7 +193,10 @@
               :disabled="pwdLoading || (pwdForm.confirm && pwdForm.new !== pwdForm.confirm)"
               class="inline-flex items-center gap-2 bg-[#1B2A4A] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#162040] transition-colors disabled:opacity-50"
             >
-              <span v-if="pwdLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <span
+                v-if="pwdLoading"
+                class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+              ></span>
               <KeyRound v-else class="w-4 h-4" />
               {{ pwdLoading ? 'Mise à jour...' : 'Mettre à jour' }}
             </button>

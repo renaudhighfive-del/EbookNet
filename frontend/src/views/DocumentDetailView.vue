@@ -31,8 +31,15 @@ const coverColors = [
 
 // Langue affichée
 const LANGUAGE_LABELS = {
-  fr: 'Français', en: 'Anglais', es: 'Espagnol', de: 'Allemand',
-  it: 'Italien', pt: 'Portugais', ar: 'Arabe', zh: 'Chinois', autre: 'Autre',
+  fr: 'Français',
+  en: 'Anglais',
+  es: 'Espagnol',
+  de: 'Allemand',
+  it: 'Italien',
+  pt: 'Portugais',
+  ar: 'Arabe',
+  zh: 'Chinois',
+  autre: 'Autre',
 }
 
 /**
@@ -84,7 +91,9 @@ onMounted(async () => {
 <template>
   <PublicLayout>
     <div v-if="isLoading" class="flex justify-center py-32">
-      <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
+      <div
+        class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"
+      ></div>
     </div>
 
     <div v-else-if="hasError" class="flex flex-col items-center justify-center py-32 text-gray-400">
@@ -135,7 +144,6 @@ onMounted(async () => {
           <!-- Colonne gauche : couverture + stats -->
           <aside class="w-full lg:w-80 shrink-0">
             <div class="sticky top-24">
-
               <!-- Couverture : image réelle si disponible, placeholder sinon -->
               <div
                 class="rounded-xl shadow-lg overflow-hidden mb-4 aspect-[3/4] relative group"
@@ -160,7 +168,9 @@ onMounted(async () => {
                   v-if="coverImageUrl"
                   class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center"
                 >
-                  <ZoomIn class="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                  <ZoomIn
+                    class="w-10 h-10 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg"
+                  />
                 </div>
               </div>
 
@@ -190,7 +200,9 @@ onMounted(async () => {
                 </div>
                 <div class="flex items-center gap-2">
                   <Download class="w-5 h-5" />
-                  <span>{{ (doc.download_count ?? 0).toLocaleString('fr-FR') }} téléchargements</span>
+                  <span
+                    >{{ (doc.download_count ?? 0).toLocaleString('fr-FR') }} téléchargements</span
+                  >
                 </div>
               </div>
             </div>
@@ -209,7 +221,7 @@ onMounted(async () => {
             <!-- Auteurs -->
             <div v-if="doc.authors?.length" class="flex items-center gap-3 mb-6">
               <span class="text-[#1A1A2E]">
-                {{ doc.authors.map(a => `${a.first_name} ${a.last_name}`).join(', ') }}
+                {{ doc.authors.map((a) => `${a.first_name} ${a.last_name}`).join(', ') }}
               </span>
             </div>
 
@@ -229,7 +241,9 @@ onMounted(async () => {
               </div>
               <div v-if="doc.language" class="flex items-center gap-2">
                 <span class="text-[#6B7280]">Langue :</span>
-                <span class="text-[#1A1A2E]">{{ LANGUAGE_LABELS[doc.language] ?? doc.language }}</span>
+                <span class="text-[#1A1A2E]">{{
+                  LANGUAGE_LABELS[doc.language] ?? doc.language
+                }}</span>
               </div>
               <div v-if="doc.document_type" class="flex items-center gap-2">
                 <span class="text-[#6B7280]">Type :</span>

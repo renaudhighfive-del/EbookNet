@@ -77,7 +77,10 @@ onMounted(loadCategories)
     <div class="flex-1 flex flex-col">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <!-- Page Title -->
-        <h1 class="text-3xl font-bold text-[#1B2A4A] mb-8 text-center" style="font-family: 'Playfair Display', serif">
+        <h1
+          class="text-3xl font-bold text-[#1B2A4A] mb-8 text-center"
+          style="font-family: 'Playfair Display', serif"
+        >
           Recherche documentaire
         </h1>
 
@@ -96,7 +99,10 @@ onMounted(loadCategories)
             :disabled="isLoading"
             class="bg-[#0D9488] text-white px-6 py-2.5 rounded-xl font-medium hover:bg-[#0F766E] transition-colors disabled:opacity-50"
           >
-            <span v-if="isLoading" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span
+              v-if="isLoading"
+              class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+            ></span>
             <span v-else>Rechercher</span>
           </button>
         </div>
@@ -106,14 +112,22 @@ onMounted(loadCategories)
           <button
             @click="showAdvanced = false"
             class="px-4 py-2 rounded-full text-sm font-medium transition-all"
-            :class="!showAdvanced ? 'bg-[#1B2A4A] text-white' : 'bg-transparent text-[#6B7280] hover:text-[#1B2A4A]'"
+            :class="
+              !showAdvanced
+                ? 'bg-[#1B2A4A] text-white'
+                : 'bg-transparent text-[#6B7280] hover:text-[#1B2A4A]'
+            "
           >
             Recherche simple
           </button>
           <button
             @click="showAdvanced = true"
             class="px-4 py-2 rounded-full text-sm font-medium transition-all"
-            :class="showAdvanced ? 'bg-[#1B2A4A] text-white' : 'bg-transparent text-[#6B7280] hover:text-[#1B2A4A]'"
+            :class="
+              showAdvanced
+                ? 'bg-[#1B2A4A] text-white'
+                : 'bg-transparent text-[#6B7280] hover:text-[#1B2A4A]'
+            "
           >
             Recherche avancée
           </button>
@@ -127,7 +141,18 @@ onMounted(loadCategories)
           <div class="mb-6">
             <h4 class="text-sm font-medium text-[#1A1A2E] mb-3">Rechercher dans</h4>
             <div class="flex flex-wrap gap-3">
-              <label v-for="f in [{ key: 'title', label: 'Titre' }, { key: 'abstract', label: 'Résumé' }, { key: 'authors', label: 'Auteurs' }, { key: 'keywords', label: 'Mots-clés' }, { key: 'isbn', label: 'ISBN' }, { key: 'subtitle', label: 'Sous-titre' }]" :key="f.key" class="flex items-center gap-2 cursor-pointer">
+              <label
+                v-for="f in [
+                  { key: 'title', label: 'Titre' },
+                  { key: 'abstract', label: 'Résumé' },
+                  { key: 'authors', label: 'Auteurs' },
+                  { key: 'keywords', label: 'Mots-clés' },
+                  { key: 'isbn', label: 'ISBN' },
+                  { key: 'subtitle', label: 'Sous-titre' },
+                ]"
+                :key="f.key"
+                class="flex items-center gap-2 cursor-pointer"
+              >
                 <input
                   type="checkbox"
                   :checked="fields.includes(f.key)"
@@ -143,14 +168,22 @@ onMounted(loadCategories)
           <div class="grid sm:grid-cols-3 gap-4 mb-6">
             <div>
               <h4 class="text-sm font-medium text-[#1A1A2E] mb-2">Catégorie</h4>
-              <select v-model="categoryId" class="w-full bg-[#F8F7F4] border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#0D9488]">
+              <select
+                v-model="categoryId"
+                class="w-full bg-[#F8F7F4] border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#0D9488]"
+              >
                 <option value="">Toutes les catégories</option>
-                <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                  {{ cat.name }}
+                </option>
               </select>
             </div>
             <div>
               <h4 class="text-sm font-medium text-[#1A1A2E] mb-2">Type de document</h4>
-              <select v-model="documentType" class="w-full bg-[#F8F7F4] border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#0D9488]">
+              <select
+                v-model="documentType"
+                class="w-full bg-[#F8F7F4] border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#0D9488]"
+              >
                 <option value="">Tous les types</option>
                 <option value="livre">Livre</option>
                 <option value="memoire">Mémoire</option>
@@ -164,7 +197,10 @@ onMounted(loadCategories)
             </div>
             <div>
               <h4 class="text-sm font-medium text-[#1A1A2E] mb-2">Langue</h4>
-              <select v-model="language" class="w-full bg-[#F8F7F4] border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#0D9488]">
+              <select
+                v-model="language"
+                class="w-full bg-[#F8F7F4] border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#0D9488]"
+              >
                 <option value="">Toutes les langues</option>
                 <option value="fr">Français</option>
                 <option value="en">Anglais</option>
@@ -177,11 +213,21 @@ onMounted(loadCategories)
           <div class="grid sm:grid-cols-4 gap-4 mb-6">
             <div>
               <h4 class="text-sm font-medium text-[#1A1A2E] mb-2">Année de</h4>
-              <input v-model="yearFrom" type="number" placeholder="1950" class="w-full bg-[#F8F7F4] border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#0D9488]" />
+              <input
+                v-model="yearFrom"
+                type="number"
+                placeholder="1950"
+                class="w-full bg-[#F8F7F4] border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#0D9488]"
+              />
             </div>
             <div>
               <h4 class="text-sm font-medium text-[#1A1A2E] mb-2">à</h4>
-              <input v-model="yearTo" type="number" placeholder="2024" class="w-full bg-[#F8F7F4] border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#0D9488]" />
+              <input
+                v-model="yearTo"
+                type="number"
+                placeholder="2024"
+                class="w-full bg-[#F8F7F4] border border-[#E5E7EB] rounded-lg px-3 py-2 text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#0D9488]"
+              />
             </div>
           </div>
 
@@ -191,7 +237,10 @@ onMounted(loadCategories)
             :disabled="isLoading"
             class="w-full bg-[#0D9488] text-white py-3 rounded-xl font-medium hover:bg-[#0F766E] transition-colors disabled:opacity-50"
           >
-            <span v-if="isLoading" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+            <span
+              v-if="isLoading"
+              class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
+            ></span>
             Lancer la recherche
           </button>
         </div>
@@ -205,16 +254,21 @@ onMounted(loadCategories)
           <template v-else>
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-xl font-semibold text-[#1B2A4A]">
-                {{ pagination.total }} résultat{{ pagination.total > 1 ? 's' : '' }}{{ searchQuery ? ` pour "${searchQuery}"` : '' }}
+                {{ pagination.total }} résultat{{ pagination.total > 1 ? 's' : ''
+                }}{{ searchQuery ? ` pour "${searchQuery}"` : '' }}
               </h2>
             </div>
 
             <!-- Results List -->
             <div v-if="searchResults.length" class="space-y-4">
               <template v-for="doc in searchResults" :key="doc.id">
-                <div class="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex gap-4">
+                <div
+                  class="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex gap-4"
+                >
                   <!-- Cover Thumb -->
-                  <div class="w-20 h-28 bg-gradient-to-br from-[#1B2A4A] to-[#2D4A7A] rounded-lg flex-shrink-0 flex items-center justify-center">
+                  <div
+                    class="w-20 h-28 bg-gradient-to-br from-[#1B2A4A] to-[#2D4A7A] rounded-lg flex-shrink-0 flex items-center justify-center"
+                  >
                     <BookOpen class="w-8 h-8 text-white/30" />
                   </div>
                   <!-- Content -->
@@ -225,7 +279,11 @@ onMounted(loadCategories)
                     >
                       {{ doc.title }}
                     </router-link>
-                    <p class="text-[#6B7280] text-sm mb-2">{{ doc.authors?.map(a => `${a.first_name} ${a.last_name}`).join(', ') ?? '' }}</p>
+                    <p class="text-[#6B7280] text-sm mb-2">
+                      {{
+                        doc.authors?.map((a) => `${a.first_name} ${a.last_name}`).join(', ') ?? ''
+                      }}
+                    </p>
                     <div class="flex flex-wrap items-center gap-2 mb-2">
                       <span class="bg-[#0D9488]/10 text-[#0D9488] px-2 py-0.5 rounded-full text-xs">
                         {{ doc.category?.name ?? '' }}
@@ -233,7 +291,9 @@ onMounted(loadCategories)
                       <span class="bg-[#F1F0EC] text-[#6B7280] px-2 py-0.5 rounded-full text-xs">
                         {{ doc.document_type ?? '' }}
                       </span>
-                      <span class="text-[#6B7280] text-xs font-mono">{{ doc.publication_year }}</span>
+                      <span class="text-[#6B7280] text-xs font-mono">{{
+                        doc.publication_year
+                      }}</span>
                     </div>
                     <p class="text-[#1A1A2E] text-sm line-clamp-2">{{ doc.abstract }}</p>
                   </div>
@@ -248,7 +308,10 @@ onMounted(loadCategories)
             </div>
 
             <!-- Pagination -->
-            <div v-if="pagination.last_page > 1" class="flex items-center justify-center gap-2 mt-10">
+            <div
+              v-if="pagination.last_page > 1"
+              class="flex items-center justify-center gap-2 mt-10"
+            >
               <button
                 :disabled="currentPage <= 1"
                 class="p-2 rounded-lg hover:bg-[#F1F0EC] text-[#6B7280] disabled:opacity-30"
@@ -259,7 +322,11 @@ onMounted(loadCategories)
               <button
                 v-for="p in pagination.last_page"
                 :key="p"
-                :class="p === currentPage ? 'px-4 py-2 rounded-lg bg-[#0D9488] text-white font-medium' : 'px-4 py-2 rounded-lg hover:bg-[#F1F0EC] text-[#6B7280]'"
+                :class="
+                  p === currentPage
+                    ? 'px-4 py-2 rounded-lg bg-[#0D9488] text-white font-medium'
+                    : 'px-4 py-2 rounded-lg hover:bg-[#F1F0EC] text-[#6B7280]'
+                "
                 @click="performSearch(p)"
               >
                 {{ p }}

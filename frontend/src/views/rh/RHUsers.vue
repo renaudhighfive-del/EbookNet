@@ -131,28 +131,28 @@ const visiblePages = computed(() => {
   const c = userStore.pagination.current_page,
     l = userStore.pagination.last_page
   const pages = []
-  
+
   // Toujours afficher la première page
   if (c > 3) pages.push(1)
-  
+
   // Ellipsis après la première page si nécessaire
   if (c > 4) pages.push('...')
-  
+
   // Pages autour de la page courante
   for (let i = Math.max(2, c - 1); i <= Math.min(l - 1, c + 1); i++) pages.push(i)
-  
+
   // Ellipsis avant la dernière page si nécessaire
   if (c < l - 3) pages.push('...')
-  
+
   // Toujours afficher la dernière page
   if (l > 1 && c < l - 1) pages.push(l)
-  
+
   // Si peu de pages, afficher toutes
   if (l <= 7) {
     pages.length = 0
     for (let i = 1; i <= l; i++) pages.push(i)
   }
-  
+
   return pages
 })
 
@@ -235,7 +235,6 @@ const showToast = (message, type = 'success') => {
 
 onMounted(() => fetchUsers())
 </script>
-
 
 <template>
   <RHLayout>
@@ -329,7 +328,10 @@ onMounted(() => fetchUsers())
     </div>
 
     <!-- Table -->
-    <div v-else-if="userStore.users && userStore.users.length > 0" class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+    <div
+      v-else-if="userStore.users && userStore.users.length > 0"
+      class="bg-white rounded-2xl border border-gray-100 overflow-hidden"
+    >
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="bg-[#F8F7F4] border-b border-gray-100">
@@ -367,7 +369,11 @@ onMounted(() => fetchUsers())
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="user in userStore.users || []" :key="user.id" class="hover:bg-[#F8F7F4] transition-colors">
+            <tr
+              v-for="user in userStore.users || []"
+              :key="user.id"
+              class="hover:bg-[#F8F7F4] transition-colors"
+            >
               <!-- Utilisateur -->
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
@@ -385,7 +391,8 @@ onMounted(() => fetchUsers())
                       <span
                         v-if="isCurrentUser(user.id)"
                         class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#EEF1F7] text-[#1B2A4A] uppercase tracking-wide shrink-0"
-                      >vous</span>
+                        >vous</span
+                      >
                     </div>
                     <p class="text-xs text-gray-400 font-mono truncate">{{ user.email }}</p>
                   </div>
@@ -440,7 +447,10 @@ onMounted(() => fetchUsers())
 
                   <!-- Approuver inscription inactive (admin uniquement) -->
                   <button
-                    v-if="user.status === 'inactive' && ['admin','responsable_rh'].includes(authStore.userRole)"
+                    v-if="
+                      user.status === 'inactive' &&
+                      ['admin', 'responsable_rh'].includes(authStore.userRole)
+                    "
                     @click="confirmAction({ type: 'approve', user })"
                     :disabled="userStore.isActionLoading"
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -491,7 +501,7 @@ onMounted(() => fetchUsers())
                       'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
                       user.status === 'archived'
                         ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-gray-400 hover:bg-red-50 hover:text-red-600'
+                        : 'text-gray-400 hover:bg-red-50 hover:text-red-600',
                     ]"
                     title="Archiver le compte"
                   >
@@ -506,17 +516,17 @@ onMounted(() => fetchUsers())
     </div>
 
     <!-- Empty -->
-    <div
-      v-else
-      class="bg-white rounded-2xl border border-gray-100 py-16 text-center"
-    >
+    <div v-else class="bg-white rounded-2xl border border-gray-100 py-16 text-center">
       <Users class="w-10 h-10 text-gray-300 mx-auto mb-3" />
       <p class="font-medium text-[#1B2A4A]">Aucun utilisateur trouvé</p>
       <p class="text-sm text-gray-400 mt-1">Modifiez vos filtres ou créez un nouveau compte.</p>
     </div>
 
     <!-- Pagination -->
-    <div v-if="userStore.pagination.last_page && userStore.pagination.last_page >= 1" class="flex items-center justify-between mt-5">
+    <div
+      v-if="userStore.pagination.last_page && userStore.pagination.last_page >= 1"
+      class="flex items-center justify-between mt-5"
+    >
       <div class="flex items-center gap-2">
         <span class="text-sm text-gray-500">Afficher</span>
         <select
@@ -541,11 +551,13 @@ onMounted(() => fetchUsers())
           :key="page"
           @click="typeof page === 'number' ? fetchUsers(page) : null"
           class="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
-          :class="page === userStore.pagination.current_page
-            ? 'bg-[#0D9488] text-white border-[#0D9488]'
-            : typeof page === 'number'
-              ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
-              : 'border-transparent text-gray-400 cursor-default'"
+          :class="
+            page === userStore.pagination.current_page
+              ? 'bg-[#0D9488] text-white border-[#0D9488]'
+              : typeof page === 'number'
+                ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+                : 'border-transparent text-gray-400 cursor-default'
+          "
           :disabled="typeof page !== 'number'"
         >
           {{ page }}
@@ -597,10 +609,14 @@ onMounted(() => fetchUsers())
         v-if="userModal.visible"
         class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       >
-        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div
+          class="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        >
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold text-[#1B2A4A]">
-              {{ userModal.isEdit ? 'Modifier le compte utilisateur' : 'Nouveau compte utilisateur' }}
+              {{
+                userModal.isEdit ? 'Modifier le compte utilisateur' : 'Nouveau compte utilisateur'
+              }}
             </h3>
             <button
               @click="closeUserModal"
@@ -658,7 +674,9 @@ onMounted(() => fetchUsers())
 
             <!-- Téléphone -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone (optionnel)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Téléphone (optionnel)</label
+              >
               <input
                 v-model="userModal.form.phone"
                 type="tel"
@@ -736,7 +754,15 @@ onMounted(() => fetchUsers())
                 :disabled="userStore.isActionLoading"
                 class="px-4 py-2 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] disabled:opacity-50"
               >
-                {{ userStore.isActionLoading ? (userModal.isEdit ? 'Modification...' : 'Création...') : (userModal.isEdit ? 'Enregistrer' : 'Créer le compte') }}
+                {{
+                  userStore.isActionLoading
+                    ? userModal.isEdit
+                      ? 'Modification...'
+                      : 'Création...'
+                    : userModal.isEdit
+                      ? 'Enregistrer'
+                      : 'Créer le compte'
+                }}
               </button>
             </div>
           </form>
@@ -745,4 +771,3 @@ onMounted(() => fetchUsers())
     </Teleport>
   </RHLayout>
 </template>
-

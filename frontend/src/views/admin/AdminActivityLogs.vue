@@ -23,28 +23,30 @@ const visiblePages = computed(() => {
 
 const filteredLogs = computed(() => {
   let result = logs.value
-  
+
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    result = result.filter(log => 
-      log.action.toLowerCase().includes(query) ||
-      (log.user && `${log.user.first_name} ${log.user.last_name}`.toLowerCase().includes(query))
+    result = result.filter(
+      (log) =>
+        log.action.toLowerCase().includes(query) ||
+        (log.user && `${log.user.first_name} ${log.user.last_name}`.toLowerCase().includes(query)),
     )
   }
-  
+
   if (filterTable.value) {
-    result = result.filter(log => log.target_table === filterTable.value)
+    result = result.filter((log) => log.target_table === filterTable.value)
   }
-  
+
   return result
 })
 
 const fetchLogs = (page = 1) => {
   isLoading.value = true
   const params = { page }
-  
-  api.get('/admin/activity-logs', { params })
-    .then(response => {
+
+  api
+    .get('/admin/activity-logs', { params })
+    .then((response) => {
       logs.value = response.data.data
       pagination.value = {
         current_page: response.data.current_page,
@@ -53,7 +55,7 @@ const fetchLogs = (page = 1) => {
         per_page: response.data.per_page,
       }
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('Erreur lors du chargement des logs:', error)
     })
     .finally(() => {
@@ -79,9 +81,11 @@ const formatDate = (dateString) => {
 const getActionClass = (action) => {
   if (action.includes('Création')) return 'bg-green-50 text-green-700 border-green-200'
   if (action.includes('Modification')) return 'bg-blue-50 text-blue-700 border-blue-200'
-  if (action.includes('Suppression') || action.includes('Archivage')) return 'bg-red-50 text-red-700 border-red-200'
+  if (action.includes('Suppression') || action.includes('Archivage'))
+    return 'bg-red-50 text-red-700 border-red-200'
   if (action.includes('Suspension')) return 'bg-orange-50 text-orange-700 border-orange-200'
-  if (action.includes('Approbation') || action.includes('Restauration')) return 'bg-teal-50 text-teal-700 border-teal-200'
+  if (action.includes('Approbation') || action.includes('Restauration'))
+    return 'bg-teal-50 text-teal-700 border-teal-200'
   if (action.includes('login')) return 'bg-purple-50 text-purple-700 border-purple-200'
   if (action.includes('logout')) return 'bg-gray-50 text-gray-700 border-gray-200'
   return 'bg-gray-50 text-gray-700 border-gray-200'
@@ -89,20 +93,20 @@ const getActionClass = (action) => {
 
 const getTableClass = (table) => {
   const classes = {
-    'users': 'bg-blue-50 text-blue-700 border-blue-200',
-    'references': 'bg-green-50 text-green-700 border-green-200',
-    'deposit_requests': 'bg-orange-50 text-orange-700 border-orange-200',
-    'categories': 'bg-purple-50 text-purple-700 border-purple-200',
+    users: 'bg-blue-50 text-blue-700 border-blue-200',
+    references: 'bg-green-50 text-green-700 border-green-200',
+    deposit_requests: 'bg-orange-50 text-orange-700 border-orange-200',
+    categories: 'bg-purple-50 text-purple-700 border-purple-200',
   }
   return classes[table] || 'bg-gray-50 text-gray-700 border-gray-200'
 }
 
 const getTableLabel = (table) => {
   const labels = {
-    'users': 'Utilisateurs',
-    'references': 'Références',
-    'deposit_requests': 'Demandes de dépôt',
-    'categories': 'Catégories',
+    users: 'Utilisateurs',
+    references: 'Références',
+    deposit_requests: 'Demandes de dépôt',
+    categories: 'Catégories',
   }
   return labels[table] || table
 }
@@ -174,7 +178,9 @@ onMounted(() => fetchLogs())
     >
       <Clock class="w-10 h-10 text-gray-300 mx-auto mb-3" />
       <p class="font-medium text-[#1B2A4A]">Aucune activité trouvée</p>
-      <p class="text-sm text-gray-400 mt-1">Aucune activité n'a été enregistrée sur la plateforme.</p>
+      <p class="text-sm text-gray-400 mt-1">
+        Aucune activité n'a été enregistrée sur la plateforme.
+      </p>
     </div>
 
     <!-- Logs List -->
@@ -237,10 +243,7 @@ onMounted(() => fetchLogs())
     </div>
 
     <!-- Pagination -->
-    <div
-      v-if="pagination.last_page > 1"
-      class="flex items-center justify-center gap-2 mt-6"
-    >
+    <div v-if="pagination.last_page > 1" class="flex items-center justify-center gap-2 mt-6">
       <button
         @click="fetchLogs(pagination.current_page - 1)"
         :disabled="pagination.current_page === 1"
@@ -271,4 +274,3 @@ onMounted(() => fetchLogs())
     </div>
   </AdminLayout>
 </template>
-

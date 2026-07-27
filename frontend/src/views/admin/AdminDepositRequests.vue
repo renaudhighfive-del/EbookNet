@@ -1,7 +1,9 @@
 <template>
   <AdminLayout>
     <div v-if="isLoading" class="flex justify-center py-20">
-      <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
+      <div
+        class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"
+      ></div>
     </div>
 
     <template v-else-if="hasError">
@@ -46,12 +48,36 @@
           <table class="w-full">
             <thead>
               <tr class="border-b border-gray-200">
-                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Référence</th>
-                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Auteur</th>
-                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Responsable</th>
-                <th class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
-                <th class="text-right p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                <th
+                  class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                >
+                  Référence
+                </th>
+                <th
+                  class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                >
+                  Auteur
+                </th>
+                <th
+                  class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                >
+                  Date
+                </th>
+                <th
+                  class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                >
+                  Responsable
+                </th>
+                <th
+                  class="text-left p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                >
+                  Statut
+                </th>
+                <th
+                  class="text-right p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                >
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -62,7 +88,11 @@
               >
                 <td class="p-4">
                   <div class="flex items-center gap-3">
-                    <div class="w-11 h-11 bg-navy-50 rounded-xl flex items-center justify-center text-navy-800 text-lg">📖</div>
+                    <div
+                      class="w-11 h-11 bg-navy-50 rounded-xl flex items-center justify-center text-navy-800 text-lg"
+                    >
+                      📖
+                    </div>
                     <div>
                       <p class="font-medium text-[#1B2A4A]">{{ deposit.title }}</p>
                       <p class="text-xs text-slate-500">{{ deposit.category?.name ?? '' }}</p>
@@ -71,19 +101,30 @@
                 </td>
                 <td class="p-4">
                   <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 text-xs font-bold">
+                    <div
+                      class="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 text-xs font-bold"
+                    >
                       {{ getUserInitials(deposit.applicant) }}
                     </div>
-                    <span class="text-sm text-[#1B2A4A]">{{ deposit.applicant ? `${deposit.applicant.first_name} ${deposit.applicant.last_name}` : '—' }}</span>
+                    <span class="text-sm text-[#1B2A4A]">{{
+                      deposit.applicant
+                        ? `${deposit.applicant.first_name} ${deposit.applicant.last_name}`
+                        : '—'
+                    }}</span>
                   </div>
                 </td>
                 <td class="p-4 text-sm text-slate-600">{{ formatDate(deposit.created_at) }}</td>
                 <td class="p-4">
                   <div v-if="deposit.assigned_manager" class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 text-xs font-bold">
+                    <div
+                      class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 text-xs font-bold"
+                    >
                       {{ getUserInitials(deposit.assigned_manager) }}
                     </div>
-                    <span class="text-sm text-[#1B2A4A]">{{ deposit.assigned_manager.first_name }} {{ deposit.assigned_manager.last_name }}</span>
+                    <span class="text-sm text-[#1B2A4A]"
+                      >{{ deposit.assigned_manager.first_name }}
+                      {{ deposit.assigned_manager.last_name }}</span
+                    >
                   </div>
                   <span v-else class="text-sm text-slate-500 italic">Non assigné</span>
                 </td>
@@ -111,7 +152,10 @@
         </div>
 
         <!-- Pagination -->
-        <div v-if="pagination.last_page > 1" class="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+        <div
+          v-if="pagination.last_page > 1"
+          class="flex items-center justify-between px-6 py-4 border-t border-gray-100"
+        >
           <span class="text-sm text-slate-500">
             Page {{ pagination.current_page }} sur {{ pagination.last_page }}
           </span>
@@ -161,18 +205,46 @@ const statusConfig = {
 
 const tabs = computed(() => [
   { id: 'all', label: 'Toutes', count: deposits.value.length },
-  { id: 'pending', label: 'En attente', count: deposits.value.filter(d => d.status === 'pending').length },
-  { id: 'assigned', label: 'Assignées', count: deposits.value.filter(d => d.status === 'assigned').length },
-  { id: 'approved_by_manager', label: 'Validées', count: deposits.value.filter(d => d.status === 'approved_by_manager').length },
-  { id: 'rejected_by_manager', label: 'Refusées', count: deposits.value.filter(d => d.status === 'rejected_by_manager').length },
-  { id: 'second_review', label: 'Second avis', count: deposits.value.filter(d => d.status === 'second_review').length },
-  { id: 'published', label: 'Publiées', count: deposits.value.filter(d => d.status === 'published').length },
-  { id: 'rejected', label: 'Rejetées', count: deposits.value.filter(d => d.status === 'rejected').length },
+  {
+    id: 'pending',
+    label: 'En attente',
+    count: deposits.value.filter((d) => d.status === 'pending').length,
+  },
+  {
+    id: 'assigned',
+    label: 'Assignées',
+    count: deposits.value.filter((d) => d.status === 'assigned').length,
+  },
+  {
+    id: 'approved_by_manager',
+    label: 'Validées',
+    count: deposits.value.filter((d) => d.status === 'approved_by_manager').length,
+  },
+  {
+    id: 'rejected_by_manager',
+    label: 'Refusées',
+    count: deposits.value.filter((d) => d.status === 'rejected_by_manager').length,
+  },
+  {
+    id: 'second_review',
+    label: 'Second avis',
+    count: deposits.value.filter((d) => d.status === 'second_review').length,
+  },
+  {
+    id: 'published',
+    label: 'Publiées',
+    count: deposits.value.filter((d) => d.status === 'published').length,
+  },
+  {
+    id: 'rejected',
+    label: 'Rejetées',
+    count: deposits.value.filter((d) => d.status === 'rejected').length,
+  },
 ])
 
 const filteredDeposits = computed(() => {
   if (activeTab.value === 'all') return deposits.value
-  return deposits.value.filter(d => d.status === activeTab.value)
+  return deposits.value.filter((d) => d.status === activeTab.value)
 })
 
 function getStatusLabel(s) {
@@ -192,7 +264,9 @@ function getUserInitials(user) {
 function formatDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('fr-FR', {
-    day: '2-digit', month: 'short', year: 'numeric'
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   })
 }
 
@@ -205,7 +279,7 @@ async function loadDeposits(page = 1) {
   hasError.value = false
   try {
     const response = await api.get('/admin/deposits', {
-      params: { page, per_page: 15 }
+      params: { page, per_page: 15 },
     })
     deposits.value = response.data.data ?? []
     pagination.value = response.data

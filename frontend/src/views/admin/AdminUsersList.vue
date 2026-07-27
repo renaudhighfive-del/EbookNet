@@ -30,25 +30,39 @@ const authStore = useAuthStore()
 const currentUserId = computed(() => authStore.user?.id)
 const isCurrentUser = (userId) => currentUserId.value === userId
 
-// ── State ───────────────────────�...
+// ── State ───────────────────────�...
 
-const searchQuery   = ref('')
+const searchQuery = ref('')
 const searchTimeout = ref(null)
-const filterRole    = ref('')
-const filterStatus  = ref('')
-const activeTab     = ref('') // '' = Tous
-const perPage       = ref(10)
-const currentPage   = ref(1)
+const filterRole = ref('')
+const filterStatus = ref('')
+const activeTab = ref('') // '' = Tous
+const perPage = ref(10)
+const currentPage = ref(1)
 
-const toast     = ref({ message: '', type: 'success' })
+const toast = ref({ message: '', type: 'success' })
 const roleModal = ref({ user: null, newRole: '' })
-const modal     = ref({
-  visible: false, title: '', message: '',
-  confirmLabel: '', danger: false, action: null,
+const modal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  confirmLabel: '',
+  danger: false,
+  action: null,
 })
 const userModal = ref({
-  visible: false, isEdit: false, userId: null,
-  form: { first_name: '', last_name: '', email: '', phone: '', password: '', role: 'user', status: 'active' },
+  visible: false,
+  isEdit: false,
+  userId: null,
+  form: {
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'user',
+    status: 'active',
+  },
   serverErrors: {},
 })
 const detailModal = ref({ visible: false, user: null })
@@ -56,15 +70,31 @@ const detailModal = ref({ visible: false, user: null })
 // ── Tabs ────────────────────────...
 
 const tabs = computed(() => [
-  { key: '',                    label: 'Tous',           count: userStore.users?.length ?? 0 },
-  { key: 'admin',               label: 'Admins',         count: (userStore.users ?? []).filter((u) => u.role === 'admin').length },
-  { key: 'responsable_rh',      label: 'Resp. RH',       count: (userStore.users ?? []).filter((u) => u.role === 'responsable_rh').length },
-  { key: 'responsable_demande', label: 'Resp. Demandes', count: (userStore.users ?? []).filter((u) => u.role === 'responsable_demande').length },
-  { key: 'user',                label: 'Utilisateurs',   count: (userStore.users ?? []).filter((u) => u.role === 'user').length },
+  { key: '', label: 'Tous', count: userStore.users?.length ?? 0 },
+  {
+    key: 'admin',
+    label: 'Admins',
+    count: (userStore.users ?? []).filter((u) => u.role === 'admin').length,
+  },
+  {
+    key: 'responsable_rh',
+    label: 'Resp. RH',
+    count: (userStore.users ?? []).filter((u) => u.role === 'responsable_rh').length,
+  },
+  {
+    key: 'responsable_demande',
+    label: 'Resp. Demandes',
+    count: (userStore.users ?? []).filter((u) => u.role === 'responsable_demande').length,
+  },
+  {
+    key: 'user',
+    label: 'Utilisateurs',
+    count: (userStore.users ?? []).filter((u) => u.role === 'user').length,
+  },
 ])
 
 const selectTab = (key) => {
-  activeTab.value  = key
+  activeTab.value = key
   filterRole.value = key
   currentPage.value = 1
 }
@@ -73,7 +103,7 @@ const selectTab = (key) => {
 
 const perPageOptions = [10, 25, 50, 100]
 
-// ── Client-side filtering ──────────────────�...
+// ── Client-side filtering ──────────────────�...
 
 const filteredUsers = computed(() => {
   if (!userStore.users) return []
@@ -126,10 +156,12 @@ const visiblePages = computed(() => {
   return pages
 })
 
-// ── Fetch ───────────────────────�...
+// ── Fetch ───────────────────────�...
 
 const fetchUsers = () => {
-  userStore.fetchUsers({ per_page: 9999 }).catch(() => showToast('Erreur lors du chargement.', 'error'))
+  userStore
+    .fetchUsers({ per_page: 9999 })
+    .catch(() => showToast('Erreur lors du chargement.', 'error'))
 }
 
 const onSearchInput = () => {
@@ -139,12 +171,22 @@ const onSearchInput = () => {
   }, 400)
 }
 
-// ── Modals ───────────────────────�...
+// ── Modals ───────────────────────�...
 
 const openCreateModal = () => {
   userModal.value = {
-    visible: true, isEdit: false, userId: null,
-    form: { first_name: '', last_name: '', email: '', phone: '', password: '', role: 'user', status: 'active' },
+    visible: true,
+    isEdit: false,
+    userId: null,
+    form: {
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      password: '',
+      role: 'user',
+      status: 'active',
+    },
     serverErrors: {},
   }
 }
@@ -153,15 +195,17 @@ const openEditModal = async (user) => {
   try {
     const userData = await userStore.fetchUser(user.id)
     userModal.value = {
-      visible: true, isEdit: true, userId: user.id,
+      visible: true,
+      isEdit: true,
+      userId: user.id,
       form: {
         first_name: userData.first_name,
-        last_name:  userData.last_name,
-        email:      userData.email,
-        phone:      userData.phone || '',
-        password:   '',
-        role:       userData.role,
-        status:     userData.status,
+        last_name: userData.last_name,
+        email: userData.email,
+        phone: userData.phone || '',
+        password: '',
+        role: userData.role,
+        status: userData.status,
       },
       serverErrors: {},
     }
@@ -170,7 +214,9 @@ const openEditModal = async (user) => {
   }
 }
 
-const closeUserModal = () => { userModal.value.visible = false }
+const closeUserModal = () => {
+  userModal.value.visible = false
+}
 const openUserDetails = async (user) => {
   try {
     const userData = await userStore.fetchUser(user.id)
@@ -212,12 +258,48 @@ const handleUserSubmit = async () => {
 const confirmAction = ({ type, user }) => {
   const name = `${user.first_name} ${user.last_name}`
   const cfgs = {
-    approve:          { title: 'Approuver le compte',         message: `Activer le compte de ${name} ? L'utilisateur pourra se connecter immédiatement.`,                    confirmLabel: 'Approuver',             danger: false, fn: () => userStore.approveUser(user.id) },
-    'validate-suspend': { title: 'Valider la suspension',     message: `Confirmer la suspension proposée par le RH pour ${name} ?`,                                          confirmLabel: 'Valider la suspension', danger: true,  fn: () => userStore.validateSuspend(user.id) },
-    deactivate:       { title: 'Désactiver le compte',        message: `Désactiver le compte de ${name} ?`,                                                                   confirmLabel: 'Désactiver',            danger: true,  fn: () => userStore.updateStatus(user.id, 'inactive') },
-    restore:          { title: 'Restaurer le compte',         message: `Restaurer et activer le compte de ${name} ?`,                                                        confirmLabel: 'Restaurer',             danger: false, fn: () => userStore.restoreUser(user.id) },
-    suspend:          { title: 'Suspendre le compte',         message: `Suspendre le compte de ${name} ? Cette action bloquera immédiatement l'accès.`,                     confirmLabel: 'Suspendre',             danger: true,  fn: () => userStore.suspendUser(user.id) },
-    archive:          { title: 'Archiver le compte',          message: `Archiver définitivement le compte de ${name} ?`,                                                     confirmLabel: 'Archiver',              danger: true,  fn: () => userStore.archiveUser(user.id) },
+    approve: {
+      title: 'Approuver le compte',
+      message: `Activer le compte de ${name} ? L'utilisateur pourra se connecter immédiatement.`,
+      confirmLabel: 'Approuver',
+      danger: false,
+      fn: () => userStore.approveUser(user.id),
+    },
+    'validate-suspend': {
+      title: 'Valider la suspension',
+      message: `Confirmer la suspension proposée par le RH pour ${name} ?`,
+      confirmLabel: 'Valider la suspension',
+      danger: true,
+      fn: () => userStore.validateSuspend(user.id),
+    },
+    deactivate: {
+      title: 'Désactiver le compte',
+      message: `Désactiver le compte de ${name} ?`,
+      confirmLabel: 'Désactiver',
+      danger: true,
+      fn: () => userStore.updateStatus(user.id, 'inactive'),
+    },
+    restore: {
+      title: 'Restaurer le compte',
+      message: `Restaurer et activer le compte de ${name} ?`,
+      confirmLabel: 'Restaurer',
+      danger: false,
+      fn: () => userStore.restoreUser(user.id),
+    },
+    suspend: {
+      title: 'Suspendre le compte',
+      message: `Suspendre le compte de ${name} ? Cette action bloquera immédiatement l'accès.`,
+      confirmLabel: 'Suspendre',
+      danger: true,
+      fn: () => userStore.suspendUser(user.id),
+    },
+    archive: {
+      title: 'Archiver le compte',
+      message: `Archiver définitivement le compte de ${name} ?`,
+      confirmLabel: 'Archiver',
+      danger: true,
+      fn: () => userStore.archiveUser(user.id),
+    },
   }
   const cfg = cfgs[type]
   if (!cfg) return
@@ -234,7 +316,9 @@ const executeModal = async () => {
   }
 }
 
-const openRoleModal   = (user) => { roleModal.value = { user, newRole: user.role } }
+const openRoleModal = (user) => {
+  roleModal.value = { user, newRole: user.role }
+}
 const applyRoleChange = async () => {
   try {
     await userStore.updateRole(roleModal.value.user.id, roleModal.value.newRole)
@@ -245,7 +329,7 @@ const applyRoleChange = async () => {
   }
 }
 
-// ── Toast ───────────────────────�...
+// ── Toast ───────────────────────�...
 
 const showToast = (message, type = 'success') => {
   toast.value = { message, type }
@@ -257,7 +341,6 @@ onMounted(() => fetchUsers())
 
 <template>
   <AdminLayout>
-
     <!-- ── Toast ──────────────────────────────────────────────────────── -->
     <Teleport to="body">
       <Transition
@@ -271,7 +354,10 @@ onMounted(() => fetchUsers())
           class="fixed bottom-6 right-6 z-60 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium"
           :class="toast.type === 'success' ? 'bg-[#0D9488]' : 'bg-red-500'"
         >
-          <component :is="toast.type === 'success' ? CheckCircle : XCircle" class="w-4 h-4 shrink-0" />
+          <component
+            :is="toast.type === 'success' ? CheckCircle : XCircle"
+            class="w-4 h-4 shrink-0"
+          />
           {{ toast.message }}
         </div>
       </Transition>
@@ -301,16 +387,16 @@ onMounted(() => fetchUsers())
         :key="tab.key"
         @click="selectTab(tab.key)"
         class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors relative"
-        :class="activeTab === tab.key
-          ? 'text-[#0D9488] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#0D9488] after:rounded-full'
-          : 'text-gray-400 hover:text-[#1B2A4A]'"
+        :class="
+          activeTab === tab.key
+            ? 'text-[#0D9488] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#0D9488] after:rounded-full'
+            : 'text-gray-400 hover:text-[#1B2A4A]'
+        "
       >
         {{ tab.label }}
         <span
           class="text-[11px] font-mono px-1.5 py-0.5 rounded-md"
-          :class="activeTab === tab.key
-            ? 'bg-teal-50 text-[#0D9488]'
-            : 'bg-gray-100 text-gray-400'"
+          :class="activeTab === tab.key ? 'bg-teal-50 text-[#0D9488]' : 'bg-gray-100 text-gray-400'"
         >
           {{ tab.count }}
         </span>
@@ -321,7 +407,9 @@ onMounted(() => fetchUsers())
     <div class="flex flex-wrap items-center gap-3 mb-5">
       <!-- Recherche -->
       <div class="relative flex-1 min-w-55">
-        <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none" />
+        <Search
+          class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 pointer-events-none"
+        />
         <input
           v-model="searchQuery"
           @input="onSearchInput"
@@ -361,28 +449,65 @@ onMounted(() => fetchUsers())
           <option value="pending_suspension">Suspension en attente</option>
           <option value="archived">Archivé</option>
         </select>
-        <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        <svg
+          class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2.5"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
       </div>
     </div>
 
     <!-- ── Loading ────────────────────────────────────────────────────── -->
     <div v-if="userStore.isLoading" class="flex justify-center py-20">
-      <div class="w-9 h-9 rounded-full border-2 border-t-[#0D9488] border-gray-100 animate-spin"></div>
+      <div
+        class="w-9 h-9 rounded-full border-2 border-t-[#0D9488] border-gray-100 animate-spin"
+      ></div>
     </div>
 
     <!-- ── Table ──────────────────────────────────────────────────────── -->
-    <div v-else-if="paginatedUsers.length > 0" class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+    <div
+      v-else-if="paginatedUsers.length > 0"
+      class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm"
+    >
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <!-- Head -->
           <thead>
             <tr class="border-b border-gray-100">
-              <th class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Utilisateur</th>
-              <th class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Rôle</th>
-              <th class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Statut</th>
-              <th class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider hidden lg:table-cell">Dernière connexion</th>
-              <th class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider hidden xl:table-cell">Inscription</th>
-              <th class="px-5 py-3.5 text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
+              <th
+                class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider"
+              >
+                Utilisateur
+              </th>
+              <th
+                class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider"
+              >
+                Rôle
+              </th>
+              <th
+                class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider"
+              >
+                Statut
+              </th>
+              <th
+                class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider hidden lg:table-cell"
+              >
+                Dernière connexion
+              </th>
+              <th
+                class="px-4 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider hidden xl:table-cell"
+              >
+                Inscription
+              </th>
+              <th
+                class="px-5 py-3.5 text-right text-[11px] font-semibold text-gray-400 uppercase tracking-wider"
+              >
+                Actions
+              </th>
             </tr>
           </thead>
 
@@ -392,7 +517,10 @@ onMounted(() => fetchUsers())
               v-for="user in paginatedUsers"
               :key="user.id"
               class="group hover:bg-[#F8F7F4] transition-colors"
-              :class="{ 'bg-red-50/30': user.status === 'suspended', 'opacity-60': user.status === 'archived' }"
+              :class="{
+                'bg-red-50/30': user.status === 'suspended',
+                'opacity-60': user.status === 'archived',
+              }"
             >
               <!-- Checkbox -->
               <!-- <td class="w-10 px-5 py-4">
@@ -420,7 +548,8 @@ onMounted(() => fetchUsers())
                       <span
                         v-if="isCurrentUser(user.id)"
                         class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#EEF1F7] text-[#1B2A4A] uppercase tracking-wide shrink-0"
-                      >vous</span>
+                        >vous</span
+                      >
                     </div>
                     <p class="text-xs text-gray-400 font-mono truncate">{{ user.email }}</p>
                   </div>
@@ -460,7 +589,6 @@ onMounted(() => fetchUsers())
               <!-- Actions -->
               <td class="px-5 py-4">
                 <div class="flex items-center justify-end gap-0.5">
-
                   <!-- Voir plus -->
                   <button
                     @click="openUserDetails(user)"
@@ -519,7 +647,11 @@ onMounted(() => fetchUsers())
 
                   <!-- Restaurer -->
                   <button
-                    v-if="['inactive','pending_suspension','suspended','archived'].includes(user.status)"
+                    v-if="
+                      ['inactive', 'pending_suspension', 'suspended', 'archived'].includes(
+                        user.status,
+                      )
+                    "
                     @click="confirmAction({ type: 'restore', user })"
                     :disabled="userStore.isActionLoading"
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-teal-50 hover:text-[#0D9488] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -530,7 +662,9 @@ onMounted(() => fetchUsers())
 
                   <!-- Suspendre -->
                   <button
-                    v-if="!['suspended','archived'].includes(user.status) && !isCurrentUser(user.id)"
+                    v-if="
+                      !['suspended', 'archived'].includes(user.status) && !isCurrentUser(user.id)
+                    "
                     @click="confirmAction({ type: 'suspend', user })"
                     :disabled="userStore.isActionLoading"
                     class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -559,13 +693,12 @@ onMounted(() => fetchUsers())
                       'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
                       user.status === 'archived'
                         ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-gray-400 hover:bg-red-50 hover:text-red-500'
+                        : 'text-gray-400 hover:bg-red-50 hover:text-red-500',
                     ]"
                     title="Archiver"
                   >
                     <Archive class="w-3.5 h-3.5" />
                   </button>
-
                 </div>
               </td>
             </tr>
@@ -612,11 +745,13 @@ onMounted(() => fetchUsers())
           :key="page"
           @click="typeof page === 'number' ? (currentPage = page) : null"
           class="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
-          :class="page === currentPage
-            ? 'bg-[#0D9488] text-white border-[#0D9488]'
-            : typeof page === 'number'
-              ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
-              : 'border-transparent text-gray-400 cursor-default'"
+          :class="
+            page === currentPage
+              ? 'bg-[#0D9488] text-white border-[#0D9488]'
+              : typeof page === 'number'
+                ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+                : 'border-transparent text-gray-400 cursor-default'
+          "
           :disabled="typeof page !== 'number'"
         >
           {{ page }}
@@ -633,12 +768,22 @@ onMounted(() => fetchUsers())
 
     <!-- ── Modal détails utilisateur ─────────────────────────────────── -->
     <Teleport to="body">
-      <Transition enter-active-class="transition duration-150 ease-out" enter-from-class="opacity-0 scale-95" leave-active-class="transition duration-100 ease-in" leave-to-class="opacity-0 scale-95">
-        <div v-if="detailModal.visible" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Transition
+        enter-active-class="transition duration-150 ease-out"
+        enter-from-class="opacity-0 scale-95"
+        leave-active-class="transition duration-100 ease-in"
+        leave-to-class="opacity-0 scale-95"
+      >
+        <div
+          v-if="detailModal.visible"
+          class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
           <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-xl w-full border border-gray-100">
             <div class="flex items-start justify-between mb-6">
               <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-2xl bg-teal-50 flex items-center justify-center text-[#0D9488]">
+                <div
+                  class="w-11 h-11 rounded-2xl bg-teal-50 flex items-center justify-center text-[#0D9488]"
+                >
                   <Users class="w-5 h-5" />
                 </div>
                 <div>
@@ -646,7 +791,10 @@ onMounted(() => fetchUsers())
                   <p class="text-sm text-gray-500 mt-0.5">Informations complètes du compte</p>
                 </div>
               </div>
-              <button @click="closeUserDetails" class="text-gray-400 hover:text-gray-600 transition-colors">
+              <button
+                @click="closeUserDetails"
+                class="text-gray-400 hover:text-gray-600 transition-colors"
+              >
                 <XCircle class="w-5 h-5" />
               </button>
             </div>
@@ -671,26 +819,47 @@ onMounted(() => fetchUsers())
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="rounded-xl border border-gray-100 p-4">
-                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Téléphone</p>
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                    Téléphone
+                  </p>
                   <p class="mt-1 text-sm text-gray-700">{{ detailModal.user.phone || '—' }}</p>
                 </div>
                 <div class="rounded-xl border border-gray-100 p-4">
-                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Rôle</p>
-                  <p class="mt-1 text-sm text-gray-700">{{ userStore.getRoleLabel(detailModal.user.role) }}</p>
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                    Rôle
+                  </p>
+                  <p class="mt-1 text-sm text-gray-700">
+                    {{ userStore.getRoleLabel(detailModal.user.role) }}
+                  </p>
                 </div>
                 <div class="rounded-xl border border-gray-100 p-4">
-                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Statut</p>
-                  <p class="mt-1 text-sm text-gray-700">{{ userStore.getStatusLabel(detailModal.user.status) }}</p>
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                    Statut
+                  </p>
+                  <p class="mt-1 text-sm text-gray-700">
+                    {{ userStore.getStatusLabel(detailModal.user.status) }}
+                  </p>
                 </div>
                 <div class="rounded-xl border border-gray-100 p-4">
-                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Dernière connexion</p>
-                  <p class="mt-1 text-sm text-gray-700">{{ detailModal.user.last_login_at ? userStore.formatDate(detailModal.user.last_login_at) : '—' }}</p>
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                    Dernière connexion
+                  </p>
+                  <p class="mt-1 text-sm text-gray-700">
+                    {{
+                      detailModal.user.last_login_at
+                        ? userStore.formatDate(detailModal.user.last_login_at)
+                        : '—'
+                    }}
+                  </p>
                 </div>
               </div>
             </div>
 
             <div class="flex justify-end mt-6">
-              <button @click="closeUserDetails" class="px-4 py-2 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] transition-colors">
+              <button
+                @click="closeUserDetails"
+                class="px-4 py-2 rounded-xl bg-[#0D9488] text-white text-sm font-semibold hover:bg-[#0a7a6f] transition-colors"
+              >
                 Fermer
               </button>
             </div>
@@ -701,15 +870,27 @@ onMounted(() => fetchUsers())
 
     <!-- ── Modal confirmation ──────────────────────────────────────────── -->
     <Teleport to="body">
-      <Transition enter-active-class="transition duration-150 ease-out" enter-from-class="opacity-0 scale-95" leave-active-class="transition duration-100 ease-in" leave-to-class="opacity-0 scale-95">
-        <div v-if="modal.visible" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Transition
+        enter-active-class="transition duration-150 ease-out"
+        enter-from-class="opacity-0 scale-95"
+        leave-active-class="transition duration-100 ease-in"
+        leave-to-class="opacity-0 scale-95"
+      >
+        <div
+          v-if="modal.visible"
+          class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
           <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full">
             <div class="flex items-start gap-4 mb-5">
               <div
                 class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                 :class="modal.danger ? 'bg-red-50' : 'bg-teal-50'"
               >
-                <component :is="modal.danger ? Ban : CheckCircle" class="w-5 h-5" :class="modal.danger ? 'text-red-500' : 'text-[#0D9488]'" />
+                <component
+                  :is="modal.danger ? Ban : CheckCircle"
+                  class="w-5 h-5"
+                  :class="modal.danger ? 'text-red-500' : 'text-[#0D9488]'"
+                />
               </div>
               <div>
                 <h3 class="text-base font-bold text-[#1B2A4A] mb-1">{{ modal.title }}</h3>
@@ -717,14 +898,19 @@ onMounted(() => fetchUsers())
               </div>
             </div>
             <div class="flex gap-2.5 justify-end">
-              <button @click="modal.visible = false" class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+              <button
+                @click="modal.visible = false"
+                class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
                 Annuler
               </button>
               <button
                 @click="executeModal"
                 :disabled="userStore.isActionLoading"
                 class="px-4 py-2 rounded-xl text-sm text-white font-semibold transition-colors disabled:opacity-50"
-                :class="modal.danger ? 'bg-red-500 hover:bg-red-600' : 'bg-[#0D9488] hover:bg-[#0a7a6f]'"
+                :class="
+                  modal.danger ? 'bg-red-500 hover:bg-red-600' : 'bg-[#0D9488] hover:bg-[#0a7a6f]'
+                "
               >
                 {{ userStore.isActionLoading ? 'En cours...' : modal.confirmLabel }}
               </button>
@@ -736,16 +922,28 @@ onMounted(() => fetchUsers())
 
     <!-- ── Modal changement de rôle ───────────────────────────────────── -->
     <Teleport to="body">
-      <Transition enter-active-class="transition duration-150 ease-out" enter-from-class="opacity-0 scale-95" leave-active-class="transition duration-100 ease-in" leave-to-class="opacity-0 scale-95">
-        <div v-if="roleModal.user" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Transition
+        enter-active-class="transition duration-150 ease-out"
+        enter-from-class="opacity-0 scale-95"
+        leave-active-class="transition duration-100 ease-in"
+        leave-to-class="opacity-0 scale-95"
+      >
+        <div
+          v-if="roleModal.user"
+          class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
           <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full">
             <div class="flex items-center gap-3 mb-5">
-              <div class="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center shrink-0">
+              <div
+                class="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center shrink-0"
+              >
                 <Shield class="w-5 h-5 text-purple-600" />
               </div>
               <div>
                 <h3 class="text-base font-bold text-[#1B2A4A]">Changer le rôle</h3>
-                <p class="text-sm text-gray-400">{{ roleModal.user.first_name }} {{ roleModal.user.last_name }}</p>
+                <p class="text-sm text-gray-400">
+                  {{ roleModal.user.first_name }} {{ roleModal.user.last_name }}
+                </p>
               </div>
             </div>
             <div class="relative mb-5">
@@ -758,11 +956,28 @@ onMounted(() => fetchUsers())
                 <option value="responsable_demande">Resp. Demandes</option>
                 <option value="admin">Administrateur</option>
               </select>
-              <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+              <svg
+                class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
             <div class="flex gap-2.5 justify-end">
-              <button @click="roleModal.user = null" class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Annuler</button>
-              <button @click="applyRoleChange" :disabled="userStore.isActionLoading" class="px-4 py-2 rounded-xl bg-[#1B2A4A] hover:bg-[#162040] text-white text-sm font-semibold disabled:opacity-50 transition-colors">
+              <button
+                @click="roleModal.user = null"
+                class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                @click="applyRoleChange"
+                :disabled="userStore.isActionLoading"
+                class="px-4 py-2 rounded-xl bg-[#1B2A4A] hover:bg-[#162040] text-white text-sm font-semibold disabled:opacity-50 transition-colors"
+              >
                 {{ userStore.isActionLoading ? 'Enregistrement...' : 'Confirmer' }}
               </button>
             </div>
@@ -773,61 +988,104 @@ onMounted(() => fetchUsers())
 
     <!-- ── Modal création / modification ──────────────────────────────── -->
     <Teleport to="body">
-      <Transition enter-active-class="transition duration-150 ease-out" enter-from-class="opacity-0 scale-95" leave-active-class="transition duration-100 ease-in" leave-to-class="opacity-0 scale-95">
-        <div v-if="userModal.visible" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Transition
+        enter-active-class="transition duration-150 ease-out"
+        enter-from-class="opacity-0 scale-95"
+        leave-active-class="transition duration-100 ease-in"
+        leave-to-class="opacity-0 scale-95"
+      >
+        <div
+          v-if="userModal.visible"
+          class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
           <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-
             <!-- Header modal -->
             <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100">
               <h3 class="text-base font-bold text-[#1B2A4A]">
                 {{ userModal.isEdit ? 'Modifier le compte' : 'Nouveau compte' }}
               </h3>
-              <button @click="closeUserModal" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors">
+              <button
+                @click="closeUserModal"
+                class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors"
+              >
                 <XCircle class="w-4 h-4" />
               </button>
             </div>
 
             <form @submit.prevent="handleUserSubmit" class="px-6 py-5 space-y-4">
-
               <!-- Prénom + Nom -->
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Prénom *</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5"
+                    >Prénom *</label
+                  >
                   <input
                     v-model="userModal.form.first_name"
-                    type="text" required
+                    type="text"
+                    required
                     class="w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-50 transition-colors"
-                    :class="userModal.serverErrors.first_name ? 'border-red-300 focus:border-red-400' : 'border-gray-200 focus:border-[#0D9488]'"
+                    :class="
+                      userModal.serverErrors.first_name
+                        ? 'border-red-300 focus:border-red-400'
+                        : 'border-gray-200 focus:border-[#0D9488]'
+                    "
                   />
-                  <p v-if="userModal.serverErrors.first_name" class="text-xs text-red-500 mt-1">{{ userModal.serverErrors.first_name[0] }}</p>
+                  <p v-if="userModal.serverErrors.first_name" class="text-xs text-red-500 mt-1">
+                    {{ userModal.serverErrors.first_name[0] }}
+                  </p>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Nom *</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5"
+                    >Nom *</label
+                  >
                   <input
                     v-model="userModal.form.last_name"
-                    type="text" required
+                    type="text"
+                    required
                     class="w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-50 transition-colors"
-                    :class="userModal.serverErrors.last_name ? 'border-red-300 focus:border-red-400' : 'border-gray-200 focus:border-[#0D9488]'"
+                    :class="
+                      userModal.serverErrors.last_name
+                        ? 'border-red-300 focus:border-red-400'
+                        : 'border-gray-200 focus:border-[#0D9488]'
+                    "
                   />
-                  <p v-if="userModal.serverErrors.last_name" class="text-xs text-red-500 mt-1">{{ userModal.serverErrors.last_name[0] }}</p>
+                  <p v-if="userModal.serverErrors.last_name" class="text-xs text-red-500 mt-1">
+                    {{ userModal.serverErrors.last_name[0] }}
+                  </p>
                 </div>
               </div>
 
               <!-- Email -->
               <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Email *</label>
+                <label
+                  class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5"
+                  >Email *</label
+                >
                 <input
                   v-model="userModal.form.email"
-                  type="email" required
+                  type="email"
+                  required
                   class="w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-50 transition-colors"
-                  :class="userModal.serverErrors.email ? 'border-red-300 focus:border-red-400' : 'border-gray-200 focus:border-[#0D9488]'"
+                  :class="
+                    userModal.serverErrors.email
+                      ? 'border-red-300 focus:border-red-400'
+                      : 'border-gray-200 focus:border-[#0D9488]'
+                  "
                 />
-                <p v-if="userModal.serverErrors.email" class="text-xs text-red-500 mt-1">{{ userModal.serverErrors.email[0] }}</p>
+                <p v-if="userModal.serverErrors.email" class="text-xs text-red-500 mt-1">
+                  {{ userModal.serverErrors.email[0] }}
+                </p>
               </div>
 
               <!-- Téléphone -->
               <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Téléphone <span class="normal-case font-normal text-gray-400">(optionnel)</span></label>
+                <label
+                  class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5"
+                  >Téléphone
+                  <span class="normal-case font-normal text-gray-400">(optionnel)</span></label
+                >
                 <input
                   v-model="userModal.form.phone"
                   type="tel"
@@ -837,9 +1095,13 @@ onMounted(() => fetchUsers())
 
               <!-- Mot de passe -->
               <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                <label
+                  class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5"
+                >
                   Mot de passe
-                  <span v-if="userModal.isEdit" class="normal-case font-normal text-gray-400">(laisser vide pour ne pas changer)</span>
+                  <span v-if="userModal.isEdit" class="normal-case font-normal text-gray-400"
+                    >(laisser vide pour ne pas changer)</span
+                  >
                   <span v-else class="text-red-400 ml-0.5">*</span>
                 </label>
                 <input
@@ -847,15 +1109,24 @@ onMounted(() => fetchUsers())
                   type="password"
                   :required="!userModal.isEdit"
                   class="w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-50 transition-colors"
-                  :class="userModal.serverErrors.password ? 'border-red-300 focus:border-red-400' : 'border-gray-200 focus:border-[#0D9488]'"
+                  :class="
+                    userModal.serverErrors.password
+                      ? 'border-red-300 focus:border-red-400'
+                      : 'border-gray-200 focus:border-[#0D9488]'
+                  "
                 />
-                <p v-if="userModal.serverErrors.password" class="text-xs text-red-500 mt-1">{{ userModal.serverErrors.password[0] }}</p>
+                <p v-if="userModal.serverErrors.password" class="text-xs text-red-500 mt-1">
+                  {{ userModal.serverErrors.password[0] }}
+                </p>
               </div>
 
               <!-- Rôle + Statut -->
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Rôle *</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5"
+                    >Rôle *</label
+                  >
                   <div class="relative">
                     <select
                       v-model="userModal.form.role"
@@ -866,11 +1137,22 @@ onMounted(() => fetchUsers())
                       <option value="responsable_demande">Resp. Demandes</option>
                       <option value="admin">Administrateur</option>
                     </select>
-                    <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    <svg
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Statut *</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5"
+                    >Statut *</label
+                  >
                   <div class="relative">
                     <select
                       v-model="userModal.form.status"
@@ -881,14 +1163,26 @@ onMounted(() => fetchUsers())
                       <option value="suspended">Suspendu</option>
                       <option value="archived">Archivé</option>
                     </select>
-                    <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    <svg
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
                 </div>
               </div>
 
               <!-- Footer modal -->
               <div class="flex gap-2.5 justify-end pt-2">
-                <button type="button" @click="closeUserModal" class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+                <button
+                  type="button"
+                  @click="closeUserModal"
+                  class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                >
                   Annuler
                 </button>
                 <button
@@ -896,17 +1190,21 @@ onMounted(() => fetchUsers())
                   :disabled="userStore.isActionLoading"
                   class="px-5 py-2 rounded-xl bg-[#0D9488] hover:bg-[#0a7a6f] text-white text-sm font-semibold disabled:opacity-50 transition-colors"
                 >
-                  {{ userStore.isActionLoading
-                    ? (userModal.isEdit ? 'Modification...' : 'Création...')
-                    : (userModal.isEdit ? 'Enregistrer' : 'Créer le compte') }}
+                  {{
+                    userStore.isActionLoading
+                      ? userModal.isEdit
+                        ? 'Modification...'
+                        : 'Création...'
+                      : userModal.isEdit
+                        ? 'Enregistrer'
+                        : 'Créer le compte'
+                  }}
                 </button>
               </div>
-
             </form>
           </div>
         </div>
       </Transition>
     </Teleport>
-
   </AdminLayout>
 </template>

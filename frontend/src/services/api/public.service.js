@@ -70,5 +70,5 @@ export const publicService = {
   async search(query) {
     const response = await api.get('/public/search', { params: { q: query } })
     return response.data
-  }
+  },
 }

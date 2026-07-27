@@ -395,7 +395,9 @@ export const adminService = {
    * @returns {Promise<Object>} Dépôt mis à jour.
    */
   async assignDeposit(id, managerId) {
-    const response = await api.patch(`/admin/deposits/${id}/assign`, { assigned_manager_id: managerId })
+    const response = await api.patch(`/admin/deposits/${id}/assign`, {
+      assigned_manager_id: managerId,
+    })
     return response.data
   },
 
@@ -507,5 +509,5 @@ export const adminService = {
   async getActivityLogs() {
     const response = await api.get('/admin/activity-logs')
     return response.data
-  }
+  },
 }

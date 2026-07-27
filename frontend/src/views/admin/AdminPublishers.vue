@@ -26,7 +26,7 @@ const toast = ref({ message: '', type: 'success' })
 const modal = ref({
   visible: false,
   isEdit: false,
-  publisherId: null, 
+  publisherId: null,
   form: { name: '', description: '', country: '', website: '' },
 })
 const deleteModal = ref({ visible: false, publisher: null })
@@ -37,14 +37,15 @@ const filteredPublishers = computed(() => {
   let filtered = [...publisherStore.publishers]
 
   if (filterCountry.value) {
-    filtered = filtered.filter(p => p.country === filterCountry.value)
+    filtered = filtered.filter((p) => p.country === filterCountry.value)
   }
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(p =>
-      p.name.toLowerCase().includes(query) ||
-      (p.country && p.country.toLowerCase().includes(query))
+    filtered = filtered.filter(
+      (p) =>
+        p.name.toLowerCase().includes(query) ||
+        (p.country && p.country.toLowerCase().includes(query)),
     )
   }
 
@@ -80,7 +81,9 @@ const visiblePages = computed(() => {
 })
 
 const fetchPublishersWithParams = () => {
-  publisherStore.fetchPublishers({ per_page: 1000 }).catch(() => showToast('Erreur lors du chargement.', 'error'))
+  publisherStore
+    .fetchPublishers({ per_page: 1000 })
+    .catch(() => showToast('Erreur lors du chargement.', 'error'))
 }
 
 const resetPage = () => {
@@ -206,7 +209,13 @@ onMounted(() => {
           class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#0D9488]"
         >
           <option value="">Tous les pays</option>
-          <option v-for="country in [...new Set(publisherStore.publishers?.map(p => p.country).filter(Boolean) || [])]" :key="country" :value="country">
+          <option
+            v-for="country in [
+              ...new Set(publisherStore.publishers?.map((p) => p.country).filter(Boolean) || []),
+            ]"
+            :key="country"
+            :value="country"
+          >
             {{ country }}
           </option>
         </select>
@@ -214,23 +223,52 @@ onMounted(() => {
 
       <!-- Loading -->
       <div v-if="publisherStore.isLoading" class="flex items-center justify-center py-12">
-        <div class="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin"></div>
+        <div
+          class="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin"
+        ></div>
       </div>
 
       <!-- Table -->
-      <div v-else-if="publisherStore.publishers && paginatedPublishers.length > 0" class="overflow-x-auto">
+      <div
+        v-else-if="publisherStore.publishers && paginatedPublishers.length > 0"
+        class="overflow-x-auto"
+      >
         <table class="w-full">
           <thead>
             <tr class="border-b border-gray-100 pb-3">
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Nom</th>
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Pays</th>
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Site web</th>
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Références</th>
-              <th class="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Actions</th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Nom
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Pays
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Site web
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Références
+              </th>
+              <th
+                class="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="publisher in paginatedPublishers" :key="publisher.id" class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+            <tr
+              v-for="publisher in paginatedPublishers"
+              :key="publisher.id"
+              class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+            >
               <td class="py-4">
                 <div class="font-semibold text-[#1B2A4A]">{{ publisher.name }}</div>
               </td>
@@ -249,7 +287,9 @@ onMounted(() => {
                 <span v-else class="text-sm text-gray-400">-</span>
               </td>
               <td class="py-4">
-                <span class="text-sm font-medium text-gray-700">{{ publisher.references_count || 0 }}</span>
+                <span class="text-sm font-medium text-gray-700">{{
+                  publisher.references_count || 0
+                }}</span>
               </td>
               <td class="py-4">
                 <div class="flex items-center justify-end gap-1.5">
@@ -311,13 +351,15 @@ onMounted(() => {
           <button
             v-for="page in visiblePages"
             :key="page"
-            @click="typeof page === 'number' ? currentPage = page : null"
+            @click="typeof page === 'number' ? (currentPage = page) : null"
             class="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
-            :class="page === currentPage
-              ? 'bg-[#0D9488] text-white border-[#0D9488]'
-              : typeof page === 'number'
-                ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
-                : 'border-transparent text-gray-400 cursor-default'"
+            :class="
+              page === currentPage
+                ? 'bg-[#0D9488] text-white border-[#0D9488]'
+                : typeof page === 'number'
+                  ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+                  : 'border-transparent text-gray-400 cursor-default'
+            "
             :disabled="typeof page !== 'number'"
           >
             {{ page }}
@@ -395,7 +437,13 @@ onMounted(() => {
               :disabled="publisherStore.isActionLoading"
               class="px-4 py-2.5 rounded-xl bg-[#0D9488] text-white hover:bg-[#0B847A] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {{ publisherStore.isActionLoading ? 'En cours...' : modal.isEdit ? 'Mettre à jour' : 'Créer' }}
+              {{
+                publisherStore.isActionLoading
+                  ? 'En cours...'
+                  : modal.isEdit
+                    ? 'Mettre à jour'
+                    : 'Créer'
+              }}
             </button>
           </div>
         </div>
@@ -412,9 +460,14 @@ onMounted(() => {
           <div class="p-6">
             <h3 class="text-lg font-bold text-[#1B2A4A] mb-2">Supprimer l'éditeur</h3>
             <p class="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir supprimer l'éditeur <strong>{{ deleteModal.publisher?.name }}</strong> ?
-              <span v-if="deleteModal.publisher?.references_count > 0" class="block mt-2 text-red-600">
-                Cet éditeur est associé à {{ deleteModal.publisher.references_count }} référence(s) et ne peut pas être supprimé.
+              Êtes-vous sûr de vouloir supprimer l'éditeur
+              <strong>{{ deleteModal.publisher?.name }}</strong> ?
+              <span
+                v-if="deleteModal.publisher?.references_count > 0"
+                class="block mt-2 text-red-600"
+              >
+                Cet éditeur est associé à {{ deleteModal.publisher.references_count }} référence(s)
+                et ne peut pas être supprimé.
               </span>
             </p>
             <div class="flex justify-end gap-3">
@@ -426,7 +479,9 @@ onMounted(() => {
               </button>
               <button
                 @click="confirmDelete"
-                :disabled="publisherStore.isActionLoading || deleteModal.publisher?.references_count > 0"
+                :disabled="
+                  publisherStore.isActionLoading || deleteModal.publisher?.references_count > 0
+                "
                 class="px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {{ publisherStore.isActionLoading ? 'Suppression...' : 'Supprimer' }}
@@ -443,7 +498,9 @@ onMounted(() => {
         v-if="detailsModal.visible"
         class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
       >
-        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div
+          class="bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col"
+        >
           <div class="p-6 border-b border-gray-100 flex items-center justify-between">
             <h3 class="text-lg font-bold text-[#1B2A4A]">Détails de l'éditeur</h3>
             <button
@@ -457,29 +514,55 @@ onMounted(() => {
             <div v-if="detailsModal.publisher" class="space-y-6">
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Nom</label>
-                  <p class="text-sm font-medium text-[#1B2A4A]">{{ detailsModal.publisher.name }}</p>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Nom</label
+                  >
+                  <p class="text-sm font-medium text-[#1B2A4A]">
+                    {{ detailsModal.publisher.name }}
+                  </p>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Pays</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Pays</label
+                  >
                   <p class="text-sm text-gray-600">{{ detailsModal.publisher.country || '-' }}</p>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Site web</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Site web</label
+                  >
                   <p class="text-sm text-gray-600">
-                    <a v-if="detailsModal.publisher.website" :href="detailsModal.publisher.website" target="_blank" class="text-[#0D9488] hover:underline">
+                    <a
+                      v-if="detailsModal.publisher.website"
+                      :href="detailsModal.publisher.website"
+                      target="_blank"
+                      class="text-[#0D9488] hover:underline"
+                    >
                       {{ detailsModal.publisher.website }}
                     </a>
                     <span v-else>-</span>
                   </p>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Nombre de références</label>
-                  <p class="text-sm font-medium text-[#1B2A4A]">{{ detailsModal.publisher.references_count || 0 }}</p>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Nombre de références</label
+                  >
+                  <p class="text-sm font-medium text-[#1B2A4A]">
+                    {{ detailsModal.publisher.references_count || 0 }}
+                  </p>
                 </div>
                 <div class="col-span-2">
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</label>
-                  <p class="text-sm text-gray-600">{{ detailsModal.publisher.description || '-' }}</p>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Description</label
+                  >
+                  <p class="text-sm text-gray-600">
+                    {{ detailsModal.publisher.description || '-' }}
+                  </p>
                 </div>
               </div>
             </div>

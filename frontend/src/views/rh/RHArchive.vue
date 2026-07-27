@@ -4,7 +4,9 @@
 
     <!-- Loading -->
     <div v-if="isLoading" class="flex justify-center py-20">
-      <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
+      <div
+        class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"
+      ></div>
     </div>
 
     <template v-else>
@@ -29,14 +31,30 @@
         <table v-else class="w-full text-sm">
           <thead>
             <tr class="bg-[#F8F7F4]">
-              <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Utilisateur</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Rôle</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Inscrit le</th>
+              <th
+                class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Utilisateur
+              </th>
+              <th
+                class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Rôle
+              </th>
+              <th
+                class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Inscrit le
+              </th>
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="user in archivedUsers" :key="user.id" class="hover:bg-[#F8F7F4] transition-colors">
+            <tr
+              v-for="user in archivedUsers"
+              :key="user.id"
+              class="hover:bg-[#F8F7F4] transition-colors"
+            >
               <td class="px-6 py-3.5">
                 <div class="flex items-center gap-3">
                   <div
@@ -54,7 +72,10 @@
                 </div>
               </td>
               <td class="px-4 py-3.5">
-                <span :class="getRoleClass(user.role)" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                <span
+                  :class="getRoleClass(user.role)"
+                  class="px-2 py-0.5 rounded-full text-xs font-medium"
+                >
                   {{ getRoleLabel(user.role) }}
                 </span>
               </td>
@@ -75,7 +96,10 @@
         </table>
 
         <!-- Pagination -->
-        <div v-if="archivedPagination.last_page > 1" class="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
+        <div
+          v-if="archivedPagination.last_page > 1"
+          class="px-6 py-4 border-t border-gray-50 flex items-center justify-between"
+        >
           <p class="text-xs text-gray-400">
             Page {{ archivedPagination.current_page }} sur {{ archivedPagination.last_page }}
           </p>
@@ -142,7 +166,17 @@ const search = ref('')
 const isActionLoading = ref(false)
 const confirmModal = ref({ visible: false, title: '', message: '', item: null })
 
-const { getRoleLabel, getRoleClass, getAvatarColor, getUserInitials, formatDate, archivedUsers, archivedPagination, isLoading, fetchArchivedUsers } = userStore
+const {
+  getRoleLabel,
+  getRoleClass,
+  getAvatarColor,
+  getUserInitials,
+  formatDate,
+  archivedUsers,
+  archivedPagination,
+  isLoading,
+  fetchArchivedUsers,
+} = userStore
 
 const fetchArchivedUsersWithParams = async (page = 1) => {
   await fetchArchivedUsers({ page, per_page: 10, search: search.value })
@@ -151,9 +185,9 @@ const fetchArchivedUsersWithParams = async (page = 1) => {
 const confirmRestoreUser = (user) => {
   confirmModal.value = {
     visible: true,
-    title: 'Restaurer l\'utilisateur',
+    title: "Restaurer l'utilisateur",
     message: `Voulez-vous restaurer le compte de ${user.first_name} ${user.last_name} ?`,
-    item: user
+    item: user,
   }
 }
 

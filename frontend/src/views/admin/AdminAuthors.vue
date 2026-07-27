@@ -17,7 +17,7 @@ import { useAuthorStore } from '../../stores/author'
 
 const authorStore = useAuthorStore()
 
-// ─── State ──────────────────────�...
+// ─── State ──────────────────────�...
 
 const searchQuery = ref('')
 const filterNationality = ref('')
@@ -29,12 +29,19 @@ const modal = ref({
   visible: false,
   isEdit: false,
   authorId: null,
-  form: { first_name: '', last_name: '', biography: '', nationality: '', birth_date: '', death_date: '' },
+  form: {
+    first_name: '',
+    last_name: '',
+    biography: '',
+    nationality: '',
+    birth_date: '',
+    death_date: '',
+  },
 })
 const deleteModal = ref({ visible: false, author: null })
 const detailsModal = ref({ visible: false, author: null })
 
-// ─── Filtrage frontend ──────────────────�...
+// ─── Filtrage frontend ──────────────────�...
 
 const filteredAuthors = computed(() => {
   if (!authorStore.authors) return []
@@ -42,23 +49,24 @@ const filteredAuthors = computed(() => {
 
   // Filtrer par nationalité
   if (filterNationality.value) {
-    filtered = filtered.filter(a => a.nationality === filterNationality.value)
+    filtered = filtered.filter((a) => a.nationality === filterNationality.value)
   }
 
   // Filtrer par recherche
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(a =>
-      a.first_name.toLowerCase().includes(query) ||
-      a.last_name.toLowerCase().includes(query) ||
-      (a.nationality && a.nationality.toLowerCase().includes(query))
+    filtered = filtered.filter(
+      (a) =>
+        a.first_name.toLowerCase().includes(query) ||
+        a.last_name.toLowerCase().includes(query) ||
+        (a.nationality && a.nationality.toLowerCase().includes(query)),
     )
   }
 
   return filtered
 })
 
-// ─── Pagination locale ──────────────────�...
+// ─── Pagination locale ──────────────────�...
 
 const currentPage = ref(1)
 
@@ -88,14 +96,16 @@ const visiblePages = computed(() => {
   return pages
 })
 
-// ─── Fetch ──────────────────────�...
+// ─── Fetch ──────────────────────�...
 
 const fetchAuthorsWithParams = () => {
   // Charger tous les auteurs sans pagination ni filtre (filtrage frontend)
-  authorStore.fetchAuthors({ per_page: 1000 }).catch(() => showToast('Erreur lors du chargement.', 'error'))
+  authorStore
+    .fetchAuthors({ per_page: 1000 })
+    .catch(() => showToast('Erreur lors du chargement.', 'error'))
 }
 
-// ─── Watchers ─────────────────────�...
+// ─── Watchers ─────────────────────�...
 
 const resetPage = () => {
   currentPage.value = 1
@@ -108,7 +118,14 @@ const openCreateModal = () => {
     visible: true,
     isEdit: false,
     authorId: null,
-    form: { first_name: '', last_name: '', biography: '', nationality: '', birth_date: '', death_date: '' },
+    form: {
+      first_name: '',
+      last_name: '',
+      biography: '',
+      nationality: '',
+      birth_date: '',
+      death_date: '',
+    },
   }
 }
 
@@ -117,13 +134,13 @@ const openEditModal = (author) => {
     visible: true,
     isEdit: true,
     authorId: author.id,
-    form: { 
-      first_name: author.first_name, 
-      last_name: author.last_name, 
-      biography: author.biography || '', 
-      nationality: author.nationality || '', 
-      birth_date: author.birth_date || '', 
-      death_date: author.death_date || '' 
+    form: {
+      first_name: author.first_name,
+      last_name: author.last_name,
+      biography: author.biography || '',
+      nationality: author.nationality || '',
+      birth_date: author.birth_date || '',
+      death_date: author.death_date || '',
     },
   }
 }
@@ -183,7 +200,7 @@ const showToast = (message, type) => {
   setTimeout(() => (toast.value.message = ''), 3000)
 }
 
-// ─── Lifecycle ─────────────────────�...
+// ─── Lifecycle ─────────────────────�...
 
 onMounted(() => {
   fetchAuthorsWithParams()
@@ -226,7 +243,13 @@ onMounted(() => {
           class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-[#0D9488]"
         >
           <option value="">Toutes les nationalités</option>
-          <option v-for="nationality in [...new Set(authorStore.authors?.map(a => a.nationality).filter(Boolean) || [])]" :key="nationality" :value="nationality">
+          <option
+            v-for="nationality in [
+              ...new Set(authorStore.authors?.map((a) => a.nationality).filter(Boolean) || []),
+            ]"
+            :key="nationality"
+            :value="nationality"
+          >
             {{ nationality }}
           </option>
         </select>
@@ -234,7 +257,9 @@ onMounted(() => {
 
       <!-- Loading -->
       <div v-if="authorStore.isLoading" class="flex items-center justify-center py-12">
-        <div class="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin"></div>
+        <div
+          class="w-8 h-8 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin"
+        ></div>
       </div>
 
       <!-- Table -->
@@ -242,32 +267,67 @@ onMounted(() => {
         <table class="w-full">
           <thead>
             <tr class="border-b border-gray-100 pb-3">
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Nom complet</th>
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Nationalité</th>
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Biographie</th>
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Dates</th>
-              <th class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Références</th>
-              <th class="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3">Actions</th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Nom complet
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Nationalité
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Biographie
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Dates
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Références
+              </th>
+              <th
+                class="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider pb-3"
+              >
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="author in paginatedAuthors" :key="author.id" class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+            <tr
+              v-for="author in paginatedAuthors"
+              :key="author.id"
+              class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+            >
               <td class="py-4">
-                <div class="font-semibold text-[#1B2A4A]">{{ author.first_name }} {{ author.last_name }}</div>
+                <div class="font-semibold text-[#1B2A4A]">
+                  {{ author.first_name }} {{ author.last_name }}
+                </div>
               </td>
               <td class="py-4">
                 <span class="text-sm text-gray-600">{{ author.nationality || '-' }}</span>
               </td>
               <td class="py-4">
-                <div class="text-sm text-gray-600 max-w-xs truncate">{{ author.biography || '-' }}</div>
-              </td>
-              <td class="py-4">
-                <div class="text-sm text-gray-600">
-                  {{ author.birth_date || '-' }}{{ author.death_date ? ` - ${author.death_date}` : '' }}
+                <div class="text-sm text-gray-600 max-w-xs truncate">
+                  {{ author.biography || '-' }}
                 </div>
               </td>
               <td class="py-4">
-                <span class="text-sm font-medium text-gray-700">{{ author.references_count || 0 }}</span>
+                <div class="text-sm text-gray-600">
+                  {{ author.birth_date || '-'
+                  }}{{ author.death_date ? ` - ${author.death_date}` : '' }}
+                </div>
+              </td>
+              <td class="py-4">
+                <span class="text-sm font-medium text-gray-700">{{
+                  author.references_count || 0
+                }}</span>
               </td>
               <td class="py-4">
                 <div class="flex items-center justify-end gap-1.5">
@@ -329,13 +389,15 @@ onMounted(() => {
           <button
             v-for="page in visiblePages"
             :key="page"
-            @click="typeof page === 'number' ? currentPage = page : null"
+            @click="typeof page === 'number' ? (currentPage = page) : null"
             class="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
-            :class="page === currentPage
-              ? 'bg-[#0D9488] text-white border-[#0D9488]'
-              : typeof page === 'number'
-                ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
-                : 'border-transparent text-gray-400 cursor-default'"
+            :class="
+              page === currentPage
+                ? 'bg-[#0D9488] text-white border-[#0D9488]'
+                : typeof page === 'number'
+                  ? 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+                  : 'border-transparent text-gray-400 cursor-default'
+            "
             :disabled="typeof page !== 'number'"
           >
             {{ page }}
@@ -360,7 +422,7 @@ onMounted(() => {
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl">
           <div class="p-6 border-b border-gray-100">
             <h3 class="text-lg font-bold text-[#1B2A4A]">
-              {{ modal.isEdit ? 'Modifier l\'auteur' : 'Nouvel auteur' }}
+              {{ modal.isEdit ? "Modifier l'auteur" : 'Nouvel auteur' }}
             </h3>
           </div>
           <div class="p-6 space-y-4">
@@ -395,7 +457,9 @@ onMounted(() => {
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">Date de naissance</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5"
+                  >Date de naissance</label
+                >
                 <input
                   v-model="modal.form.birth_date"
                   type="date"
@@ -404,7 +468,7 @@ onMounted(() => {
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Date de décès</label>
-              <input
+                <input
                   v-model="modal.form.death_date"
                   type="date"
                   class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0D9488] focus:ring-2 focus:ring-teal-50"
@@ -433,7 +497,13 @@ onMounted(() => {
               :disabled="authorStore.isActionLoading"
               class="px-4 py-2.5 rounded-xl bg-[#0D9488] text-white hover:bg-[#0B847A] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {{ authorStore.isActionLoading ? 'En cours...' : modal.isEdit ? 'Mettre à jour' : 'Créer' }}
+              {{
+                authorStore.isActionLoading
+                  ? 'En cours...'
+                  : modal.isEdit
+                    ? 'Mettre à jour'
+                    : 'Créer'
+              }}
             </button>
           </div>
         </div>
@@ -450,9 +520,14 @@ onMounted(() => {
           <div class="p-6">
             <h3 class="text-lg font-bold text-[#1B2A4A] mb-2">Supprimer l'auteur</h3>
             <p class="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir supprimer l'auteur <strong>{{ deleteModal.author?.first_name }} {{ deleteModal.author?.last_name }}</strong> ?
+              Êtes-vous sûr de vouloir supprimer l'auteur
+              <strong
+                >{{ deleteModal.author?.first_name }} {{ deleteModal.author?.last_name }}</strong
+              >
+              ?
               <span v-if="deleteModal.author?.references_count > 0" class="block mt-2 text-red-600">
-                Cet auteur est associé à {{ deleteModal.author.references_count }} référence(s) et ne peut pas être supprimé.
+                Cet auteur est associé à {{ deleteModal.author.references_count }} référence(s) et
+                ne peut pas être supprimé.
               </span>
             </p>
             <div class="flex justify-end gap-3">
@@ -481,7 +556,9 @@ onMounted(() => {
         v-if="detailsModal.visible"
         class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
       >
-        <div class="bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div
+          class="bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col"
+        >
           <div class="p-6 border-b border-gray-100 flex items-center justify-between">
             <h3 class="text-lg font-bold text-[#1B2A4A]">Détails de l'auteur</h3>
             <button
@@ -496,31 +573,58 @@ onMounted(() => {
               <!-- Info auteur -->
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Prénom</label>
-                  <p class="text-sm font-medium text-[#1B2A4A]">{{ detailsModal.author.first_name }}</p>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Prénom</label
+                  >
+                  <p class="text-sm font-medium text-[#1B2A4A]">
+                    {{ detailsModal.author.first_name }}
+                  </p>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Nom</label>
-                  <p class="text-sm font-medium text-[#1B2A4A]">{{ detailsModal.author.last_name }}</p>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Nom</label
+                  >
+                  <p class="text-sm font-medium text-[#1B2A4A]">
+                    {{ detailsModal.author.last_name }}
+                  </p>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Nationalité</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Nationalité</label
+                  >
                   <p class="text-sm text-gray-600">{{ detailsModal.author.nationality || '-' }}</p>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Nombre de références</label>
-                  <p class="text-sm font-medium text-[#1B2A4A]">{{ detailsModal.author.references_count || 0 }}</p>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Nombre de références</label
+                  >
+                  <p class="text-sm font-medium text-[#1B2A4A]">
+                    {{ detailsModal.author.references_count || 0 }}
+                  </p>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Date de naissance</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Date de naissance</label
+                  >
                   <p class="text-sm text-gray-600">{{ detailsModal.author.birth_date || '-' }}</p>
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Date de décès</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Date de décès</label
+                  >
                   <p class="text-sm text-gray-600">{{ detailsModal.author.death_date || '-' }}</p>
                 </div>
                 <div class="col-span-2">
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Biographie</label>
+                  <label
+                    class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1"
+                    >Biographie</label
+                  >
                   <p class="text-sm text-gray-600">{{ detailsModal.author.biography || '-' }}</p>
                 </div>
               </div>

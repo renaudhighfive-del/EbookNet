@@ -10,7 +10,6 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- COLONNE GAUCHE -->
       <div class="space-y-6">
-
         <!-- CONFIGURATION D'UN JOUR -->
         <div class="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
           <h3 class="text-lg font-bold text-gray-900 mb-4">Configurer un jour</h3>
@@ -32,7 +31,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">Début</label>
               <input
                 type="time"
-                :value="selectedRule?.start_time?.slice(0,5) || '09:00'"
+                :value="selectedRule?.start_time?.slice(0, 5) || '09:00'"
                 @input="updateSelectedRule('start_time', $event.target.value + ':00')"
                 class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm"
               />
@@ -42,7 +41,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">Fin</label>
               <input
                 type="time"
-                :value="selectedRule?.end_time?.slice(0,5) || '17:00'"
+                :value="selectedRule?.end_time?.slice(0, 5) || '17:00'"
                 @input="updateSelectedRule('end_time', $event.target.value + ':00')"
                 class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm"
               />
@@ -53,7 +52,8 @@
             <span class="text-sm text-gray-600">
               {{ previewDays[previewDayIndex] }}
               <span v-if="selectedRule?.is_active">
-                : {{ selectedRule.start_time?.slice(0,5) }} → {{ selectedRule.end_time?.slice(0,5) }}
+                : {{ selectedRule.start_time?.slice(0, 5) }} →
+                {{ selectedRule.end_time?.slice(0, 5) }}
               </span>
               <span v-else class="text-gray-400"> (inactif)</span>
             </span>
@@ -61,20 +61,18 @@
             <button
               @click="toggleSelectedDay"
               class="px-4 py-1.5 rounded-xl text-sm font-semibold"
-              :class="selectedRule?.is_active
-                ? 'bg-red-100 text-red-600'
-                : 'bg-green-100 text-green-600'"
+              :class="
+                selectedRule?.is_active ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+              "
             >
               {{ selectedRule?.is_active ? 'Désactiver' : 'Activer' }}
             </button>
           </div>
         </div>
-
       </div>
 
       <!-- COLONNE DROITE -->
       <div class="space-y-6">
-
         <!-- HORAIRES HEBDOMADAIRES -->
         <div class="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
           <h3 class="text-lg font-bold text-gray-900 mb-4">Horaires hebdomadaires</h3>
@@ -103,12 +101,10 @@
               </div>
 
               <div v-if="rule.is_active" class="text-sm text-gray-600">
-                {{ rule.start_time?.slice(0,5) }} → {{ rule.end_time?.slice(0,5) }}
+                {{ rule.start_time?.slice(0, 5) }} → {{ rule.end_time?.slice(0, 5) }}
               </div>
 
-              <div v-else class="text-sm text-gray-400 italic">
-                Non défini
-              </div>
+              <div v-else class="text-sm text-gray-400 italic">Non défini</div>
             </div>
           </div>
 
@@ -117,7 +113,11 @@
             type="button"
             :disabled="isSaving"
             class="mt-6 w-full py-2.5 rounded-xl font-semibold transition"
-            :class="isSaving ? 'bg-blue-300 text-white cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'"
+            :class="
+              isSaving
+                ? 'bg-blue-300 text-white cursor-not-allowed'
+                : 'bg-blue-500 text-white hover:bg-blue-600'
+            "
           >
             <span v-if="isSaving">Enregistrement en cours...</span>
             <span v-else>Enregistrer les horaires</span>
@@ -130,7 +130,10 @@
             <div class="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center">
               <!-- Google icon -->
               <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
-                <path d="M12 1C7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.07 5.38 12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1z" fill="#EA4335"/>
+                <path
+                  d="M12 1C7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.07 5.38 12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1z"
+                  fill="#EA4335"
+                />
               </svg>
             </div>
 
@@ -144,14 +147,29 @@
               type="button"
               :disabled="googleLoading"
               class="px-4 py-2 rounded-xl text-sm font-semibold transition-colors inline-flex items-center justify-center gap-2"
-              :class="googleConnected
-                ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200'
-                : 'bg-blue-500 text-white hover:bg-blue-600'"
+              :class="
+                googleConnected
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+              "
             >
               <span v-if="googleLoading" class="inline-flex items-center gap-2">
                 <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25" />
-                  <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" class="opacity-75" />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                    class="opacity-25"
+                  />
+                  <path
+                    d="M22 12a10 10 0 0 1-10 10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                    class="opacity-75"
+                  />
                 </svg>
                 Chargement...
               </span>
@@ -159,7 +177,6 @@
             </button>
           </div>
         </div>
-
       </div>
     </div>
   </div>
@@ -178,12 +195,10 @@ const previewDayIndex = ref(0)
 const googleConnected = ref(false)
 const googleLoading = ref(false)
 
-const previewDays = [
-  'Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'
-]
+const previewDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 
 const selectedRule = computed(() =>
-  availabilityRules.value.find(r => r.day_of_week === previewDayIndex.value)
+  availabilityRules.value.find((r) => r.day_of_week === previewDayIndex.value),
 )
 
 const isSaving = computed(() => store.isActionLoading)
@@ -198,17 +213,19 @@ watch(() => store.rules, initRules, { deep: true })
 
 function initRules() {
   const db = store.rules || []
-  availabilityRules.value = [0,1,2,3,4,5,6].map(day => {
-    const found = db.find(r => r.day_of_week === day)
-    return found || {
-      day_of_week: day,
-      start_time: '09:00:00',
-      end_time: '17:00:00',
-      is_active: false,
-      slot_duration_minutes: 30,
-      buffer_minutes: 0,
-      id: null
-    }
+  availabilityRules.value = [0, 1, 2, 3, 4, 5, 6].map((day) => {
+    const found = db.find((r) => r.day_of_week === day)
+    return (
+      found || {
+        day_of_week: day,
+        start_time: '09:00:00',
+        end_time: '17:00:00',
+        is_active: false,
+        slot_duration_minutes: 30,
+        buffer_minutes: 0,
+        id: null,
+      }
+    )
   })
 }
 
@@ -217,12 +234,20 @@ function handleGoogleCallbackQuery() {
   if (params.has('google_calendar_connected')) {
     toast.success('Google Calendar connecté avec succès.')
     params.delete('google_calendar_connected')
-    window.history.replaceState({}, document.title, `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`)
+    window.history.replaceState(
+      {},
+      document.title,
+      `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`,
+    )
   }
   if (params.has('google_calendar_error')) {
     toast.error('Échec de la connexion Google Calendar.')
     params.delete('google_calendar_error')
-    window.history.replaceState({}, document.title, `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`)
+    window.history.replaceState(
+      {},
+      document.title,
+      `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`,
+    )
   }
 }
 
@@ -266,7 +291,7 @@ async function saveSelectedRule(rule) {
     end_time: rule.is_active ? rule.end_time : null,
     is_active: rule.is_active,
     slot_duration_minutes: rule.slot_duration_minutes,
-    buffer_minutes: rule.buffer_minutes
+    buffer_minutes: rule.buffer_minutes,
   }
 
   if (rule.id) {
@@ -307,7 +332,7 @@ async function saveAllRules() {
         end_time: rule.is_active ? rule.end_time : null,
         is_active: rule.is_active,
         slot_duration_minutes: rule.slot_duration_minutes,
-        buffer_minutes: rule.buffer_minutes
+        buffer_minutes: rule.buffer_minutes,
       }
 
       if (rule.id) {

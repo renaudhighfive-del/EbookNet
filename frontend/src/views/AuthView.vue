@@ -73,8 +73,8 @@ const handleForgotPassword = async () => {
     await api.post('/auth/forgot-password', { email: forgotForm.value.email })
     forgotSent.value = true
   } catch (error) {
-    forgotError.value = error.response?.data?.message
-      ?? "Une erreur est survenue. Veuillez réessayer."
+    forgotError.value =
+      error.response?.data?.message ?? 'Une erreur est survenue. Veuillez réessayer.'
   } finally {
     isLoading.value = false
   }
@@ -139,9 +139,7 @@ const handleRegister = async () => {
             :key="item.text"
             class="flex items-center gap-3 text-white/75"
           >
-            <div
-              class="w-8 h-8 rounded-lg bg-white/8 flex items-center justify-center shrink-0"
-            >
+            <div class="w-8 h-8 rounded-lg bg-white/8 flex items-center justify-center shrink-0">
               <component :is="item.icon" class="w-4 h-4" />
             </div>
             <span class="text-sm">{{ item.text }}</span>
@@ -149,7 +147,7 @@ const handleRegister = async () => {
         </div>
       </div>
       <p class="text-gray-600 text-xs">© 2024 BibliNum — Bibliothèque Numérique</p>
-      
+
       <!-- Bouton retour vers l'accueil -->
       <router-link
         to="/"
@@ -249,7 +247,9 @@ const handleRegister = async () => {
                 type="button"
                 @click="showForgotPassword = true"
                 class="text-[#0D9488] text-sm font-medium hover:underline"
-              >Mot de passe oublié ?</button>
+              >
+                Mot de passe oublié ?
+              </button>
             </div>
             <button
               type="submit"
@@ -280,7 +280,11 @@ const handleRegister = async () => {
         <div v-else-if="showForgotPassword">
           <button
             type="button"
-            @click="showForgotPassword = false; forgotSent = false; forgotError = ''"
+            @click="
+              showForgotPassword = false
+              forgotSent = false
+              forgotError = ''
+            "
             class="flex items-center gap-1 text-sm text-gray-500 hover:text-[#1B2A4A] mb-6 transition-colors"
           >
             <span>← Retour à la connexion</span>
@@ -288,7 +292,8 @@ const handleRegister = async () => {
 
           <h2 class="text-2xl font-bold text-[#1B2A4A] mb-2 font-serif">Mot de passe oublié</h2>
           <p class="text-sm text-gray-500 mb-6">
-            Saisissez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.
+            Saisissez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre
+            mot de passe.
           </p>
 
           <div
@@ -314,7 +319,8 @@ const handleRegister = async () => {
             </div>
             <h3 class="text-lg font-bold text-[#1B2A4A] mb-2 font-serif">E-mail envoyé !</h3>
             <p class="text-sm text-gray-600 leading-relaxed">
-              Si cette adresse e-mail existe dans notre système, vous recevrez un lien de réinitialisation.
+              Si cette adresse e-mail existe dans notre système, vous recevrez un lien de
+              réinitialisation.
             </p>
           </div>
 
@@ -322,7 +328,8 @@ const handleRegister = async () => {
             <div>
               <label
                 class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5"
-              >Adresse e-mail</label>
+                >Adresse e-mail</label
+              >
               <input
                 v-model="forgotForm.email"
                 type="email"
@@ -362,7 +369,10 @@ const handleRegister = async () => {
               Vous serez notifié par e-mail dès que votre compte sera activé.
             </p>
             <button
-              @click="activeTab = 'login'; registerSuccess = false"
+              @click="
+                activeTab = 'login'
+                registerSuccess = false
+              "
               class="mt-5 px-5 py-2.5 bg-[#0D9488] text-white rounded-xl text-sm font-semibold hover:bg-[#0a7a6f] transition-colors"
             >
               Retour à la connexion

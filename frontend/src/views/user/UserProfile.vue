@@ -69,7 +69,7 @@ async function handleSaveProfile() {
     }
     toast.success('Profil mis à jour avec succès.')
   } catch (err) {
-    toast.error(err.response?.data?.message || 'Impossible d\'enregistrer les modifications')
+    toast.error(err.response?.data?.message || "Impossible d'enregistrer les modifications")
     console.error('Erreur sauvegarde profil:', err)
   } finally {
     isSavingProfile.value = false
@@ -131,7 +131,10 @@ onMounted(() => {
                   {{ profileForm.first_name }} {{ profileForm.last_name }}
                 </p>
                 <p class="text-gray-500 text-sm">{{ profileForm.email }}</p>
-                <button type="button" class="text-teal-700 font-medium text-sm mt-1 hover:underline">
+                <button
+                  type="button"
+                  class="text-teal-700 font-medium text-sm mt-1 hover:underline"
+                >
                   Modifier l'avatar
                 </button>
               </div>
@@ -199,8 +202,17 @@ onMounted(() => {
                 :disabled="isSavingProfile || isLoading"
                 class="inline-flex items-center gap-2 px-8 py-3 bg-teal-600 text-white font-medium rounded-xl hover:bg-teal-700 transition-colors disabled:opacity-50"
               >
-                <span v-if="isSavingProfile" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                {{ isSavingProfile ? 'Enregistrement...' : (isLoading ? 'Chargement...' : 'Enregistrer le profil' )}}
+                <span
+                  v-if="isSavingProfile"
+                  class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+                ></span>
+                {{
+                  isSavingProfile
+                    ? 'Enregistrement...'
+                    : isLoading
+                      ? 'Chargement...'
+                      : 'Enregistrer le profil'
+                }}
               </button>
             </div>
           </form>
@@ -259,7 +271,10 @@ onMounted(() => {
                 :disabled="isSavingPassword"
                 class="inline-flex items-center gap-2 px-8 py-3 bg-teal-600 text-white font-medium rounded-xl hover:bg-teal-700 transition-colors disabled:opacity-50"
               >
-                <span v-if="isSavingPassword" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span
+                  v-if="isSavingPassword"
+                  class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+                ></span>
                 {{ isSavingPassword ? 'Mise à jour...' : 'Mettre à jour le mot de passe' }}
               </button>
             </div>

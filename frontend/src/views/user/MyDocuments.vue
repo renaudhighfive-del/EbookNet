@@ -18,30 +18,59 @@ const depositStore = useDepositStore()
 const activeTab = ref('all')
 
 const statusConfig = {
-  pending:             { label: 'En attente',        cls: 'bg-gray-100 text-gray-600',      icon: Clock },
-  assigned:            { label: 'Assignée',           cls: 'bg-blue-100 text-blue-700',       icon: Send },
-  approved_by_manager: { label: 'Validée (resp.)',   cls: 'bg-teal-100 text-teal-700',       icon: CheckCircle },
-  rejected_by_manager: { label: 'Refusée (resp.)',   cls: 'bg-orange-100 text-orange-700',   icon: XCircle },
-  second_review:       { label: 'Second avis',        cls: 'bg-purple-100 text-purple-700',   icon: Eye },
-  approved:            { label: 'Approuvée',          cls: 'bg-green-100 text-green-700',     icon: CheckCircle },
-  rejected:            { label: 'Rejetée',            cls: 'bg-red-100 text-red-700',         icon: XCircle },
-  published:           { label: 'Publiée',            cls: 'bg-emerald-100 text-emerald-800', icon: CheckCircle },
+  pending: { label: 'En attente', cls: 'bg-gray-100 text-gray-600', icon: Clock },
+  assigned: { label: 'Assignée', cls: 'bg-blue-100 text-blue-700', icon: Send },
+  approved_by_manager: {
+    label: 'Validée (resp.)',
+    cls: 'bg-teal-100 text-teal-700',
+    icon: CheckCircle,
+  },
+  rejected_by_manager: {
+    label: 'Refusée (resp.)',
+    cls: 'bg-orange-100 text-orange-700',
+    icon: XCircle,
+  },
+  second_review: { label: 'Second avis', cls: 'bg-purple-100 text-purple-700', icon: Eye },
+  approved: { label: 'Approuvée', cls: 'bg-green-100 text-green-700', icon: CheckCircle },
+  rejected: { label: 'Rejetée', cls: 'bg-red-100 text-red-700', icon: XCircle },
+  published: { label: 'Publiée', cls: 'bg-emerald-100 text-emerald-800', icon: CheckCircle },
 }
 
 const deposits = computed(() => depositStore.deposits)
 
 const tabs = computed(() => [
-  { id: 'all',      label: 'Toutes',   count: deposits.value.length },
-  { id: 'pending',  label: 'En cours', count: deposits.value.filter(d => ['pending', 'assigned', 'second_review'].includes(d.status)).length },
-  { id: 'approved', label: 'Validées', count: deposits.value.filter(d => ['approved_by_manager', 'approved', 'published'].includes(d.status)).length },
-  { id: 'rejected', label: 'Refusées', count: deposits.value.filter(d => ['rejected_by_manager', 'rejected'].includes(d.status)).length },
+  { id: 'all', label: 'Toutes', count: deposits.value.length },
+  {
+    id: 'pending',
+    label: 'En cours',
+    count: deposits.value.filter((d) => ['pending', 'assigned', 'second_review'].includes(d.status))
+      .length,
+  },
+  {
+    id: 'approved',
+    label: 'Validées',
+    count: deposits.value.filter((d) =>
+      ['approved_by_manager', 'approved', 'published'].includes(d.status),
+    ).length,
+  },
+  {
+    id: 'rejected',
+    label: 'Refusées',
+    count: deposits.value.filter((d) => ['rejected_by_manager', 'rejected'].includes(d.status))
+      .length,
+  },
 ])
 
 const filteredDeposits = computed(() => {
   if (activeTab.value === 'all') return deposits.value
-  if (activeTab.value === 'pending') return deposits.value.filter(d => ['pending', 'assigned', 'second_review'].includes(d.status))
-  if (activeTab.value === 'approved') return deposits.value.filter(d => ['approved_by_manager', 'approved', 'published'].includes(d.status))
-  if (activeTab.value === 'rejected') return deposits.value.filter(d => ['rejected_by_manager', 'rejected'].includes(d.status))
+  if (activeTab.value === 'pending')
+    return deposits.value.filter((d) => ['pending', 'assigned', 'second_review'].includes(d.status))
+  if (activeTab.value === 'approved')
+    return deposits.value.filter((d) =>
+      ['approved_by_manager', 'approved', 'published'].includes(d.status),
+    )
+  if (activeTab.value === 'rejected')
+    return deposits.value.filter((d) => ['rejected_by_manager', 'rejected'].includes(d.status))
   return deposits.value
 })
 
@@ -52,7 +81,9 @@ function getStatus(s) {
 function formatDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('fr-FR', {
-    day: '2-digit', month: 'short', year: 'numeric',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   })
 }
 
@@ -71,9 +102,7 @@ onMounted(async () => {
       <div class="flex items-center justify-between mb-6">
         <div>
           <h1 class="text-3xl font-bold text-navy-800 font-serif mb-2">Mes dépôts</h1>
-          <p class="text-gray-500">
-            Suivez l'état de vos demandes de dépôt documentaire
-          </p>
+          <p class="text-gray-500">Suivez l'état de vos demandes de dépôt documentaire</p>
         </div>
         <router-link
           to="/deposit-request"
@@ -86,7 +115,9 @@ onMounted(async () => {
 
       <!-- Loading -->
       <div v-if="depositStore.isLoading" class="flex justify-center py-20">
-        <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
+        <div
+          class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"
+        ></div>
       </div>
 
       <template v-else>
@@ -150,7 +181,11 @@ onMounted(async () => {
           <FileText class="w-16 h-16 mx-auto mb-4 text-gray-300" />
           <p class="text-lg text-gray-500 mb-2">Aucune demande de dépôt</p>
           <p class="text-sm text-gray-400 mb-6">
-            {{ activeTab === 'all' ? 'Vous n\'avez encore soumis aucune demande.' : 'Aucune demande dans cette catégorie.' }}
+            {{
+              activeTab === 'all'
+                ? "Vous n'avez encore soumis aucune demande."
+                : 'Aucune demande dans cette catégorie.'
+            }}
           </p>
           <router-link
             v-if="activeTab === 'all'"

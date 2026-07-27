@@ -10,9 +10,20 @@ onMounted(async () => {
   await store.fetchDeposits()
 })
 
-const pendingCount = computed(() => store.deposits.filter(d => d.status === 'assigned' || d.status === 'second_opinion').length)
-const approvedCount = computed(() => store.deposits.filter(d => d.status === 'manager_approved' || d.status === 'approved_published').length)
-const rejectedCount = computed(() => store.deposits.filter(d => d.status === 'manager_rejected' || d.status === 'rejected').length)
+const pendingCount = computed(
+  () =>
+    store.deposits.filter((d) => d.status === 'assigned' || d.status === 'second_opinion').length,
+)
+const approvedCount = computed(
+  () =>
+    store.deposits.filter(
+      (d) => d.status === 'manager_approved' || d.status === 'approved_published',
+    ).length,
+)
+const rejectedCount = computed(
+  () =>
+    store.deposits.filter((d) => d.status === 'manager_rejected' || d.status === 'rejected').length,
+)
 
 const tabs = computed(() => [
   { id: 'pending', label: 'À examiner', count: pendingCount.value },
@@ -24,13 +35,13 @@ const tabs = computed(() => [
 const filteredDeposits = computed(() => {
   const list = store.deposits
   if (activeTab.value === 'pending') {
-    return list.filter(d => d.status === 'assigned' || d.status === 'second_opinion')
+    return list.filter((d) => d.status === 'assigned' || d.status === 'second_opinion')
   }
   if (activeTab.value === 'approved') {
-    return list.filter(d => d.status === 'manager_approved' || d.status === 'approved_published')
+    return list.filter((d) => d.status === 'manager_approved' || d.status === 'approved_published')
   }
   if (activeTab.value === 'rejected') {
-    return list.filter(d => d.status === 'manager_rejected' || d.status === 'rejected')
+    return list.filter((d) => d.status === 'manager_rejected' || d.status === 'rejected')
   }
   return list
 })
@@ -48,7 +59,10 @@ function getTabEmptyMessage() {
     <template #title>
       <div class="flex items-center gap-3">
         <span>Demandes qui me sont assignées</span>
-        <span v-if="pendingCount > 0" class="bg-red-600 text-white text-xs px-2 py-1 rounded-full font-bold">
+        <span
+          v-if="pendingCount > 0"
+          class="bg-red-600 text-white text-xs px-2 py-1 rounded-full font-bold"
+        >
           {{ pendingCount }} à examiner
         </span>
       </div>
@@ -56,7 +70,9 @@ function getTabEmptyMessage() {
 
     <!-- Loader -->
     <div v-if="store.isLoading" class="flex justify-center py-16">
-      <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
+      <div
+        class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"
+      ></div>
     </div>
 
     <template v-else>
@@ -84,9 +100,12 @@ function getTabEmptyMessage() {
           :key="deposit.id"
           class="bg-white rounded-2xl p-6 shadow-soft border-l-4 border-gray-200 flex flex-col justify-between"
           :class="{
-            'border-l-amber-500': deposit.status === 'second_opinion' || store.getAgingDays(deposit.submittedAt) >= 3,
-            'border-l-green-600': ['manager_approved', 'approved_published'].includes(deposit.status),
-            'border-l-red-600': ['manager_rejected', 'rejected'].includes(deposit.status)
+            'border-l-amber-500':
+              deposit.status === 'second_opinion' || store.getAgingDays(deposit.submittedAt) >= 3,
+            'border-l-green-600': ['manager_approved', 'approved_published'].includes(
+              deposit.status,
+            ),
+            'border-l-red-600': ['manager_rejected', 'rejected'].includes(deposit.status),
           }"
         >
           <div class="flex items-start gap-4 mb-4">
@@ -96,9 +115,16 @@ function getTabEmptyMessage() {
               📗
             </div>
             <div class="flex-1 min-w-0">
-              <h3 class="font-semibold text-[#1B2A4A] mb-2 truncate" :title="deposit.title">{{ deposit.title }}</h3>
+              <h3 class="font-semibold text-[#1B2A4A] mb-2 truncate" :title="deposit.title">
+                {{ deposit.title }}
+              </h3>
               <p class="text-gray-600 text-sm mb-3">
-                Soumis par : {{ deposit.submittedBy ? `${deposit.submittedBy.first_name} ${deposit.submittedBy.last_name}` : '—' }}
+                Soumis par :
+                {{
+                  deposit.submittedBy
+                    ? `${deposit.submittedBy.first_name} ${deposit.submittedBy.last_name}`
+                    : '—'
+                }}
               </p>
               <div class="flex flex-wrap gap-2 mb-4">
                 <span class="bg-teal-50 text-teal-700 px-2 py-1 rounded-full text-xs">
@@ -109,14 +135,20 @@ function getTabEmptyMessage() {
                 </span>
               </div>
               <div
-                v-if="store.getAgingBadge(deposit.submittedAt) && (deposit.status === 'assigned' || deposit.status === 'second_opinion')"
+                v-if="
+                  store.getAgingBadge(deposit.submittedAt) &&
+                  (deposit.status === 'assigned' || deposit.status === 'second_opinion')
+                "
                 class="mb-4 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs"
                 :class="store.getAgingBadge(deposit.submittedAt).cls"
               >
                 ⚠️ Assignée depuis {{ store.getAgingBadge(deposit.submittedAt).label }}
               </div>
               <div class="mb-4">
-                <span class="px-3 py-1 rounded-full text-xs font-semibold" :class="store.getStatusConfig(deposit.status).cls">
+                <span
+                  class="px-3 py-1 rounded-full text-xs font-semibold"
+                  :class="store.getStatusConfig(deposit.status).cls"
+                >
                   {{ store.getStatusConfig(deposit.status).label }}
                 </span>
               </div>
@@ -126,7 +158,11 @@ function getTabEmptyMessage() {
             :to="`/manager/deposits/${deposit.id}/review`"
             class="w-full flex items-center justify-center bg-teal-600 text-white py-3 rounded-xl font-medium hover:bg-teal-700 transition-colors mt-auto text-center"
           >
-            {{ ['assigned', 'second_opinion'].includes(deposit.status) ? 'Examiner la demande →' : 'Voir les détails →' }}
+            {{
+              ['assigned', 'second_opinion'].includes(deposit.status)
+                ? 'Examiner la demande →'
+                : 'Voir les détails →'
+            }}
           </router-link>
         </div>
       </div>

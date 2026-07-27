@@ -4,7 +4,9 @@
 
     <!-- Loading -->
     <div v-if="isLoading" class="flex justify-center py-20">
-      <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
+      <div
+        class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"
+      ></div>
     </div>
 
     <template v-else>
@@ -14,7 +16,9 @@
           @click="activeTab = 'users'"
           :class="[
             'px-4 py-2 rounded-xl text-sm font-medium transition-colors',
-            activeTab === 'users' ? 'bg-[#0D9488] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            activeTab === 'users'
+              ? 'bg-[#0D9488] text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
           ]"
         >
           Utilisateurs archivés
@@ -23,7 +27,9 @@
           @click="activeTab = 'references'"
           :class="[
             'px-4 py-2 rounded-xl text-sm font-medium transition-colors',
-            activeTab === 'references' ? 'bg-[#0D9488] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            activeTab === 'references'
+              ? 'bg-[#0D9488] text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
           ]"
         >
           Références archivées
@@ -31,7 +37,10 @@
       </div>
 
       <!-- Utilisateurs archivés -->
-      <div v-if="activeTab === 'users'" class="bg-white rounded-2xl border border-gray-100 shadow-soft overflow-hidden">
+      <div
+        v-if="activeTab === 'users'"
+        class="bg-white rounded-2xl border border-gray-100 shadow-soft overflow-hidden"
+      >
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-50">
           <h3 class="text-sm font-semibold text-[#1B2A4A]">Utilisateurs archivés</h3>
           <div class="relative">
@@ -52,14 +61,30 @@
         <table v-else class="w-full text-sm">
           <thead>
             <tr class="bg-[#F8F7F4]">
-              <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Utilisateur</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Rôle</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Inscrit le</th>
+              <th
+                class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Utilisateur
+              </th>
+              <th
+                class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Rôle
+              </th>
+              <th
+                class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Inscrit le
+              </th>
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="user in archivedUsers" :key="user.id" class="hover:bg-[#F8F7F4] transition-colors">
+            <tr
+              v-for="user in archivedUsers"
+              :key="user.id"
+              class="hover:bg-[#F8F7F4] transition-colors"
+            >
               <td class="px-6 py-3.5">
                 <div class="flex items-center gap-3">
                   <div
@@ -77,7 +102,10 @@
                 </div>
               </td>
               <td class="px-4 py-3.5">
-                <span :class="getRoleClass(user.role)" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                <span
+                  :class="getRoleClass(user.role)"
+                  class="px-2 py-0.5 rounded-full text-xs font-medium"
+                >
                   {{ getRoleLabel(user.role) }}
                 </span>
               </td>
@@ -98,7 +126,10 @@
         </table>
 
         <!-- Pagination -->
-        <div v-if="archivedPagination.last_page > 1" class="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
+        <div
+          v-if="archivedPagination.last_page > 1"
+          class="px-6 py-4 border-t border-gray-50 flex items-center justify-between"
+        >
           <p class="text-xs text-gray-400">
             Page {{ archivedPagination.current_page }} sur {{ archivedPagination.last_page }}
           </p>
@@ -122,7 +153,10 @@
       </div>
 
       <!-- Références archivées -->
-      <div v-if="activeTab === 'references'" class="bg-white rounded-2xl border border-gray-100 shadow-soft overflow-hidden">
+      <div
+        v-if="activeTab === 'references'"
+        class="bg-white rounded-2xl border border-gray-100 shadow-soft overflow-hidden"
+      >
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-50">
           <h3 class="text-sm font-semibold text-[#1B2A4A]">Références archivées</h3>
           <div class="relative">
@@ -143,15 +177,35 @@
         <table v-else class="w-full text-sm">
           <thead>
             <tr class="bg-[#F8F7F4]">
-              <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Titre</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Catégorie</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ajouté par</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+              <th
+                class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Titre
+              </th>
+              <th
+                class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Catégorie
+              </th>
+              <th
+                class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Ajouté par
+              </th>
+              <th
+                class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"
+              >
+                Date
+              </th>
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="ref in archivedReferences" :key="ref.id" class="hover:bg-[#F8F7F4] transition-colors">
+            <tr
+              v-for="ref in archivedReferences"
+              :key="ref.id"
+              class="hover:bg-[#F8F7F4] transition-colors"
+            >
               <td class="px-6 py-3.5">
                 <div>
                   <p class="font-medium text-[#1B2A4A] text-sm leading-tight">{{ ref.title }}</p>
@@ -159,13 +213,19 @@
                 </div>
               </td>
               <td class="px-4 py-3.5">
-                <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                <span
+                  class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                >
                   {{ ref.category?.name || '—' }}
                 </span>
               </td>
               <td class="px-4 py-3.5">
                 <span class="text-gray-600 text-xs">
-                  {{ ref.uploaded_by ? `${ref.uploaded_by.first_name} ${ref.uploaded_by.last_name}` : '—' }}
+                  {{
+                    ref.uploaded_by
+                      ? `${ref.uploaded_by.first_name} ${ref.uploaded_by.last_name}`
+                      : '—'
+                  }}
                 </span>
               </td>
               <td class="px-4 py-3.5 text-gray-400 text-xs font-mono">
@@ -185,7 +245,10 @@
         </table>
 
         <!-- Pagination -->
-        <div v-if="refPagination.last_page > 1" class="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
+        <div
+          v-if="refPagination.last_page > 1"
+          class="px-6 py-4 border-t border-gray-50 flex items-center justify-between"
+        >
           <p class="text-xs text-gray-400">
             Page {{ refPagination.current_page }} sur {{ refPagination.last_page }}
           </p>
@@ -256,8 +319,23 @@ const searchReferences = ref('')
 const isActionLoading = ref(false)
 const confirmModal = ref({ visible: false, title: '', message: '', type: '', item: null })
 
-const { getRoleLabel, getRoleClass, getAvatarColor, getUserInitials, formatDate, archivedUsers, archivedPagination, fetchArchivedUsers } = userStore
-const { archivedReferences, archivedPagination: refPagination, isLoading, fetchArchivedReferences, restoreReference } = referenceStore
+const {
+  getRoleLabel,
+  getRoleClass,
+  getAvatarColor,
+  getUserInitials,
+  formatDate,
+  archivedUsers,
+  archivedPagination,
+  fetchArchivedUsers,
+} = userStore
+const {
+  archivedReferences,
+  archivedPagination: refPagination,
+  isLoading,
+  fetchArchivedReferences,
+  restoreReference,
+} = referenceStore
 
 const fetchArchivedUsersWithParams = async (page = 1) => {
   await fetchArchivedUsers({ page, per_page: 10, search: searchUsers.value })
@@ -270,10 +348,10 @@ const fetchArchivedReferencesWithParams = async (page = 1) => {
 const confirmRestoreUser = (user) => {
   confirmModal.value = {
     visible: true,
-    title: 'Restaurer l\'utilisateur',
+    title: "Restaurer l'utilisateur",
     message: `Voulez-vous restaurer le compte de ${user.first_name} ${user.last_name} ?`,
     type: 'user',
-    item: user
+    item: user,
   }
 }
 
@@ -283,7 +361,7 @@ const confirmRestoreReference = (ref) => {
     title: 'Restaurer la référence',
     message: `Voulez-vous restaurer la référence "${ref.title}" ?`,
     type: 'reference',
-    item: ref
+    item: ref,
   }
 }
 
@@ -312,9 +390,6 @@ watch(searchUsers, debouncedFetchUsers)
 watch(searchReferences, debouncedFetchReferences)
 
 onMounted(() => {
-  Promise.all([
-    fetchArchivedUsersWithParams(),
-    fetchArchivedReferencesWithParams()
-  ])
+  Promise.all([fetchArchivedUsersWithParams(), fetchArchivedReferencesWithParams()])
 })
 </script>

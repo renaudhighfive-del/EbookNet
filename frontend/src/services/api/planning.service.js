@@ -36,11 +36,11 @@ export const planningService = {
     const response = await api.get('/planning/appointments', {
       params: {
         start_date: startDate,
-        end_date: endDate
-      }
+        end_date: endDate,
+      },
     })
 
-   return response.data
+    return response.data
   },
 
   /**
@@ -71,5 +71,5 @@ export const planningService = {
   async cancelAppointment(id) {
     const response = await api.post(`/planning/appointments/${id}/cancel`)
     return response.data
-  }
+  },
 }

@@ -238,7 +238,6 @@ async function confirmLogout() {
 }
 </script>
 
-
 <template>
   <div class="min-h-screen flex bg-[#F1F0EC]">
     <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
@@ -467,7 +466,14 @@ async function confirmLogout() {
 
     <!-- Modal de confirmation de déconnexion -->
     <Teleport to="body">
-      <Transition enter-active-class="transition ease-in-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in-out duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <Transition
+        enter-active-class="transition ease-in-out duration-200"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition ease-in-out duration-150"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
         <div
           v-if="logoutModalOpen"
           class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
@@ -496,4 +502,3 @@ async function confirmLogout() {
     </Teleport>
   </div>
 </template>
-

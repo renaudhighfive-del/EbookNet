@@ -141,7 +141,7 @@ export const usePublisherStore = defineStore('publisher', () => {
    * @param {Object} updatedPublisher - Données mises à jour.
    */
   function _updateInList(id, updatedPublisher) {
-    const index = publishers.value.findIndex(p => p.id === id)
+    const index = publishers.value.findIndex((p) => p.id === id)
     if (index !== -1) {
       const existing = publishers.value[index]
       publishers.value.splice(index, 1, { ...existing, ...updatedPublisher })
@@ -153,7 +153,7 @@ export const usePublisherStore = defineStore('publisher', () => {
    * @param {number|string} id - Identifiant à retirer.
    */
   function _removeFromList(id) {
-    publishers.value = publishers.value.filter(p => p.id !== id)
+    publishers.value = publishers.value.filter((p) => p.id !== id)
   }
 
   return {

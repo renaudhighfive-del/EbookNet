@@ -56,5 +56,5 @@ export const managerService = {
   async rejectDeposit(id, justification) {
     const response = await api.patch(`/manager/deposits/${id}/reject`, { justification })
     return response.data
-  }
+  },
 }

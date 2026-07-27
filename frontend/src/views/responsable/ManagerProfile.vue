@@ -83,7 +83,7 @@ async function handleSaveProfile() {
 
     toast.success('Profil mis à jour avec succès.')
   } catch (err) {
-    toast.error(err.response?.data?.message || 'Impossible d\'enregistrer les modifications')
+    toast.error(err.response?.data?.message || "Impossible d'enregistrer les modifications")
     console.error('Erreur sauvegarde profil:', err)
   } finally {
     isSavingProfile.value = false
@@ -137,7 +137,9 @@ onMounted(() => {
           >
             {{ initials }}
           </div>
-          <h2 class="text-2xl font-bold text-navy-800 mb-1">{{ form.first_name }} {{ form.last_name }}</h2>
+          <h2 class="text-2xl font-bold text-navy-800 mb-1">
+            {{ form.first_name }} {{ form.last_name }}
+          </h2>
           <span
             class="inline-block bg-teal-50 text-teal-700 px-3 py-1 rounded-full text-sm font-medium mb-4"
           >
@@ -150,7 +152,9 @@ onMounted(() => {
             <h3 class="text-lg font-semibold text-navy-800 mb-4">Informations personnelles</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label for="firstName" class="block text-sm font-medium text-navy-800 mb-2">Prénom *</label>
+                <label for="firstName" class="block text-sm font-medium text-navy-800 mb-2"
+                  >Prénom *</label
+                >
                 <input
                   id="firstName"
                   v-model="form.first_name"
@@ -160,7 +164,9 @@ onMounted(() => {
                 />
               </div>
               <div>
-                <label for="lastName" class="block text-sm font-medium text-navy-800 mb-2">Nom *</label>
+                <label for="lastName" class="block text-sm font-medium text-navy-800 mb-2"
+                  >Nom *</label
+                >
                 <input
                   id="lastName"
                   v-model="form.last_name"
@@ -171,7 +177,9 @@ onMounted(() => {
               </div>
             </div>
             <div class="mt-4">
-              <label for="email" class="block text-sm font-medium text-navy-800 mb-2">Adresse e-mail *</label>
+              <label for="email" class="block text-sm font-medium text-navy-800 mb-2"
+                >Adresse e-mail *</label
+              >
               <input
                 id="email"
                 v-model="form.email"
@@ -181,7 +189,9 @@ onMounted(() => {
               />
             </div>
             <div class="mt-4">
-              <label for="phone" class="block text-sm font-medium text-navy-800 mb-2">Téléphone</label>
+              <label for="phone" class="block text-sm font-medium text-navy-800 mb-2"
+                >Téléphone</label
+              >
               <input
                 id="phone"
                 v-model="form.phone"
@@ -196,17 +206,38 @@ onMounted(() => {
             <h3 class="text-lg font-semibold text-navy-800 mb-4">Sécurité</h3>
             <div class="space-y-4">
               <div>
-                <label for="currentPassword" class="block text-sm font-medium text-gray-600 mb-2">Mot de passe actuel</label>
-                <input id="currentPassword" v-model="passwordForm.current_password" type="password" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50" />
+                <label for="currentPassword" class="block text-sm font-medium text-gray-600 mb-2"
+                  >Mot de passe actuel</label
+                >
+                <input
+                  id="currentPassword"
+                  v-model="passwordForm.current_password"
+                  type="password"
+                  class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
+                />
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label for="newPassword" class="block text-sm font-medium text-gray-600 mb-2">Nouveau mot de passe</label>
-                  <input id="newPassword" v-model="passwordForm.password" type="password" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50" />
+                  <label for="newPassword" class="block text-sm font-medium text-gray-600 mb-2"
+                    >Nouveau mot de passe</label
+                  >
+                  <input
+                    id="newPassword"
+                    v-model="passwordForm.password"
+                    type="password"
+                    class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
+                  />
                 </div>
                 <div>
-                  <label for="confirmPassword" class="block text-sm font-medium text-gray-600 mb-2">Confirmer le nouveau mot de passe</label>
-                  <input id="confirmPassword" v-model="passwordForm.password_confirmation" type="password" class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50" />
+                  <label for="confirmPassword" class="block text-sm font-medium text-gray-600 mb-2"
+                    >Confirmer le nouveau mot de passe</label
+                  >
+                  <input
+                    id="confirmPassword"
+                    v-model="passwordForm.password_confirmation"
+                    type="password"
+                    class="w-full bg-beige border border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-50"
+                  />
                 </div>
               </div>
             </div>
@@ -223,13 +254,18 @@ onMounted(() => {
           </div>
 
           <div class="flex items-center justify-between pt-4">
-            <button type="button" class="text-gray-600 hover:text-navy-800 font-medium">Annuler</button>
+            <button type="button" class="text-gray-600 hover:text-navy-800 font-medium">
+              Annuler
+            </button>
             <button
               type="submit"
               :disabled="isSavingProfile"
               class="inline-flex items-center gap-2 bg-teal-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-teal-700 transition-colors disabled:opacity-50"
             >
-              <span v-if="isSavingProfile" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <span
+                v-if="isSavingProfile"
+                class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+              ></span>
               {{ isSavingProfile ? 'Enregistrement...' : 'Enregistrer les modifications' }}
             </button>
           </div>

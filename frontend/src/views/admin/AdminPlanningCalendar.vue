@@ -3,18 +3,37 @@
     <!-- Header navigation -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-4">
-        <button @click="previousWeek" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50">
+        <button
+          @click="previousWeek"
+          class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50"
+        >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"
+            ></path>
           </svg>
         </button>
-        <button @click="goToToday" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50">
+        <button
+          @click="goToToday"
+          class="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50"
+        >
           Aujourd'hui
         </button>
         <h2 class="text-xl font-bold text-gray-900">{{ currentWeekDisplay }}</h2>
-        <button @click="nextWeek" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50">
+        <button
+          @click="nextWeek"
+          class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50"
+        >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            ></path>
           </svg>
         </button>
       </div>
@@ -23,7 +42,8 @@
           <span class="w-3 h-3 rounded bg-green-500"></span> Confirmé
         </span>
         <span class="flex items-center gap-1.5 text-xs text-gray-500">
-          <span class="w-3 h-3 rounded bg-amber-400 border border-dashed border-amber-600"></span> En attente
+          <span class="w-3 h-3 rounded bg-amber-400 border border-dashed border-amber-600"></span>
+          En attente
         </span>
         <span class="flex items-center gap-1.5 text-xs text-gray-500">
           <span class="w-3 h-3 rounded bg-gray-400"></span> Terminé
@@ -33,20 +53,31 @@
 
     <!-- Loading -->
     <div v-if="store.isLoading" class="flex items-center justify-center py-20">
-      <div class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"></div>
+      <div
+        class="animate-spin rounded-full h-10 w-10 border-2 border-t-teal-600 border-gray-200"
+      ></div>
     </div>
 
     <!-- Calendar grid -->
     <div v-else class="rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
       <!-- Day headers -->
       <div class="grid grid-cols-7 border-b border-gray-100">
-        <div v-for="day in weekDays" :key="day.date" class="py-4 text-center border-r border-gray-100 last:border-r-0" :class="{ 'opacity-50': isDateBeforeToday(day.date) }">
+        <div
+          v-for="day in weekDays"
+          :key="day.date"
+          class="py-4 text-center border-r border-gray-100 last:border-r-0"
+          :class="{ 'opacity-50': isDateBeforeToday(day.date) }"
+        >
           <p class="text-xs text-gray-500 uppercase font-medium">{{ day.shortName }}</p>
           <div class="mt-1">
             <span
               :class="[
                 'w-10 h-10 inline-flex items-center justify-center rounded-full text-lg font-semibold',
-                day.isToday ? 'bg-[#5B8DEF] text-white' : (isDateBeforeToday(day.date) ? 'text-gray-400' : 'text-gray-900')
+                day.isToday
+                  ? 'bg-[#5B8DEF] text-white'
+                  : isDateBeforeToday(day.date)
+                    ? 'text-gray-400'
+                    : 'text-gray-900',
               ]"
             >
               {{ day.dayNumber }}
@@ -56,17 +87,28 @@
       </div>
 
       <!-- Time grid -->
-      <div class="relative" style="height: 1536px;">
+      <div class="relative" style="height: 1536px">
         <div class="absolute inset-0 grid grid-cols-7">
-          <div v-for="day in weekDays" :key="day.date" class="border-r border-gray-100 last:border-r-0 relative">
+          <div
+            v-for="day in weekDays"
+            :key="day.date"
+            class="border-r border-gray-100 last:border-r-0 relative"
+          >
             <!-- Half-hour lines -->
-            <div class="absolute inset-0 pointer-events-none" style="background-size: 100% 64px;">
-              <div v-for="slot in timeSlots" :key="slot" class="h-16 border-t border-gray-100"></div>
+            <div class="absolute inset-0 pointer-events-none" style="background-size: 100% 64px">
+              <div
+                v-for="slot in timeSlots"
+                :key="slot"
+                class="h-16 border-t border-gray-100"
+              ></div>
             </div>
 
             <!-- Empty slots -->
             <div class="absolute inset-0 z-10">
-              <template v-for="daySlot in getDaySlots(day.date)" :key="`${day.date}-${daySlot.start}`">
+              <template
+                v-for="daySlot in getDaySlots(day.date)"
+                :key="`${day.date}-${daySlot.start}`"
+              >
                 <div
                   v-if="daySlot.outOfRange"
                   class="absolute left-1.5 right-1.5 h-16 rounded-xl border border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed pointer-events-none"
@@ -79,11 +121,11 @@
                     'absolute left-1.5 right-1.5 h-16 rounded-xl border border-dashed transition-all flex items-center justify-center',
                     isDateBeforeToday(day.date)
                       ? 'border-gray-300 bg-gray-100 cursor-not-allowed opacity-50 pointer-events-none'
-                      : 'border-gray-200 bg-white/80 hover:bg-blue-50 cursor-pointer pointer-events-auto'
+                      : 'border-gray-200 bg-white/80 hover:bg-blue-50 cursor-pointer pointer-events-auto',
                   ]"
                   :style="{ top: `${daySlot.index * 64}px` }"
                 >
-                  <span 
+                  <span
                     v-if="!isDateBeforeToday(day.date)"
                     class="text-blue-400 text-xs font-semibold"
                   >
@@ -101,18 +143,24 @@
                 @click="!isDateBeforeToday(day.date) && openDetails(event)"
                 :style="{
                   top: `${getEventPosition(event.start_time)}px`,
-                  height: `${getEventHeight(event.start_time, event.end_time)}px`
+                  height: `${getEventHeight(event.start_time, event.end_time)}px`,
                 }"
                 :class="[
                   'absolute left-1.5 right-1.5 rounded-xl p-2 text-xs font-medium overflow-hidden transition-all',
-                  isDateBeforeToday(day.date) ? 'opacity-70 cursor-default' : 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:z-30',
-                  event.status === 'confirmed' ? 'bg-green-500 text-white' : 
-                  event.status === 'pending' ? 'bg-amber-50 text-amber-800 border-2 border-dashed border-amber-400' : 
-                  'bg-gray-100 text-gray-600'
+                  isDateBeforeToday(day.date)
+                    ? 'opacity-70 cursor-default'
+                    : 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:z-30',
+                  event.status === 'confirmed'
+                    ? 'bg-green-500 text-white'
+                    : event.status === 'pending'
+                      ? 'bg-amber-50 text-amber-800 border-2 border-dashed border-amber-400'
+                      : 'bg-gray-100 text-gray-600',
                 ]"
               >
                 <p class="truncate font-semibold">{{ event.first_name }} {{ event.last_name }}</p>
-                <p class="opacity-80 mt-0.5">{{ formatTime(event.start_time) }}–{{ formatTime(event.end_time) }}</p>
+                <p class="opacity-80 mt-0.5">
+                  {{ formatTime(event.start_time) }}–{{ formatTime(event.end_time) }}
+                </p>
               </div>
             </div>
           </div>
@@ -120,7 +168,11 @@
 
         <!-- Time labels -->
         <div class="absolute left-0 top-0 bottom-0 w-14 pl-2 pointer-events-none">
-          <div v-for="slot in timeSlots" :key="slot" class="h-16 text-[10px] text-gray-400 leading-[1.1] pt-1">
+          <div
+            v-for="slot in timeSlots"
+            :key="slot"
+            class="h-16 text-[10px] text-gray-400 leading-[1.1] pt-1"
+          >
             {{ slot }}
           </div>
         </div>
@@ -134,14 +186,24 @@
           <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="closeDetails"></div>
           <div class="relative w-full max-w-lg bg-white shadow-2xl h-full overflow-y-auto">
             <!-- En-tête -->
-            <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-between z-10">
+            <div
+              class="sticky top-0 bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-between z-10"
+            >
               <div>
                 <h3 class="text-lg font-bold text-gray-900">Détails du rendez-vous</h3>
                 <p class="text-sm text-gray-500 mt-0.5">Consultez et gérez cette demande.</p>
               </div>
-              <button @click="closeDetails" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
+              <button
+                @click="closeDetails"
+                class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+              >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  ></path>
                 </svg>
               </button>
             </div>
@@ -152,12 +214,23 @@
                 <span
                   :class="[
                     'px-4 py-2 rounded-xl text-sm font-semibold inline-flex items-center gap-2',
-                    selectedAppointment.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                    selectedAppointment.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                    'bg-red-100 text-red-700'
+                    selectedAppointment.status === 'confirmed'
+                      ? 'bg-green-100 text-green-700'
+                      : selectedAppointment.status === 'pending'
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-red-100 text-red-700',
                   ]"
                 >
-                  <span class="w-2 h-2 rounded-full" :class="selectedAppointment.status === 'confirmed' ? 'bg-green-500' : selectedAppointment.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'"></span>
+                  <span
+                    class="w-2 h-2 rounded-full"
+                    :class="
+                      selectedAppointment.status === 'confirmed'
+                        ? 'bg-green-500'
+                        : selectedAppointment.status === 'pending'
+                          ? 'bg-amber-500'
+                          : 'bg-red-500'
+                    "
+                  ></span>
                   {{ getStatusLabel(selectedAppointment.status) }}
                 </span>
                 <span class="text-sm text-gray-400">#{{ selectedAppointment.id }}</span>
@@ -165,24 +238,38 @@
 
               <!-- Infos étudiant -->
               <div class="bg-gray-50 rounded-2xl p-5 space-y-4">
-                <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Informations étudiant</h4>
+                <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">
+                  Informations étudiant
+                </h4>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
                     <p class="text-xs text-gray-500 mb-0.5">Prénom</p>
-                    <p class="text-sm font-semibold text-gray-900">{{ selectedAppointment.first_name }}</p>
+                    <p class="text-sm font-semibold text-gray-900">
+                      {{ selectedAppointment.first_name }}
+                    </p>
                   </div>
                   <div>
                     <p class="text-xs text-gray-500 mb-0.5">Nom</p>
-                    <p class="text-sm font-semibold text-gray-900">{{ selectedAppointment.last_name }}</p>
+                    <p class="text-sm font-semibold text-gray-900">
+                      {{ selectedAppointment.last_name }}
+                    </p>
                   </div>
                 </div>
                 <div>
                   <p class="text-xs text-gray-500 mb-0.5">Email</p>
-                  <a :href="`mailto:${selectedAppointment.email}`" class="text-sm font-semibold text-blue-600 hover:text-blue-700">{{ selectedAppointment.email }}</a>
+                  <a
+                    :href="`mailto:${selectedAppointment.email}`"
+                    class="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                    >{{ selectedAppointment.email }}</a
+                  >
                 </div>
                 <div v-if="selectedAppointment.phone">
                   <p class="text-xs text-gray-500 mb-0.5">Téléphone</p>
-                  <a :href="`tel:${selectedAppointment.phone}`" class="text-sm font-semibold text-gray-900">{{ selectedAppointment.phone }}</a>
+                  <a
+                    :href="`tel:${selectedAppointment.phone}`"
+                    class="text-sm font-semibold text-gray-900"
+                    >{{ selectedAppointment.phone }}</a
+                  >
                 </div>
               </div>
 
@@ -192,21 +279,31 @@
                 <div class="grid grid-cols-2 gap-4">
                   <div>
                     <p class="text-xs text-gray-500 mb-0.5">Date</p>
-                    <p class="text-sm font-semibold text-gray-900">{{ formatDateFull(selectedAppointment.date) }}</p>
+                    <p class="text-sm font-semibold text-gray-900">
+                      {{ formatDateFull(selectedAppointment.date) }}
+                    </p>
                   </div>
                   <div>
                     <p class="text-xs text-gray-500 mb-0.5">Horaire</p>
-                    <p class="text-sm font-semibold text-gray-900">{{ formatTime(selectedAppointment.start_time) }} - {{ formatTime(selectedAppointment.end_time) }}</p>
+                    <p class="text-sm font-semibold text-gray-900">
+                      {{ formatTime(selectedAppointment.start_time) }} -
+                      {{ formatTime(selectedAppointment.end_time) }}
+                    </p>
                   </div>
                 </div>
                 <div>
                   <p class="text-xs text-gray-500 mb-0.5">Sujet</p>
-                  <p class="text-sm text-gray-900">{{ selectedAppointment.subject || 'Non renseigné' }}</p>
+                  <p class="text-sm text-gray-900">
+                    {{ selectedAppointment.subject || 'Non renseigné' }}
+                  </p>
                 </div>
               </div>
 
               <!-- Actions -->
-              <div v-if="selectedAppointment.status === 'pending'" class="border-t border-gray-100 pt-6 space-y-3">
+              <div
+                v-if="selectedAppointment.status === 'pending'"
+                class="border-t border-gray-100 pt-6 space-y-3"
+              >
                 <p class="text-sm text-gray-500 mb-1">Actions</p>
                 <div v-if="!selectedAppointmentState()?.action" class="grid grid-cols-2 gap-3">
                   <button
@@ -214,7 +311,12 @@
                     class="w-full py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 13l4 4L19 7"
+                      ></path>
                     </svg>
                     Confirmer
                   </button>
@@ -223,7 +325,12 @@
                     class="w-full py-3 bg-red-100 text-red-700 font-semibold rounded-xl hover:bg-red-200 transition-all flex items-center justify-center gap-2"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      ></path>
                     </svg>
                     Refuser
                   </button>
@@ -231,9 +338,14 @@
 
                 <div v-else class="space-y-4">
                   <p class="text-sm font-medium text-gray-600">
-                    {{ selectedAppointmentState()?.action === 'confirmed' ? 'Confirmation' : 'Refus' }} du rendez-vous
+                    {{
+                      selectedAppointmentState()?.action === 'confirmed' ? 'Confirmation' : 'Refus'
+                    }}
+                    du rendez-vous
                   </p>
-                  <label for="admin-message" class="block text-sm font-medium text-gray-700">Message</label>
+                  <label for="admin-message" class="block text-sm font-medium text-gray-700"
+                    >Message</label
+                  >
                   <textarea
                     id="admin-message"
                     v-model="selectedAppointmentState().admin_message"
@@ -260,8 +372,15 @@
               </div>
 
               <!-- Annulé avec raison -->
-              <div v-if="selectedAppointment.status === 'cancelled' && selectedAppointment.cancel_reason" class="bg-red-50 rounded-2xl p-5">
-                <h4 class="text-sm font-bold text-red-800 uppercase tracking-wide mb-2">Raison d'annulation</h4>
+              <div
+                v-if="
+                  selectedAppointment.status === 'cancelled' && selectedAppointment.cancel_reason
+                "
+                class="bg-red-50 rounded-2xl p-5"
+              >
+                <h4 class="text-sm font-bold text-red-800 uppercase tracking-wide mb-2">
+                  Raison d'annulation
+                </h4>
                 <p class="text-sm text-red-700">{{ selectedAppointment.cancel_reason }}</p>
               </div>
             </div>
@@ -273,29 +392,60 @@
     <!-- Empty slot modal -->
     <Teleport to="body">
       <Transition name="fade">
-        <div v-if="isEmptySlotModalOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+        <div
+          v-if="isEmptySlotModalOpen"
+          class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+        >
           <div class="absolute inset-0 bg-black/40" @click="closeEmptySlotModal"></div>
-          <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
+          <div
+            class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in"
+          >
             <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 class="text-lg font-bold text-gray-900">Créneau libre sélectionné</h3>
                 <p class="text-sm text-gray-500 mt-0.5">Ce créneau sera marqué comme occupé.</p>
               </div>
-              <button @click="closeEmptySlotModal" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all">
+              <button
+                @click="closeEmptySlotModal"
+                class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+              >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  ></path>
                 </svg>
               </button>
             </div>
             <div class="px-6 py-5 space-y-4">
               <p class="text-sm text-gray-600">Voulez-vous rendre ce créneau occupé ?</p>
-              <p class="text-base font-semibold text-gray-900">{{ formatDateFull(selectedEmptySlot.date) }}</p>
-              <p class="text-sm text-gray-700">De {{ selectedEmptySlot.start }} à {{ selectedEmptySlot.end }}</p>
-              <p class="text-sm text-gray-500">Ce créneau sera désormais marqué comme occupé une fois confirmé.</p>
+              <p class="text-base font-semibold text-gray-900">
+                {{ formatDateFull(selectedEmptySlot.date) }}
+              </p>
+              <p class="text-sm text-gray-700">
+                De {{ selectedEmptySlot.start }} à {{ selectedEmptySlot.end }}
+              </p>
+              <p class="text-sm text-gray-500">
+                Ce créneau sera désormais marqué comme occupé une fois confirmé.
+              </p>
             </div>
-            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-3">
-              <button @click="closeEmptySlotModal" class="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all">Annuler</button>
-              <button @click="confirmOccupyEmptySlot" class="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all">Confirmer</button>
+            <div
+              class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-3"
+            >
+              <button
+                @click="closeEmptySlotModal"
+                class="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all"
+              >
+                Annuler
+              </button>
+              <button
+                @click="confirmOccupyEmptySlot"
+                class="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all"
+              >
+                Confirmer
+              </button>
             </div>
           </div>
         </div>
@@ -332,7 +482,7 @@ const weekDays = computed(() => {
       shortName: names[i],
       dayNumber: date.getDate(),
       monthIndex: date.getMonth(),
-      isToday: date.toDateString() === today.toDateString()
+      isToday: date.toDateString() === today.toDateString(),
     })
   }
   return days
@@ -341,7 +491,20 @@ const weekDays = computed(() => {
 const currentWeekDisplay = computed(() => {
   const start = weekDays.value[0]
   const end = weekDays.value[6]
-  const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+  const monthNames = [
+    'Janvier',
+    'Février',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Août',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Décembre',
+  ]
 
   // On réutilise directement dayNumber/monthIndex déjà calculés en local
   // (on évite de reparser start.date/end.date, ce qui repasserait par UTC et redécal...
@@ -395,14 +558,14 @@ async function loadWeek() {
   await store.fetchRules()
   const start = getWeekStart(weekStart.value)
   const end = getWeekEnd(weekStart.value)
-  const fmt = d => toLocalISODate(d)
+  const fmt = (d) => toLocalISODate(d)
   await store.fetchCalendarAppointments(fmt(start), fmt(end))
 }
 
 const dayRules = computed(() => store.rules || [])
 
 function getRuleForDate(date) {
-  return dayRules.value.find(rule => rule.day_of_week === getLocalDayIndex(date))
+  return dayRules.value.find((rule) => rule.day_of_week === getLocalDayIndex(date))
 }
 
 function getLocalDayIndex(date) {
@@ -433,7 +596,9 @@ function getDaySlots(date) {
     const [startLabel, endLabel] = timeSlots.value[index].split('-')
     const start = labelToTime(startLabel)
     const end = labelToTime(endLabel)
-    const occupied = appointments.some(event => timeRangesOverlap(event.start_time, event.end_time, start, end))
+    const occupied = appointments.some((event) =>
+      timeRangesOverlap(event.start_time, event.end_time, start, end),
+    )
     const allowed = isSlotAllowedByRule(rule, start, end)
     slots.push({ index, start, end, occupied, outOfRange: !allowed })
   }
@@ -442,7 +607,7 @@ function getDaySlots(date) {
 }
 
 function getEventsForDay(date) {
-  return (store.calendarAppointments || []).filter(e => {
+  return (store.calendarAppointments || []).filter((e) => {
     const appointmentDate = new Date(e.date).toISOString().split('T')[0]
     return appointmentDate === date && e.status !== 'cancelled'
   })
@@ -463,9 +628,11 @@ async function confirmOccupyEmptySlot() {
     await store.createManualAppointment({
       date: selectedEmptySlot.value.date,
       start_time: selectedEmptySlot.value.start,
-      end_time: selectedEmptySlot.value.end
+      end_time: selectedEmptySlot.value.end,
     })
-    toastStore.success(`Créneau ${selectedEmptySlot.value.start} - ${selectedEmptySlot.value.end} du ${formatDateFull(selectedEmptySlot.value.date)} marqué occupé !`)
+    toastStore.success(
+      `Créneau ${selectedEmptySlot.value.start} - ${selectedEmptySlot.value.end} du ${formatDateFull(selectedEmptySlot.value.date)} marqué occupé !`,
+    )
     closeEmptySlotModal()
   } catch (err) {
     toastStore.error(err.response?.data?.message || 'Erreur lors de la réservation du créneau.')
@@ -481,7 +648,7 @@ function getEventPosition(time) {
 function getEventHeight(startTime, endTime) {
   const [startHour, startMin] = startTime.split(':').map(Number)
   const [endHour, endMin] = endTime.split(':').map(Number)
-  const duration = (endHour * 60 + endMin) - (startHour * 60 + startMin)
+  const duration = endHour * 60 + endMin - (startHour * 60 + startMin)
   const slots = duration / 30
   return Math.max(slots * 64, 40)
 }
@@ -496,7 +663,7 @@ function getStatusLabel(status) {
     confirmed: 'Confirmé',
     cancelled: 'Annulé',
     completed: 'Terminé',
-    no_show: 'Absent'
+    no_show: 'Absent',
   }
   return labels[status] || status
 }
@@ -504,7 +671,12 @@ function getStatusLabel(status) {
 function formatDateFull(dateStr) {
   try {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    return date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
   } catch {
     return dateStr
   }
@@ -528,7 +700,10 @@ function parseTimeToMinutes(time) {
 }
 
 function timeRangesOverlap(startA, endA, startB, endB) {
-  return parseTimeToMinutes(startA) < parseTimeToMinutes(endB) && parseTimeToMinutes(endA) > parseTimeToMinutes(startB)
+  return (
+    parseTimeToMinutes(startA) < parseTimeToMinutes(endB) &&
+    parseTimeToMinutes(endA) > parseTimeToMinutes(startB)
+  )
 }
 
 function previousWeek() {
@@ -563,7 +738,7 @@ function getEditingState(appointment) {
   if (!appointmentEdits.value[appointment.id]) {
     appointmentEdits.value[appointment.id] = {
       action: null,
-      admin_message: appointment.admin_message || ''
+      admin_message: appointment.admin_message || '',
     }
   }
   return appointmentEdits.value[appointment.id]
@@ -596,13 +771,13 @@ async function submitSidebarAction() {
 
   actionLoading.value = {
     ...actionLoading.value,
-    [selectedAppointment.value.id]: true
+    [selectedAppointment.value.id]: true,
   }
 
   const status = state.action === 'confirmed' ? 'confirmed' : 'refused'
   const payload = {
     status,
-    admin_message: state.admin_message || null
+    admin_message: state.admin_message || null,
   }
 
   try {
@@ -612,14 +787,16 @@ async function submitSidebarAction() {
     if (result.email_sent === false) {
       toastStore.error('Le statut a été enregistré, mais l’email n’a pas pu être envoyé.')
     } else {
-      toastStore.success(`Rendez-vous de ${selectedAppointment.value.first_name} ${status === 'confirmed' ? 'confirmé' : 'refusé'}.`)
+      toastStore.success(
+        `Rendez-vous de ${selectedAppointment.value.first_name} ${status === 'confirmed' ? 'confirmé' : 'refusé'}.`,
+      )
     }
   } catch {
     toastStore.error('Erreur lors de la mise à jour du rendez-vous.')
   } finally {
     actionLoading.value = {
       ...actionLoading.value,
-      [selectedAppointment.value.id]: false
+      [selectedAppointment.value.id]: false,
     }
   }
 }

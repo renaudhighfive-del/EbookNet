@@ -1,12 +1,16 @@
 <template>
   <div class="min-h-screen bg-beige flex flex-col">
     <!-- Navbar -->
-    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-200/50 transition-all duration-300">
+    <header
+      class="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-200/50 transition-all duration-300"
+    >
       <div class="max-w-7xl mx-auto px-6 lg:px-8">
         <div class="flex items-center justify-between h-20">
           <!-- Logo -->
           <router-link to="/" class="flex items-center gap-3 group">
-            <div class="w-11 h-11 bg-[#1B2A4A] rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:bg-[#0D9488] group-hover:scale-105">
+            <div
+              class="w-11 h-11 bg-[#1B2A4A] rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:bg-[#0D9488] group-hover:scale-105"
+            >
               <BookOpen class="w-5 h-5 text-white" />
             </div>
             <span class="text-xl font-serif font-bold text-[#1B2A4A] tracking-tight">Lectoria</span>
@@ -14,26 +18,35 @@
 
           <!-- Nav -->
           <nav class="hidden md:flex items-center gap-8">
-            <router-link to="/"
+            <router-link
+              to="/"
               class="text-sm font-medium text-slate-600 hover:text-[#1B2A4A] transition-colors"
               :class="{ 'text-[#1B2A4A] font-semibold': $route.path === '/' }"
-            >Accueil</router-link>
-            <router-link to="/catalogue"
+              >Accueil</router-link
+            >
+            <router-link
+              to="/catalogue"
               class="text-sm font-medium text-slate-600 hover:text-[#1B2A4A] transition-colors"
               :class="{ 'text-[#1B2A4A] font-semibold': $route.path === '/catalogue' }"
-            >Catalogue</router-link>
-            <router-link to="/recherche"
+              >Catalogue</router-link
+            >
+            <router-link
+              to="/recherche"
               class="text-sm font-medium text-slate-600 hover:text-[#1B2A4A] transition-colors"
               :class="{ 'text-[#1B2A4A] font-semibold': $route.path === '/recherche' }"
-            >Recherche</router-link>
+              >Recherche</router-link
+            >
           </nav>
 
           <!-- Login / Dashboard button -->
-          <router-link :to="authStore.isAuthenticated ? dashboardLink : '/connexion'"
+          <router-link
+            :to="authStore.isAuthenticated ? dashboardLink : '/connexion'"
             class="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-[#1B2A4A] rounded-xl font-semibold transition-all duration-200 text-sm"
-            :class="authStore.isAuthenticated
-              ? 'bg-[#1B2A4A] text-white hover:bg-[#0D9488] hover:border-[#0D9488]'
-              : 'text-[#1B2A4A] hover:bg-[#1B2A4A] hover:text-white'"
+            :class="
+              authStore.isAuthenticated
+                ? 'bg-[#1B2A4A] text-white hover:bg-[#0D9488] hover:border-[#0D9488]'
+                : 'text-[#1B2A4A] hover:bg-[#1B2A4A] hover:text-white'
+            "
           >
             <component :is="authStore.isAuthenticated ? LayoutDashboard : LogIn" class="w-4 h-4" />
             {{ authStore.isAuthenticated ? 'Tableau de bord' : 'Connexion' }}
@@ -56,7 +69,8 @@
               <span class="text-lg font-serif font-bold">Lectoria</span>
             </div>
             <p class="text-slate-300 leading-relaxed mb-5 max-w-sm text-sm">
-              Bibliothèque Numérique du Bénin — Centraliser, sécuriser et diffuser le patrimoine documentaire académique.
+              Bibliothèque Numérique du Bénin — Centraliser, sécuriser et diffuser le patrimoine
+              documentaire académique.
             </p>
             <div class="space-y-2 text-slate-300 text-xs">
               <div class="flex items-center gap-2">
@@ -71,14 +85,31 @@
           <div>
             <h3 class="font-semibold mb-4 text-xs tracking-wide text-slate-100">Navigation</h3>
             <ul class="space-y-2 text-xs">
-              <li><router-link to="/" class="text-slate-300 hover:text-white transition-colors">Accueil</router-link></li>
-              <li><router-link to="/catalogue" class="text-slate-300 hover:text-white transition-colors">Catalogue</router-link></li>
-              <li><router-link to="/recherche" class="text-slate-300 hover:text-white transition-colors">Recherche</router-link></li>
+              <li>
+                <router-link to="/" class="text-slate-300 hover:text-white transition-colors"
+                  >Accueil</router-link
+                >
+              </li>
+              <li>
+                <router-link
+                  to="/catalogue"
+                  class="text-slate-300 hover:text-white transition-colors"
+                  >Catalogue</router-link
+                >
+              </li>
+              <li>
+                <router-link
+                  to="/recherche"
+                  class="text-slate-300 hover:text-white transition-colors"
+                  >Recherche</router-link
+                >
+              </li>
               <li>
                 <router-link
                   :to="authStore.isAuthenticated ? dashboardLink : '/connexion'"
                   class="text-slate-300 hover:text-white transition-colors"
-                >{{ authStore.isAuthenticated ? 'Tableau de bord' : 'Connexion' }}</router-link>
+                  >{{ authStore.isAuthenticated ? 'Tableau de bord' : 'Connexion' }}</router-link
+                >
               </li>
             </ul>
           </div>
@@ -86,10 +117,24 @@
           <div>
             <h3 class="font-semibold mb-4 text-xs tracking-wide text-slate-100">Ressources</h3>
             <ul class="space-y-2 text-xs">
-              <li><a href="#" class="text-slate-300 hover:text-white transition-colors">Mentions légales</a></li>
-              <li><a href="#" class="text-slate-300 hover:text-white transition-colors">Politique de confidentialité</a></li>
-              <li><a href="#" class="text-slate-300 hover:text-white transition-colors">Conditions d'utilisation</a></li>
-              <li><a href="#" class="text-slate-300 hover:text-white transition-colors">Aide & FAQ</a></li>
+              <li>
+                <a href="#" class="text-slate-300 hover:text-white transition-colors"
+                  >Mentions légales</a
+                >
+              </li>
+              <li>
+                <a href="#" class="text-slate-300 hover:text-white transition-colors"
+                  >Politique de confidentialité</a
+                >
+              </li>
+              <li>
+                <a href="#" class="text-slate-300 hover:text-white transition-colors"
+                  >Conditions d'utilisation</a
+                >
+              </li>
+              <li>
+                <a href="#" class="text-slate-300 hover:text-white transition-colors">Aide & FAQ</a>
+              </li>
             </ul>
           </div>
         </div>

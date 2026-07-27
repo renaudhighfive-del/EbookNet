@@ -48,7 +48,7 @@ export const useDepositStore = defineStore('deposit', () => {
       toast.success(result.message || 'Demande de dépôt créée avec succès.')
       return result
     } catch (err) {
-      const msg = err.response?.data?.message ?? "Erreur lors de la création de la demande."
+      const msg = err.response?.data?.message ?? 'Erreur lors de la création de la demande.'
       error.value = msg
       const toast = useToastStore()
       toast.error(msg)

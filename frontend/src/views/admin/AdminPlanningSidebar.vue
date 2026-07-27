@@ -7,9 +7,16 @@
     </div>
 
     <!-- New slot button -->
-    <button class="w-full py-3 bg-[#5B8DEF] text-white font-semibold rounded-xl hover:bg-[#4b7bdf] transition-all flex items-center justify-center gap-2 mb-6">
+    <button
+      class="w-full py-3 bg-[#5B8DEF] text-white font-semibold rounded-xl hover:bg-[#4b7bdf] transition-all flex items-center justify-center gap-2 mb-6"
+    >
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 4v16m8-8H4"
+        ></path>
       </svg>
       Nouveau créneau
     </button>
@@ -19,20 +26,38 @@
       <div class="flex items-center justify-between mb-3">
         <p class="font-semibold text-gray-900">{{ currentMonth }}</p>
         <div class="flex items-center gap-2">
-          <button @click="previousMonth" class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700">
+          <button
+            @click="previousMonth"
+            class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700"
+          >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              ></path>
             </svg>
           </button>
-          <button @click="nextMonth" class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700">
+          <button
+            @click="nextMonth"
+            class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700"
+          >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              ></path>
             </svg>
           </button>
         </div>
       </div>
       <div class="grid grid-cols-7 gap-1 text-center text-xs mb-2">
-        <span v-for="day in weekDayNames" :key="day" class="text-gray-400 font-medium">{{ day }}</span>
+        <span v-for="day in weekDayNames" :key="day" class="text-gray-400 font-medium">{{
+          day
+        }}</span>
       </div>
       <div class="grid grid-cols-7 gap-1">
         <div
@@ -41,13 +66,20 @@
           @click="!day.isEmpty && selectDate(day)"
           :class="[
             'h-8 flex items-center justify-center text-sm rounded-lg cursor-pointer transition-all',
-            day.isToday ? 'bg-[#5B8DEF] text-white font-semibold' : day.isSelected ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100',
+            day.isToday
+              ? 'bg-[#5B8DEF] text-white font-semibold'
+              : day.isSelected
+                ? 'bg-blue-50 text-blue-600'
+                : 'text-gray-700 hover:bg-gray-100',
             day.isEmpty ? 'text-transparent cursor-default hover:bg-transparent' : '',
-            day.hasEvent && !day.isToday ? 'relative' : ''
+            day.hasEvent && !day.isToday ? 'relative' : '',
           ]"
         >
           {{ day.number }}
-          <span v-if="day.hasEvent && !day.isToday" class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"></span>
+          <span
+            v-if="day.hasEvent && !day.isToday"
+            class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-500 rounded-full"
+          ></span>
         </div>
       </div>
     </div>
@@ -68,7 +100,9 @@
           <span class="text-sm text-gray-700">Confirmé</span>
         </div>
         <div class="flex items-center gap-3">
-          <div class="w-4 h-4 rounded-full border-2 border-dashed border-amber-400 bg-amber-50"></div>
+          <div
+            class="w-4 h-4 rounded-full border-2 border-dashed border-amber-400 bg-amber-50"
+          ></div>
           <span class="text-sm text-gray-700">En attente</span>
         </div>
         <div class="flex items-center gap-3">
@@ -94,30 +128,43 @@ const selectedDate = ref(new Date())
 const weekDayNames = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
 const currentMonth = computed(() => {
-  const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+  const months = [
+    'Janvier',
+    'Février',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Août',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Décembre',
+  ]
   return `${months[currentDate.value.getMonth()]} ${currentDate.value.getFullYear()}`
 })
 
 const calendarDays = computed(() => {
   const year = currentDate.value.getFullYear()
   const month = currentDate.value.getMonth()
-  
+
   // First day of month
   const firstDay = new Date(year, month, 1)
   const startingDay = (firstDay.getDay() + 6) % 7 // Monday = 0
-  
+
   // Last day of month
   const lastDay = new Date(year, month + 1, 0)
   const daysInMonth = lastDay.getDate()
-  
+
   const days = []
   const today = new Date()
-  
+
   // Empty days before month start
   for (let i = 0; i < startingDay; i++) {
     days.push({ isEmpty: true })
   }
-  
+
   // Days in month
   for (let i = 1; i <= daysInMonth; i++) {
     const date = new Date(year, month, i)
@@ -127,10 +174,12 @@ const calendarDays = computed(() => {
       date: dateStr,
       isToday: date.toDateString() === today.toDateString(),
       isSelected: date.toDateString() === selectedDate.value.toDateString(),
-      hasEvent: (store.appointments || []).some(a => a.date === dateStr && a.status !== 'cancelled'),
+      hasEvent: (store.appointments || []).some(
+        (a) => a.date === dateStr && a.status !== 'cancelled',
+      ),
     })
   }
-  
+
   return days
 })
 
@@ -140,11 +189,11 @@ const thisWeekAppointments = computed(() => {
   const day = weekStart.getDay()
   const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1)
   weekStart.setDate(diff)
-  
+
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekStart.getDate() + 6)
-  
-  return (store.appointments || []).filter(a => {
+
+  return (store.appointments || []).filter((a) => {
     const apptDate = new Date(a.date)
     return apptDate >= weekStart && apptDate <= weekEnd && a.status !== 'cancelled'
   })
